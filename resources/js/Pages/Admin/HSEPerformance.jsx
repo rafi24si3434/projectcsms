@@ -410,15 +410,15 @@ export default function HSEPerformance() {
 
     // Style constants
     const colors = {
-        green: "#004d32",
-        green2: "#00583b",
-        lightGreen: "#e8f1ed",
+        green: "#0a192f",
+        green2: "#0284c7",
+        lightGreen: "#e0f2fe",
         bg: "#f4f7fb",
         border: "#d9e1e8",
         text: "#102033",
         muted: "#64748b",
         red: "#c91f2c",
-        yellow: "#efff00",
+        yellow: "#38bdf8",
     };
 
     const cardStyle = {
@@ -427,7 +427,7 @@ export default function HSEPerformance() {
         borderRadius: "10px",
         padding: "18px",
         boxSizing: "border-box",
-        boxShadow: "0 2px 4px rgba(0, 77, 50, 0.04)",
+        boxShadow: "0 2px 4px rgba(14,165,233,0.04)",
     };
 
     const selectStyle = {
@@ -1173,7 +1173,7 @@ function KpiCard({ title, value, subtitle, change, icon, isGood }) {
                 border: "1px solid #d9e1e8",
                 borderRadius: "10px",
                 padding: "16px",
-                boxShadow: "0 2px 4px rgba(0, 77, 50, 0.04)",
+                boxShadow: "0 2px 4px rgba(14,165,233,0.04)",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
@@ -1184,7 +1184,7 @@ function KpiCard({ title, value, subtitle, change, icon, isGood }) {
                     <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                         {title}
                     </span>
-                    <div style={{ fontSize: "22px", fontWeight: "900", color: "#004d32", marginTop: "4px", letterSpacing: "-0.02em" }}>
+                    <div style={{ fontSize: "22px", fontWeight: "900", color: "#0a192f", marginTop: "4px", letterSpacing: "-0.02em" }}>
                         {value}
                     </div>
                 </div>
@@ -1193,8 +1193,8 @@ function KpiCard({ title, value, subtitle, change, icon, isGood }) {
                         width: "36px",
                         height: "36px",
                         borderRadius: "8px",
-                        backgroundColor: "#e8f1ed",
-                        color: "#004d32",
+                        backgroundColor: "#e0f2fe",
+                        color: "#0a192f",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -1234,7 +1234,7 @@ function FormulaBadge({ label, formula, value }) {
                 boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
             }}
         >
-            <div style={{ fontSize: "11px", fontWeight: "800", color: "#004d32", marginBottom: "2px" }}>
+            <div style={{ fontSize: "11px", fontWeight: "800", color: "#0a192f", marginBottom: "2px" }}>
                 {label}
             </div>
             <div style={{ fontSize: "11px", color: "#64748b", fontFamily: "monospace" }}>
@@ -1254,14 +1254,14 @@ function IndicatorBars({ data }) {
                 <div key={idx}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>
                         <span style={{ color: "#334155" }}>{label}</span>
-                        <span style={{ color: "#004d32", fontWeight: "800" }}>{value}%</span>
+                        <span style={{ color: "#0a192f", fontWeight: "800" }}>{value}%</span>
                     </div>
                     <div style={{ width: "100%", height: "8px", backgroundColor: "#e2e8f0", borderRadius: "4px", overflow: "hidden" }}>
                         <div
                             style={{
                                 width: `${Math.min(100, Math.max(0, value))}%`,
                                 height: "100%",
-                                backgroundColor: value >= 90 ? "#004d32" : value >= 60 ? "#d97706" : "#dc2626",
+                                backgroundColor: value >= 90 ? "#0a192f" : value >= 60 ? "#d97706" : "#dc2626",
                                 borderRadius: "4px",
                                 transition: "width 0.3s ease",
                             }}

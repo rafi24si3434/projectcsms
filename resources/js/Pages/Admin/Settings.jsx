@@ -214,13 +214,13 @@ export default function SettingsPage({
                                 width: "32px",
                                 height: "32px",
                                 borderRadius: "8px",
-                                backgroundColor: "#004d32",
-                                border: "1px solid #efff00",
+                                backgroundColor: "#0a192f",
+                                border: "1px solid #38bdf8",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "#efff00",
-                                boxShadow: "0 0 8px rgba(239, 255, 0, 0.25)",
+                                color: "#38bdf8",
+                                boxShadow: "0 0 8px rgba(56,189,248,0.25)",
                             }}
                         >
                             <Settings size={18} strokeWidth={2.5} />
@@ -229,7 +229,7 @@ export default function SettingsPage({
                             style={{
                                 fontSize: "16px",
                                 fontWeight: "800",
-                                color: "#004d32",
+                                color: "#0a192f",
                                 letterSpacing: "-0.01em",
                             }}
                         >
@@ -244,9 +244,9 @@ export default function SettingsPage({
                             gap: "6px",
                             padding: "4px 12px",
                             borderRadius: "20px",
-                            backgroundColor: "#ecfdf5",
-                            border: "1px solid #a7f3d0",
-                            color: "#004d32",
+                            backgroundColor: "#e0f2fe",
+                            border: "1px solid #7dd3fc",
+                            color: "#0a192f",
                             fontSize: "12px",
                             fontWeight: "700",
                         }}
@@ -256,8 +256,8 @@ export default function SettingsPage({
                                 width: "8px",
                                 height: "8px",
                                 borderRadius: "50%",
-                                backgroundColor: "#10b981",
-                                boxShadow: "0 0 6px #10b981",
+                                backgroundColor: "#38bdf8",
+                                boxShadow: "0 0 6px #38bdf8",
                             }}
                         />
                         Server Online
@@ -270,22 +270,22 @@ export default function SettingsPage({
                     {notification.text && (
                         <div
                             style={{
-                                backgroundColor: notification.type === "success" ? "#ecfdf5" : "#fee2e2",
-                                border: `1px solid ${notification.type === "success" ? "#34d399" : "#f87171"}`,
+                                backgroundColor: notification.type === "success" ? "#e0f2fe" : "#fee2e2",
+                                border: `1px solid ${notification.type === "success" ? "#38bdf8" : "#f87171"}`,
                                 borderRadius: "10px",
                                 padding: "12px 18px",
                                 marginBottom: "20px",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "10px",
-                                color: notification.type === "success" ? "#065f46" : "#991b1b",
+                                color: notification.type === "success" ? "#1e3a8a" : "#991b1b",
                                 fontSize: "13px",
                                 fontWeight: "700",
                                 boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                             }}
                         >
                             {notification.type === "success" ? (
-                                <CheckCircle2 size={18} color="#059669" />
+                                <CheckCircle2 size={18} color="#0284c7" />
                             ) : (
                                 <AlertCircle size={18} color="#dc2626" />
                             )}
@@ -296,13 +296,13 @@ export default function SettingsPage({
                     {/* HERO CARD */}
                     <div
                         style={{
-                            backgroundColor: "#004d32",
+                            backgroundColor: "#0a192f",
                             borderRadius: "16px",
                             padding: "24px 28px",
                             color: "#ffffff",
                             marginBottom: "24px",
-                            boxShadow: "0 10px 25px rgba(0, 77, 50, 0.15)",
-                            border: "1px solid rgba(239, 255, 0, 0.3)",
+                            boxShadow: "0 10px 25px rgba(14,165,233,0.15)",
+                            border: "1px solid rgba(56,189,248,0.3)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
@@ -316,9 +316,9 @@ export default function SettingsPage({
                                     style={{
                                         padding: "3px 8px",
                                         borderRadius: "4px",
-                                        backgroundColor: "rgba(239, 255, 0, 0.2)",
-                                        border: "1px solid #efff00",
-                                        color: "#efff00",
+                                        backgroundColor: "rgba(56,189,248,0.2)",
+                                        border: "1px solid #38bdf8",
+                                        color: "#38bdf8",
                                         fontSize: "11px",
                                         fontWeight: "800",
                                         textTransform: "uppercase",
@@ -326,14 +326,14 @@ export default function SettingsPage({
                                 >
                                     Control Panel
                                 </span>
-                                <span style={{ color: "#a7f3d0", fontSize: "12px", fontWeight: "600" }}>
+                                <span style={{ color: "#7dd3fc", fontSize: "12px", fontWeight: "600" }}>
                                     PT BESMINDO MATERI SEWATAMA
                                 </span>
                             </div>
                             <h1 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: "900" }}>
                                 Pusat Pengaturan Sistem & Profil
                             </h1>
-                            <p style={{ margin: 0, color: "#d1fae5", fontSize: "13px" }}>
+                            <p style={{ margin: 0, color: "#dbeafe", fontSize: "13px" }}>
                                 Kelola identitas akun Anda, keamanan kata sandi, serta konfigurasi operasional aplikasi HSE.
                             </p>
                         </div>
@@ -345,7 +345,7 @@ export default function SettingsPage({
                                 alignItems: "center",
                                 gap: "12px",
                                 backgroundColor: "rgba(0,0,0,0.25)",
-                                border: "1px solid rgba(239, 255, 0, 0.3)",
+                                border: "1px solid rgba(56,189,248,0.3)",
                                 padding: "10px 16px",
                                 borderRadius: "12px",
                             }}
@@ -355,8 +355,8 @@ export default function SettingsPage({
                                     width: "36px",
                                     height: "36px",
                                     borderRadius: "50%",
-                                    backgroundColor: "#efff00",
-                                    color: "#004d32",
+                                    backgroundColor: "#38bdf8",
+                                    color: "#0a192f",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
@@ -370,7 +370,7 @@ export default function SettingsPage({
                                 <div style={{ fontSize: "13px", fontWeight: "800", color: "#ffffff" }}>
                                     {currentUser.name}
                                 </div>
-                                <div style={{ fontSize: "11.5px", color: "#efff00" }}>
+                                <div style={{ fontSize: "11.5px", color: "#38bdf8" }}>
                                     {currentUser.email} • Role: {currentUser.role?.toUpperCase()}
                                 </div>
                             </div>
@@ -392,9 +392,9 @@ export default function SettingsPage({
                             style={{
                                 padding: "9px 18px",
                                 borderRadius: "8px",
-                                border: activeTab === "profile" ? "1px solid #004d32" : "1px solid #e2e8f0",
-                                backgroundColor: activeTab === "profile" ? "#004d32" : "#ffffff",
-                                color: activeTab === "profile" ? "#efff00" : "#475569",
+                                border: activeTab === "profile" ? "1px solid #0a192f" : "1px solid #e2e8f0",
+                                backgroundColor: activeTab === "profile" ? "#0a192f" : "#ffffff",
+                                color: activeTab === "profile" ? "#38bdf8" : "#475569",
                                 fontSize: "13px",
                                 fontWeight: "800",
                                 cursor: "pointer",
@@ -413,9 +413,9 @@ export default function SettingsPage({
                             style={{
                                 padding: "9px 18px",
                                 borderRadius: "8px",
-                                border: activeTab === "password" ? "1px solid #004d32" : "1px solid #e2e8f0",
-                                backgroundColor: activeTab === "password" ? "#004d32" : "#ffffff",
-                                color: activeTab === "password" ? "#efff00" : "#475569",
+                                border: activeTab === "password" ? "1px solid #0a192f" : "1px solid #e2e8f0",
+                                backgroundColor: activeTab === "password" ? "#0a192f" : "#ffffff",
+                                color: activeTab === "password" ? "#38bdf8" : "#475569",
                                 fontSize: "13px",
                                 fontWeight: "800",
                                 cursor: "pointer",
@@ -434,9 +434,9 @@ export default function SettingsPage({
                             style={{
                                 padding: "9px 18px",
                                 borderRadius: "8px",
-                                border: activeTab === "system" ? "1px solid #004d32" : "1px solid #e2e8f0",
-                                backgroundColor: activeTab === "system" ? "#004d32" : "#ffffff",
-                                color: activeTab === "system" ? "#efff00" : "#475569",
+                                border: activeTab === "system" ? "1px solid #0a192f" : "1px solid #e2e8f0",
+                                backgroundColor: activeTab === "system" ? "#0a192f" : "#ffffff",
+                                color: activeTab === "system" ? "#38bdf8" : "#475569",
                                 fontSize: "13px",
                                 fontWeight: "800",
                                 cursor: "pointer",
@@ -463,7 +463,7 @@ export default function SettingsPage({
                             }}
                         >
                             <div style={{ marginBottom: "20px" }}>
-                                <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: "800", color: "#004d32" }}>
+                                <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: "800", color: "#0a192f" }}>
                                     Informasi Profil Pengguna
                                 </h3>
                                 <p style={{ margin: 0, color: "#64748b", fontSize: "12.5px" }}>
@@ -544,7 +544,7 @@ export default function SettingsPage({
                             }}
                         >
                             <div style={{ marginBottom: "20px" }}>
-                                <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: "800", color: "#004d32" }}>
+                                <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: "800", color: "#0a192f" }}>
                                     Ganti Kata Sandi Akun
                                 </h3>
                                 <p style={{ margin: 0, color: "#64748b", fontSize: "12.5px" }}>
@@ -618,7 +618,7 @@ export default function SettingsPage({
                                     boxShadow: "0 4px 18px rgba(0,0,0,0.03)",
                                 }}
                             >
-                                <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800", color: "#004d32" }}>
+                                <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800", color: "#0a192f" }}>
                                     Informasi Server & Lingkungan Aplikasi
                                 </h3>
 
@@ -635,7 +635,7 @@ export default function SettingsPage({
 
                                     <div style={infoBoxStyle}>
                                         <div style={infoLabel}>Versi Sistem</div>
-                                        <div style={{ ...infoVal, color: "#004d32", fontWeight: "900" }}>{systemInfo.appVersion}</div>
+                                        <div style={{ ...infoVal, color: "#0a192f", fontWeight: "900" }}>{systemInfo.appVersion}</div>
                                     </div>
 
                                     <div style={infoBoxStyle}>
@@ -665,7 +665,7 @@ export default function SettingsPage({
                                     boxShadow: "0 4px 18px rgba(0,0,0,0.03)",
                                 }}
                             >
-                                <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800", color: "#004d32" }}>
+                                <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800", color: "#0a192f" }}>
                                     Konfigurasi Operasional Portal
                                 </h3>
 
@@ -756,16 +756,16 @@ const inputStyle = {
 const saveBtnStyle = {
     padding: "10px 22px",
     borderRadius: "8px",
-    border: "1px solid #efff00",
-    backgroundColor: "#004d32",
-    color: "#efff00",
+    border: "1px solid #38bdf8",
+    backgroundColor: "#0a192f",
+    color: "#38bdf8",
     fontWeight: "800",
     fontSize: "13px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    boxShadow: "0 0 10px rgba(239, 255, 0, 0.25)",
+    boxShadow: "0 0 10px rgba(56,189,248,0.25)",
 };
 
 const infoBoxStyle = {
@@ -802,9 +802,9 @@ const switchRowStyle = {
 const switchBtnStyle = (isActive) => ({
     padding: "6px 14px",
     borderRadius: "20px",
-    border: isActive ? "1px solid #a7f3d0" : "1px solid #cbd5e1",
-    backgroundColor: isActive ? "#004d32" : "#f1f5f9",
-    color: isActive ? "#efff00" : "#64748b",
+    border: isActive ? "1px solid #7dd3fc" : "1px solid #cbd5e1",
+    backgroundColor: isActive ? "#0a192f" : "#f1f5f9",
+    color: isActive ? "#38bdf8" : "#64748b",
     fontSize: "12px",
     fontWeight: "800",
     cursor: "pointer",

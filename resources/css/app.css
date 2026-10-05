@@ -9,20 +9,27 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --color-hse-green: #004d32;
-    --color-hse-green-dark: #00351f;
-    --color-hse-green-light: #006b45;
+    /* ── Navy Glowing / Radiant Blue Palette ── */
+    --color-navy-deep:    #0a192f;
+    --color-navy-royal:   #1e3a8a;
+    --color-navy-sky:     #0284c7;
+    --color-cyan-glow:    #38bdf8;
+    --color-cyan-light:   #e0f2fe;
+    --color-blue-light:   #dbeafe;
 
-    --color-hse-neon: #efff00;
-    --color-hse-neon-light: #f5ffb3;
-    --color-hse-neon-dark: #c7d900;
+    /* ── Legacy aliases (keep for compatibility) ── */
+    --color-hse-green:       #0a192f;
+    --color-hse-green-dark:  #0f172a;
+    --color-hse-green-light: #1e3a8a;
+    --color-hse-neon:        #38bdf8;
+    --color-hse-neon-light:  #bae6fd;
+    --color-hse-neon-dark:   #0284c7;
 
-    --color-hse-bg: #f3f7f2;
-    --color-hse-card: #ffffff;
-
-    --color-hse-text: #073b2a;
-    --color-hse-muted: #60756b;
-    --color-hse-border: #cbdacf;
+    --color-hse-bg:     #f0f6ff;
+    --color-hse-card:   #ffffff;
+    --color-hse-text:   #0f172a;
+    --color-hse-muted:  #64748b;
+    --color-hse-border: #cbd5e1;
 }
 
 html,
@@ -44,16 +51,31 @@ body {
         "Segoe UI",
         sans-serif;
 
-    background: #f3f7f2;
-    color: #073b2a;
+    background: #f8fafc;
+    color: #0f172a;
 
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.dark body {
+    background: #020617;
+    color: #f8fafc;
+}
+
+html.dark #app {
+    background: #020617;
 }
 
 ::selection {
-    background: #efff00;
-    color: #00351f;
+    background: #1e3a8a;
+    color: #e0f2fe;
+}
+
+html.dark ::selection {
+    background: #0284c7;
+    color: #ffffff;
 }
 
 ::-webkit-scrollbar {
@@ -62,22 +84,23 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: #edf4ee;
+    background: #e0f2fe;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #006b45;
+    background: #0284c7;
     border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #004d32;
+    background: #0a192f;
 }
 
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 2px solid #efff00;
+    outline: 2px solid #38bdf8;
     outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2);
 }

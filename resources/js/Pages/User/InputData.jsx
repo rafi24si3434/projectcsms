@@ -356,13 +356,13 @@ export default function UserInputData() {
                                 width: "32px",
                                 height: "32px",
                                 borderRadius: "8px",
-                                backgroundColor: "#004d32",
-                                border: "1px solid #efff00",
+                                backgroundColor: "#0a192f",
+                                border: "1px solid #38bdf8",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "#efff00",
-                                boxShadow: "0 0 8px rgba(239, 255, 0, 0.25)",
+                                color: "#38bdf8",
+                                boxShadow: "0 0 8px rgba(56,189,248,0.25)",
                             }}
                         >
                             <ClipboardList size={18} strokeWidth={2.5} />
@@ -371,7 +371,7 @@ export default function UserInputData() {
                             style={{
                                 fontSize: "16px",
                                 fontWeight: "800",
-                                color: "#004d32",
+                                color: "#0a192f",
                                 letterSpacing: "-0.01em",
                             }}
                         >
@@ -389,7 +389,7 @@ export default function UserInputData() {
                                 borderRadius: "20px",
                                 backgroundColor: "#ecfdf5",
                                 border: "1px solid #a7f3d0",
-                                color: "#004d32",
+                                color: "#0a192f",
                                 fontSize: "11.5px",
                                 fontWeight: "700",
                             }}
@@ -415,15 +415,15 @@ export default function UserInputData() {
                     {/* HERO BANNER */}
                     <div
                         style={{
-                            backgroundColor: "#004d32",
+                            backgroundColor: "#0a192f",
                             borderRadius: "16px",
                             padding: "24px 28px",
                             color: "#ffffff",
                             marginBottom: "24px",
                             position: "relative",
                             overflow: "hidden",
-                            boxShadow: "0 10px 25px rgba(0, 77, 50, 0.15)",
-                            border: "1px solid rgba(239, 255, 0, 0.3)",
+                            boxShadow: "0 10px 25px rgba(14,165,233,0.15)",
+                            border: "1px solid rgba(56,189,248,0.3)",
                         }}
                     >
                         <div
@@ -434,7 +434,7 @@ export default function UserInputData() {
                                 width: "160px",
                                 height: "160px",
                                 borderRadius: "50%",
-                                backgroundColor: "rgba(239, 255, 0, 0.08)",
+                                backgroundColor: "rgba(56,189,248,0.08)",
                                 pointerEvents: "none",
                             }}
                         />
@@ -444,9 +444,9 @@ export default function UserInputData() {
                                 style={{
                                     padding: "3px 8px",
                                     borderRadius: "4px",
-                                    backgroundColor: "rgba(239, 255, 0, 0.2)",
-                                    border: "1px solid #efff00",
-                                    color: "#efff00",
+                                    backgroundColor: "rgba(56,189,248,0.2)",
+                                    border: "1px solid #38bdf8",
+                                    color: "#38bdf8",
                                     fontSize: "11px",
                                     fontWeight: "800",
                                     letterSpacing: "0.05em",
@@ -474,7 +474,7 @@ export default function UserInputData() {
                                 alignItems: "center",
                                 gap: "12px",
                                 backgroundColor: "rgba(0, 0, 0, 0.3)",
-                                border: "1.5px solid #efff00",
+                                border: "1.5px solid #38bdf8",
                                 borderRadius: "10px",
                                 padding: "8px 16px",
                                 boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
@@ -485,14 +485,14 @@ export default function UserInputData() {
                                     width: "30px",
                                     height: "30px",
                                     borderRadius: "50%",
-                                    backgroundColor: "#efff00",
-                                    color: "#004d32",
+                                    backgroundColor: "#38bdf8",
+                                    color: "#0a192f",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     fontWeight: "900",
                                     fontSize: "13px",
-                                    boxShadow: "0 0 10px rgba(239, 255, 0, 0.6)",
+                                    boxShadow: "0 0 10px rgba(56,189,248,0.6)",
                                     flexShrink: 0,
                                 }}
                             >
@@ -504,7 +504,7 @@ export default function UserInputData() {
                                 </div>
                                 <div style={{ fontSize: "13.5px", fontWeight: "800", color: "#ffffff", marginTop: "1px" }}>
                                     {form.submitterName || currentUser?.name || "User Lapangan"}{" "}
-                                    <span style={{ color: "#efff00", fontWeight: "600", fontSize: "12px" }}>
+                                    <span style={{ color: "#38bdf8", fontWeight: "600", fontSize: "12px" }}>
                                         ({form.submitterEmail || currentUser?.email || "user@besmindo.com"})
                                     </span>
                                 </div>
@@ -812,10 +812,10 @@ export default function UserInputData() {
                                     height: "42px",
                                     padding: "0 22px",
                                     backgroundColor: "#ffffff",
-                                    border: "1px solid #004d32",
+                                    border: "1px solid #0a192f",
                                     borderRadius: "8px",
                                     cursor: "pointer",
-                                    color: "#004d32",
+                                    color: "#0a192f",
                                     fontWeight: "700",
                                     fontSize: "13px",
                                     display: "flex",
@@ -834,9 +834,9 @@ export default function UserInputData() {
                                 style={{
                                     height: "42px",
                                     padding: "0 26px",
-                                    backgroundColor: "#004d32",
-                                    color: "#efff00",
-                                    border: "1px solid #efff00",
+                                    backgroundColor: "#0a192f",
+                                    color: "#38bdf8",
+                                    border: "1px solid #38bdf8",
                                     borderRadius: "8px",
                                     cursor: isSubmitting ? "not-allowed" : "pointer",
                                     fontWeight: "800",
@@ -844,7 +844,7 @@ export default function UserInputData() {
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
-                                    boxShadow: "0 0 12px rgba(239, 255, 0, 0.25)",
+                                    boxShadow: "0 0 12px rgba(56,189,248,0.25)",
                                     opacity: isSubmitting ? 0.7 : 1,
                                     transition: "all 0.2s",
                                 }}
@@ -884,9 +884,9 @@ function IndicatorSection({ title, type, indicators, values, onChange }) {
                     <thead>
                         <tr
                             style={{
-                                backgroundColor: "#004d32",
+                                backgroundColor: "#0a192f",
                                 color: "#ffffff",
-                                borderBottom: "2px solid #efff00",
+                                borderBottom: "2px solid #38bdf8",
                             }}
                         >
                             <th style={tableHeaderStyle}>No</th>
@@ -926,7 +926,7 @@ function IndicatorSection({ title, type, indicators, values, onChange }) {
                                         style={{
                                             ...tableCellStyle,
                                             fontWeight: "700",
-                                            color: "#004d32",
+                                            color: "#0a192f",
                                             width: "50px",
                                         }}
                                     >
@@ -1000,7 +1000,7 @@ function Section({ title, children }) {
                 backgroundColor: "#ffffff",
                 border: "1px solid #e2e8f0",
                 borderRadius: "14px",
-                boxShadow: "0 4px 18px rgba(0, 77, 50, 0.04)",
+                boxShadow: "0 4px 18px rgba(14,165,233,0.04)",
                 padding: "24px",
                 marginBottom: "20px",
                 boxSizing: "border-box",
@@ -1015,7 +1015,7 @@ function Section({ title, children }) {
                     left: 0,
                     right: 0,
                     height: "3px",
-                    background: "linear-gradient(90deg, #004d32 0%, #efff00 100%)",
+                    background: "linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%)",
                 }}
             />
 
@@ -1026,7 +1026,7 @@ function Section({ title, children }) {
                     borderBottom: "1px solid #f1f5f9",
                     fontSize: "15.5px",
                     fontWeight: "800",
-                    color: "#004d32",
+                    color: "#0a192f",
                 }}
             >
                 {title}

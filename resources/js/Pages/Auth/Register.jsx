@@ -40,8 +40,8 @@ export default function Register() {
                     minHeight: "100vh",
                     backgroundColor: "#00281b",
                     backgroundImage: `
-                        radial-gradient(circle at 15% 20%, rgba(239, 255, 0, 0.08) 0%, transparent 40%),
-                        radial-gradient(circle at 85% 80%, rgba(0, 77, 50, 0.6) 0%, transparent 50%),
+                        radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%),
+                        radial-gradient(circle, rgba(10,25,47,0.8) 0%, transparent 70%),
                         linear-gradient(135deg, #001f15 0%, #003824 50%, #002417 100%)
                     `,
                     fontFamily:
@@ -65,7 +65,7 @@ export default function Register() {
                         height: "450px",
                         borderRadius: "50%",
                         background:
-                            "radial-gradient(circle, rgba(239, 255, 0, 0.12) 0%, transparent 70%)",
+                            "radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%)",
                         pointerEvents: "none",
                     }}
                 />
@@ -90,9 +90,9 @@ export default function Register() {
                                 padding: "16px 24px",
                                 borderRadius: "20px",
                                 backgroundColor: "#ffffff",
-                                border: "2.5px solid #efff00",
+                                border: "2.5px solid #38bdf8",
                                 boxShadow:
-                                    "0 10px 30px rgba(0, 0, 0, 0.3), 0 0 24px rgba(239, 255, 0, 0.25)",
+                                    "0 10px 30px rgba(0, 0, 0, 0.3), 0 0 24px rgba(56,189,248,0.25)",
                                 marginBottom: "16px",
                                 boxSizing: "border-box",
                             }}
@@ -119,9 +119,9 @@ export default function Register() {
                                     gap: "6px",
                                     padding: "6px 18px",
                                     borderRadius: "20px",
-                                    backgroundColor: "rgba(0, 77, 50, 0.85)",
-                                    border: "1px solid rgba(239, 255, 0, 0.4)",
-                                    color: "#efff00",
+                                    backgroundColor: "rgba(14,165,233,0.85)",
+                                    border: "1px solid rgba(56,189,248,0.4)",
+                                    color: "#38bdf8",
                                     fontSize: "12px",
                                     fontWeight: "800",
                                     letterSpacing: "0.06em",
@@ -142,7 +142,7 @@ export default function Register() {
                             borderRadius: "20px",
                             padding: "32px 30px",
                             boxShadow: "0 20px 50px rgba(0, 0, 0, 0.35)",
-                            border: "1px solid rgba(239, 255, 0, 0.4)",
+                            border: "1px solid rgba(56,189,248,0.4)",
                             position: "relative",
                             overflow: "hidden",
                         }}
@@ -156,7 +156,7 @@ export default function Register() {
                                 right: 0,
                                 height: "4px",
                                 background:
-                                    "linear-gradient(90deg, #004d32 0%, #efff00 50%, #004d32 100%)",
+                                    "linear-gradient(90deg, #0a192f 0%, #38bdf8 50%, #0a192f 100%)",
                             }}
                         />
 
@@ -166,7 +166,7 @@ export default function Register() {
                                     margin: "0 0 4px",
                                     fontSize: "20px",
                                     fontWeight: "900",
-                                    color: "#004d32",
+                                    color: "#0a192f",
                                     letterSpacing: "-0.02em",
                                 }}
                             >
@@ -185,7 +185,7 @@ export default function Register() {
                                         display: "block",
                                         fontSize: "12px",
                                         fontWeight: "800",
-                                        color: "#004d32",
+                                        color: "#0a192f",
                                         textTransform: "uppercase",
                                         letterSpacing: "0.04em",
                                         marginBottom: "8px",
@@ -210,15 +210,15 @@ export default function Register() {
                                             borderRadius: "12px",
                                             border:
                                                 data.role === "user"
-                                                    ? "2px solid #004d32"
+                                                    ? "2px solid #0a192f"
                                                     : "1px solid #e2e8f0",
                                             backgroundColor:
                                                 data.role === "user"
-                                                    ? "#004d32"
+                                                    ? "#0a192f"
                                                     : "#f8fafc",
                                             color:
                                                 data.role === "user"
-                                                    ? "#efff00"
+                                                    ? "#38bdf8"
                                                     : "#475569",
                                             cursor: "pointer",
                                             display: "flex",
@@ -227,7 +227,7 @@ export default function Register() {
                                             gap: "4px",
                                             boxShadow:
                                                 data.role === "user"
-                                                    ? "0 4px 14px rgba(0, 77, 50, 0.25)"
+                                                    ? "0 4px 14px rgba(14,165,233,0.25)"
                                                     : "none",
                                             transition: "all 0.2s ease",
                                         }}
@@ -258,15 +258,15 @@ export default function Register() {
                                             borderRadius: "12px",
                                             border:
                                                 data.role === "admin"
-                                                    ? "2px solid #004d32"
+                                                    ? "2px solid #0a192f"
                                                     : "1px solid #e2e8f0",
                                             backgroundColor:
                                                 data.role === "admin"
-                                                    ? "#004d32"
+                                                    ? "#0a192f"
                                                     : "#f8fafc",
                                             color:
                                                 data.role === "admin"
-                                                    ? "#efff00"
+                                                    ? "#38bdf8"
                                                     : "#475569",
                                             cursor: "pointer",
                                             display: "flex",
@@ -275,7 +275,7 @@ export default function Register() {
                                             gap: "4px",
                                             boxShadow:
                                                 data.role === "admin"
-                                                    ? "0 4px 14px rgba(0, 77, 50, 0.25)"
+                                                    ? "0 4px 14px rgba(14,165,233,0.25)"
                                                     : "none",
                                             transition: "all 0.2s ease",
                                         }}
@@ -550,9 +550,9 @@ export default function Register() {
                                     width: "100%",
                                     padding: "14px 20px",
                                     borderRadius: "12px",
-                                    border: "1px solid #efff00",
-                                    backgroundColor: "#004d32",
-                                    color: "#efff00",
+                                    border: "1px solid #38bdf8",
+                                    backgroundColor: "#0a192f",
+                                    color: "#38bdf8",
                                     fontSize: "14.5px",
                                     fontWeight: "800",
                                     letterSpacing: "0.02em",
@@ -563,7 +563,7 @@ export default function Register() {
                                     justifyContent: "center",
                                     gap: "8px",
                                     boxShadow:
-                                        "0 6px 20px rgba(0, 77, 50, 0.4), 0 0 16px rgba(239, 255, 0, 0.2)",
+                                        "0 6px 20px rgba(14,165,233,0.4), 0 0 16px rgba(56,189,248,0.2)",
                                     transition: "all 0.2s ease",
                                 }}
                             >
@@ -592,7 +592,7 @@ export default function Register() {
                                 <Link
                                     href="/login"
                                     style={{
-                                        color: "#004d32",
+                                        color: "#0a192f",
                                         fontWeight: "800",
                                         textDecoration: "none",
                                         marginLeft: "4px",
@@ -609,7 +609,7 @@ export default function Register() {
                         style={{
                             textAlign: "center",
                             marginTop: "20px",
-                            color: "#d1fae5",
+                            color: "#dbeafe",
                             fontSize: "12px",
                         }}
                     >

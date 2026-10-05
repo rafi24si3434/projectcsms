@@ -1,396 +1,299 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Link, usePage, router } from "@inertiajs/react";
 import {
-    ClipboardList,
     CircleHelp,
     LogOut,
-    ChevronLeft,
-    ChevronRight,
-    ShieldCheck,
-    UserCheck,
     HardDrive,
+    ShieldCheck,
+    ChevronRight,
 } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
+import { useTheme } from "../Contexts/ThemeContext";
 
-export default function UserSidebar({
-    collapsed: collapsedProp,
-    onToggle,
-}) {
+export default function UserSidebar() {
     const { url } = usePage();
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
 
-    /*
-    |--------------------------------------------------------------------------
-    | SIDEBAR STATE
-    |--------------------------------------------------------------------------
-    */
-    const [internalCollapsed, setInternalCollapsed] = useState(() => {
-        if (typeof window !== "undefined") {
-            const saved = localStorage.getItem("besmindo_user_sidebar_collapsed");
-            if (saved !== null) {
-                return saved === "true";
-            }
-        }
-        return false;
-    });
-
-    const isControlled = typeof collapsedProp === "boolean";
-    const collapsed = isControlled ? collapsedProp : internalCollapsed;
-
-    /*
-    |--------------------------------------------------------------------------
-    | RESPONSIVE
-    |--------------------------------------------------------------------------
-    */
-    useEffect(() => {
-        if (isControlled) return;
-
-        const handleResize = () => {
-            if (window.innerWidth <= 900) {
-                setInternalCollapsed(true);
-            } else {
-                const saved = localStorage.getItem("besmindo_user_sidebar_collapsed");
-                if (saved !== null) {
-                    setInternalCollapsed(saved === "true");
-                } else {
-                    setInternalCollapsed(false);
-                }
-            }
-        };
-
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [isControlled]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOGGLE
-    |--------------------------------------------------------------------------
-    */
-    const handleToggle = () => {
-        if (onToggle) {
-            onToggle();
-        } else {
-            const next = !internalCollapsed;
-            setInternalCollapsed(next);
-            if (typeof window !== "undefined") {
-                localStorage.setItem(
-                    "besmindo_user_sidebar_collapsed",
-                    String(next)
-                );
-            }
-        }
-    };
-
-    /*
-    |--------------------------------------------------------------------------
-    | ACTIVE CHECK
-    |--------------------------------------------------------------------------
-    */
     const isActive = (path) => {
         if (!url) return false;
         return url.startsWith(path);
     };
 
-    /*
-    |--------------------------------------------------------------------------
-    | LOGOUT
-    |--------------------------------------------------------------------------
-    */
     const handleLogout = () => {
         localStorage.removeItem("isLoggedIn");
         router.post("/logout");
     };
 
-    const sidebarWidth = collapsed ? "78px" : "215px";
-
     useEffect(() => {
         if (typeof document !== "undefined") {
-            document.documentElement.style.setProperty(
-                "--admin-sidebar-width",
-                sidebarWidth
-            );
+            document.documentElement.style.setProperty("--admin-sidebar-width", "220px");
         }
-    }, [sidebarWidth]);
+    }, []);
 
     return (
-        <>
-            <aside
-                style={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                    width: sidebarWidth,
-                    backgroundColor: "#ffffff",
-                    borderRight: "1px solid #e2e8f0",
+        <aside
+            style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: "220px",
+                backgroundColor: isDark ? "#0b1329" : "#ffffff",
+                borderRight: isDark ? "1px solid #1e293b" : "1px solid #edf2f7",
+                display: "flex",
+                flexDirection: "column",
+                zIndex: 999,
+                overflow: "hidden",
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                transition: "background-color 0.25s ease, border-color 0.25s ease",
+            }}
+        >
+            <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
+
+                {/* ── HEADER / BRANDING ── */}
+                <div style={{
+                    height: "88px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 16px",
+                    borderBottom: isDark ? "1px solid #1e293b" : "1px solid #f1f5f9",
+                    boxSizing: "border-box",
+                    flexShrink: 0,
+                }}>
+                    <Link href="/csms" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", textDecoration: "none" }}>
+                        <img
+                            src="/images/logo-besmindo.png"
+                            alt="BESMINDO"
+                            style={{
+                                width: "100%",
+                                maxWidth: "185px",
+                                height: "auto",
+                                maxHeight: "58px",
+                                objectFit: "contain",
+                                display: "block",
+                                imageRendering: "auto",
+                                transform: "translateZ(0)",
+                                backfaceVisibility: "hidden",
+                            }}
+                        />
+                    </Link>
+                </div>
+
+                {/* ── USER PROFILE ── */}
+                <div style={{
+                    padding: "14px 14px",
+                    boxSizing: "border-box",
+                    flexShrink: 0,
+                }}>
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "8px 10px",
+                        borderRadius: "10px",
+                        backgroundColor: isDark ? "#131f37" : "#f8fafc",
+                        border: isDark ? "1px solid #1e293b" : "1px solid #f1f5f9",
+                        transition: "all 0.25s ease",
+                    }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "8px",
+                            backgroundColor: "#0ea5e9",
+                            color: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            boxShadow: "0 2px 4px rgba(14, 165, 233, 0.25)",
+                        }}>
+                            <ShieldCheck size={17} strokeWidth={2.4} />
+                        </div>
+                        <div style={{ overflow: "hidden", flex: 1 }}>
+                            <div style={{
+                                fontSize: "12.5px",
+                                fontWeight: "600",
+                                color: isDark ? "#f1f5f9" : "#0f172a",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                lineHeight: "1.2",
+                            }}>
+                                Field PIC / User
+                            </div>
+                            <div style={{
+                                fontSize: "11px",
+                                color: isDark ? "#94a3b8" : "#64748b",
+                                marginTop: "2px",
+                                whiteSpace: "nowrap",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                            }}>
+                                <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#10b981", display: "inline-block" }}></span>
+                                <span>Online</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── MENU CATEGORY ── */}
+                <div style={{
+                    padding: "6px 18px 6px",
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    color: isDark ? "#64748b" : "#94a3b8",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    flexShrink: 0,
+                }}>
+                    Menu
+                </div>
+
+                {/* ── NAVIGATION ── */}
+                <nav style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "2px 10px",
+                    boxSizing: "border-box",
                     display: "flex",
                     flexDirection: "column",
-                    zIndex: 999,
-                    transition:
-                        "width 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s",
-                    boxShadow: "2px 0 16px rgba(0, 77, 50, 0.04)",
-                    fontFamily:
-                        "'Instrument Sans', 'Plus Jakarta Sans', -apple-system, sans-serif",
-                }}
-            >
-                {/* =====================================================
-                    TOGGLE BUTTON
-                ===================================================== */}
-                <button
-                    type="button"
-                    onClick={handleToggle}
-                    title={collapsed ? "Buka Sidebar" : "Tutup Sidebar"}
-                    style={{
-                        position: "absolute",
-                        top: "18px",
-                        right: "-13px",
-                        width: "26px",
-                        height: "26px",
-                        borderRadius: "50%",
-                        backgroundColor: "#004d32",
-                        border: "2px solid #efff00",
-                        color: "#efff00",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1000,
-                        boxShadow: "0 0 10px rgba(239, 255, 0, 0.35)",
-                        transition: "transform 0.15s ease",
-                    }}
-                >
-                    {collapsed ? (
-                        <ChevronRight size={14} strokeWidth={3} />
-                    ) : (
-                        <ChevronLeft size={14} strokeWidth={3} />
-                    )}
-                </button>
-
-                {/* =====================================================
-                    LOGO / BRANDING
-                ===================================================== */}
-                <div
-                    style={{
-                        height: "90px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: collapsed ? "10px 8px" : "10px 18px",
-                        borderBottom: "1px solid #e2e8f0",
-                        boxSizing: "border-box",
-                        overflow: "hidden",
-                    }}
-                >
-                    <img
-                        src="/images/besmindo-logo.png"
-                        alt="BESMINDO"
-                        style={{
-                            width: collapsed ? "42px" : "100%",
-                            maxWidth: collapsed ? "42px" : "175px",
-                            height: "auto",
-                            maxHeight: collapsed ? "42px" : "60px",
-                            objectFit: "contain",
-                            transition: "all 0.25s ease",
-                        }}
-                    />
-                </div>
-
-                {/* =====================================================
-                    USER PROFILE CARD
-                ===================================================== */}
-                <div
-                    style={{
-                        padding: collapsed ? "14px 8px" : "14px 14px",
-                        borderBottom: "1px solid #e2e8f0",
-                        backgroundColor: "#fcfdfc",
-                    }}
-                >
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: collapsed ? "0" : "10px",
-                            justifyContent: collapsed ? "center" : "flex-start",
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: "36px",
-                                height: "36px",
-                                borderRadius: "8px",
-                                backgroundColor: "#004d32",
-                                border: "1px solid #efff00",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "#efff00",
-                                flexShrink: 0,
-                                boxShadow: "0 0 8px rgba(239, 255, 0, 0.2)",
-                            }}
-                        >
-                            <UserCheck size={18} strokeWidth={2.5} />
-                        </div>
-
-                        {!collapsed && (
-                            <div style={{ overflow: "hidden" }}>
-                                <div
-                                    style={{
-                                        fontSize: "13px",
-                                        fontWeight: "800",
-                                        color: "#004d32",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    Field PIC / Operator
-                                </div>
-                                <div
-                                    style={{
-                                        fontSize: "10px",
-                                        color: "#64748b",
-                                        fontWeight: "600",
-                                        marginTop: "1px",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    Data Entry Access
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* =====================================================
-                    NAVIGATION MENU (INPUT DATA ONLY)
-                ===================================================== */}
-                <nav
-                    style={{
-                        flex: 1,
-                        overflowY: "auto",
-                        padding: collapsed ? "16px 8px" : "16px 12px",
-                        boxSizing: "border-box",
-                    }}
-                >
-                    <div
-                        style={{
-                            fontSize: "10px",
-                            fontWeight: "800",
-                            color: "#64748b",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.06em",
-                            padding: "0 8px",
-                            marginBottom: "8px",
-                            display: collapsed ? "none" : "block",
-                        }}
-                    >
-                        Form Menu
-                    </div>
-
+                    gap: "4px",
+                }}>
                     <Link
                         href="/csms"
-                        title={collapsed ? "CSMS Storage (20 RIG)" : ""}
                         style={{
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: collapsed ? "center" : "flex-start",
+                            justifyContent: "space-between",
                             width: "100%",
                             boxSizing: "border-box",
-                            padding: collapsed ? "10px 8px" : "10px 14px",
-                            marginBottom: "8px",
-                            borderRadius: "10px",
+                            padding: "9px 12px",
+                            borderRadius: "9px",
                             textDecoration: "none",
-                            background: isActive("/csms") ? "#004d32" : "transparent",
-                            color: isActive("/csms") ? "#efff00" : "#334155",
-                            border: isActive("/csms") ? "1px solid #efff00" : "1px solid transparent",
-                            fontSize: "12.5px",
-                            fontWeight: "800",
-                            letterSpacing: "-0.01em",
-                            minHeight: "40px",
-                            overflow: "hidden",
-                            boxShadow: isActive("/csms")
-                                ? "0 0 14px rgba(239, 255, 0, 0.35), inset 0 0 8px rgba(239, 255, 0, 0.15)"
-                                : "none",
-                            transition: "all 0.2s ease",
+                            backgroundColor: isActive("/csms")
+                                ? isDark ? "#1e293b" : "#0f172a"
+                                : "transparent",
+                            color: isActive("/csms")
+                                ? "#ffffff"
+                                : isDark ? "#94a3b8" : "#475569",
+                            fontSize: "13px",
+                            fontWeight: isActive("/csms") ? "600" : "500",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!isActive("/csms")) {
+                                e.currentTarget.style.backgroundColor = isDark ? "#131f37" : "#f1f5f9";
+                                e.currentTarget.style.color = isDark ? "#38bdf8" : "#0f172a";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!isActive("/csms")) {
+                                e.currentTarget.style.backgroundColor = "transparent";
+                                e.currentTarget.style.color = isDark ? "#94a3b8" : "#475569";
+                            }
                         }}
                     >
-                        <span
-                            style={{
-                                width: "24px",
-                                minWidth: "24px",
-                                height: "24px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                marginRight: collapsed ? "0" : "10px",
-                                color: isActive("/csms") ? "#efff00" : "#004d32",
-                                flexShrink: 0,
-                            }}
-                        >
-                            <HardDrive size={18} strokeWidth={2.6} />
-                        </span>
-
-                        {!collapsed && (
-                            <span
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <HardDrive
+                                size={17}
+                                strokeWidth={isActive("/csms") ? 2.3 : 1.9}
                                 style={{
-                                    whiteSpace: "nowrap",
+                                    color: isActive("/csms")
+                                        ? "#38bdf8"
+                                        : isDark ? "#64748b" : "#64748b",
+                                    flexShrink: 0,
                                 }}
-                            >
-                                CSMS Storage (20 RIG)
-                            </span>
+                            />
+                            <span style={{ whiteSpace: "nowrap" }}>CSMS Storage (20 RIG)</span>
+                        </div>
+                        {isActive("/csms") && (
+                            <ChevronRight size={13} style={{ color: "#38bdf8", opacity: 0.8 }} />
                         )}
                     </Link>
-
-                    {/* CSMS Menu Only */}
                 </nav>
 
-                {/* =====================================================
-                    BOTTOM MENU (LOGOUT & HELP)
-                ===================================================== */}
-                <div
-                    style={{
-                        borderTop: "1px solid #e2e8f0",
-                        padding: collapsed ? "12px 8px" : "12px",
-                        boxSizing: "border-box",
-                        flexShrink: 0,
-                    }}
-                >
+                {/* ── FOOTER / ACTIONS ── */}
+                <div style={{
+                    padding: "12px 10px",
+                    borderTop: isDark ? "1px solid #1e293b" : "1px solid #f1f5f9",
+                    boxSizing: "border-box",
+                    flexShrink: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                }}>
+                    {/* Theme Mode Switcher */}
+                    <div style={{ marginBottom: "2px" }}>
+                        <ThemeToggle />
+                    </div>
+
+                    <button
+                        type="button"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            width: "100%",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: isDark ? "#94a3b8" : "#64748b",
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            boxSizing: "border-box",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = isDark ? "#131f37" : "#f1f5f9";
+                            e.currentTarget.style.color = isDark ? "#e2e8f0" : "#0f172a";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.style.color = isDark ? "#94a3b8" : "#64748b";
+                        }}
+                    >
+                        <CircleHelp size={16} strokeWidth={1.9} />
+                        <span>Bantuan / Support</span>
+                    </button>
+
                     <button
                         type="button"
                         onClick={handleLogout}
                         style={{
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: collapsed ? "center" : "flex-start",
+                            gap: "10px",
                             width: "100%",
-                            padding: collapsed ? "8px" : "8px 12px",
+                            padding: "8px 12px",
                             borderRadius: "8px",
+                            border: "none",
                             backgroundColor: "transparent",
-                            color: "#b91c1c",
-                            fontSize: "12px",
-                            fontWeight: "700",
-                            border: "1px solid transparent",
+                            color: "#ef4444",
+                            fontSize: "13px",
+                            fontWeight: "500",
                             cursor: "pointer",
+                            textAlign: "left",
+                            boxSizing: "border-box",
                             transition: "all 0.15s ease",
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#fef2f2";
-                            e.currentTarget.style.borderColor = "#fecaca";
+                            e.currentTarget.style.backgroundColor = isDark ? "rgba(239, 68, 68, 0.12)" : "#fef2f2";
                         }}
                         onMouseLeave={(e) => {
                             e.currentTarget.style.backgroundColor = "transparent";
-                            e.currentTarget.style.borderColor = "transparent";
                         }}
                     >
-                        <LogOut
-                            size={16}
-                            style={{
-                                marginRight: collapsed ? "0" : "10px",
-                                flexShrink: 0,
-                            }}
-                        />
-                        {!collapsed && <span>Logout</span>}
+                        <LogOut size={16} strokeWidth={1.9} />
+                        <span>Logout</span>
                     </button>
                 </div>
-            </aside>
-        </>
+            </div>
+        </aside>
     );
 }

@@ -167,13 +167,13 @@ export default function Approval({ reports: initialReports = [] }) {
                                 width: "32px",
                                 height: "32px",
                                 borderRadius: "8px",
-                                backgroundColor: "#004d32",
-                                border: "1px solid #efff00",
+                                backgroundColor: "#0a192f",
+                                border: "1px solid #38bdf8",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "#efff00",
-                                boxShadow: "0 0 8px rgba(239, 255, 0, 0.25)",
+                                color: "#38bdf8",
+                                boxShadow: "0 0 8px rgba(56,189,248,0.25)",
                             }}
                         >
                             <ShieldCheck size={18} strokeWidth={2.5} />
@@ -182,7 +182,7 @@ export default function Approval({ reports: initialReports = [] }) {
                             style={{
                                 fontSize: "16px",
                                 fontWeight: "800",
-                                color: "#004d32",
+                                color: "#0a192f",
                                 letterSpacing: "-0.01em",
                             }}
                         >
@@ -201,9 +201,9 @@ export default function Approval({ reports: initialReports = [] }) {
                                 gap: "6px",
                                 padding: "4px 10px",
                                 borderRadius: "16px",
-                                backgroundColor: "#ecfdf5",
-                                border: "1px solid #a7f3d0",
-                                color: "#004d32",
+                                backgroundColor: "#e0f2fe",
+                                border: "1px solid #7dd3fc",
+                                color: "#0a192f",
                                 fontSize: "11px",
                                 fontWeight: "800",
                             }}
@@ -213,8 +213,8 @@ export default function Approval({ reports: initialReports = [] }) {
                                     width: "6px",
                                     height: "6px",
                                     borderRadius: "50%",
-                                    backgroundColor: "#10b981",
-                                    boxShadow: "0 0 4px #10b981",
+                                    backgroundColor: "#38bdf8",
+                                    boxShadow: "0 0 4px #38bdf8",
                                 }}
                             />
                             Email Gateway Terhubung
@@ -231,7 +231,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                 margin: "0 0 6px",
                                 fontSize: "22px",
                                 fontWeight: "900",
-                                color: "#004d32",
+                                color: "#0a192f",
                                 letterSpacing: "-0.02em",
                             }}
                         >
@@ -257,7 +257,7 @@ export default function Approval({ reports: initialReports = [] }) {
                             <div style={{ color: "#64748b", fontSize: "12px", fontWeight: "700" }}>
                                 Total Pengajuan
                             </div>
-                            <div style={{ fontSize: "28px", fontWeight: "900", color: "#004d32", marginTop: "4px" }}>
+                            <div style={{ fontSize: "28px", fontWeight: "900", color: "#0a192f", marginTop: "4px" }}>
                                 {stats.total}
                             </div>
                             <div style={{ fontSize: "11.5px", color: "#64748b", marginTop: "2px" }}>
@@ -267,7 +267,7 @@ export default function Approval({ reports: initialReports = [] }) {
 
                         {/* CARD 2: PENDING */}
                         <div style={cardStyle}>
-                            <div style={{ ...cardTopStripe, background: "linear-gradient(90deg, #f59e0b 0%, #efff00 100%)" }} />
+                            <div style={{ ...cardTopStripe, background: "linear-gradient(90deg, #f59e0b 0%, #38bdf8 100%)" }} />
                             <div style={{ color: "#b45309", fontSize: "12px", fontWeight: "700" }}>
                                 Menunggu Persetujuan
                             </div>
@@ -281,14 +281,14 @@ export default function Approval({ reports: initialReports = [] }) {
 
                         {/* CARD 3: APPROVED */}
                         <div style={cardStyle}>
-                            <div style={{ ...cardTopStripe, background: "linear-gradient(90deg, #004d32 0%, #10b981 100%)" }} />
-                            <div style={{ color: "#047857", fontSize: "12px", fontWeight: "700" }}>
+                            <div style={{ ...cardTopStripe, background: "linear-gradient(90deg, #0a192f 0%, #38bdf8 100%)" }} />
+                            <div style={{ color: "#0284c7", fontSize: "12px", fontWeight: "700" }}>
                                 Disetujui (Approved)
                             </div>
-                            <div style={{ fontSize: "28px", fontWeight: "900", color: "#004d32", marginTop: "4px" }}>
+                            <div style={{ fontSize: "28px", fontWeight: "900", color: "#0a192f", marginTop: "4px" }}>
                                 {stats.approved}
                             </div>
-                            <div style={{ fontSize: "11.5px", color: "#047857", marginTop: "2px" }}>
+                            <div style={{ fontSize: "11.5px", color: "#0284c7", marginTop: "2px" }}>
                                 Aktif di KPI & Report
                             </div>
                         </div>
@@ -314,7 +314,7 @@ export default function Approval({ reports: initialReports = [] }) {
                             backgroundColor: "#ffffff",
                             borderRadius: "14px",
                             border: "1px solid #e2e8f0",
-                            boxShadow: "0 4px 18px rgba(0, 77, 50, 0.04)",
+                            boxShadow: "0 4px 18px rgba(14,165,233,0.04)",
                             overflow: "hidden",
                         }}
                     >
@@ -343,9 +343,9 @@ export default function Approval({ reports: initialReports = [] }) {
                                         style={{
                                             padding: "6px 14px",
                                             borderRadius: "8px",
-                                            border: filterStatus === tab.key ? "1px solid #efff00" : "1px solid #e2e8f0",
-                                            backgroundColor: filterStatus === tab.key ? "#004d32" : "#f8fafc",
-                                            color: filterStatus === tab.key ? "#efff00" : "#64748b",
+                                            border: filterStatus === tab.key ? "1px solid #38bdf8" : "1px solid #e2e8f0",
+                                            backgroundColor: filterStatus === tab.key ? "#0a192f" : "#f8fafc",
+                                            color: filterStatus === tab.key ? "#38bdf8" : "#64748b",
                                             fontSize: "12px",
                                             fontWeight: filterStatus === tab.key ? "800" : "600",
                                             cursor: "pointer",
@@ -394,9 +394,9 @@ export default function Approval({ reports: initialReports = [] }) {
                                 <thead>
                                     <tr
                                         style={{
-                                            backgroundColor: "#004d32",
+                                            backgroundColor: "#0a192f",
                                             color: "#ffffff",
-                                            borderBottom: "2px solid #efff00",
+                                            borderBottom: "2px solid #38bdf8",
                                         }}
                                     >
                                         <th style={thStyle}>No</th>
@@ -440,11 +440,11 @@ export default function Approval({ reports: initialReports = [] }) {
                                                         borderBottom: "1px solid #f1f5f9",
                                                     }}
                                                 >
-                                                    <td style={{ ...tdStyle, fontWeight: "700", color: "#004d32" }}>
+                                                    <td style={{ ...tdStyle, fontWeight: "700", color: "#0a192f" }}>
                                                         {idx + 1}
                                                     </td>
                                                     <td style={{ ...tdStyle, textAlign: "left" }}>
-                                                        <div style={{ fontWeight: "800", color: "#004d32" }}>
+                                                        <div style={{ fontWeight: "800", color: "#0a192f" }}>
                                                             {report.rig_no || "Rig -"}
                                                         </div>
                                                         <div style={{ fontSize: "11px", color: "#64748b" }}>
@@ -478,8 +478,8 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                     width: "24px",
                                                                     height: "24px",
                                                                     borderRadius: "50%",
-                                                                    backgroundColor: "#004d32",
-                                                                    color: "#efff00",
+                                                                    backgroundColor: "#0a192f",
+                                                                    color: "#38bdf8",
                                                                     display: "flex",
                                                                     alignItems: "center",
                                                                     justifyContent: "center",
@@ -491,7 +491,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                 {creatorName.charAt(0).toUpperCase()}
                                                             </div>
                                                             <div>
-                                                                <div style={{ fontWeight: "700", color: "#004d32", fontSize: "12px", lineHeight: "1.2" }}>
+                                                                <div style={{ fontWeight: "700", color: "#0a192f", fontSize: "12px", lineHeight: "1.2" }}>
                                                                     {creatorName}
                                                                 </div>
                                                                 <div style={{ fontSize: "10.5px", color: "#64748b" }}>
@@ -529,7 +529,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                     borderRadius: "6px",
                                                                     border: "1px solid #cbd5e1",
                                                                     backgroundColor: "#ffffff",
-                                                                    color: "#004d32",
+                                                                    color: "#0a192f",
                                                                     fontSize: "11.5px",
                                                                     fontWeight: "700",
                                                                     cursor: "pointer",
@@ -551,16 +551,16 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                         style={{
                                                                             padding: "5px 10px",
                                                                             borderRadius: "6px",
-                                                                            border: "1px solid #efff00",
-                                                                            backgroundColor: "#004d32",
-                                                                            color: "#efff00",
+                                                                            border: "1px solid #38bdf8",
+                                                                            backgroundColor: "#0a192f",
+                                                                            color: "#38bdf8",
                                                                             fontSize: "11.5px",
                                                                             fontWeight: "800",
                                                                             cursor: "pointer",
                                                                             display: "flex",
                                                                             alignItems: "center",
                                                                             gap: "4px",
-                                                                            boxShadow: "0 0 8px rgba(239, 255, 0, 0.2)",
+                                                                            boxShadow: "0 0 8px rgba(56,189,248,0.2)",
                                                                         }}
                                                                     >
                                                                         <CheckCircle2 size={13} />
@@ -636,7 +636,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                 display: "flex",
                                 flexDirection: "column",
                                 boxShadow: "0 24px 50px rgba(0, 0, 0, 0.35)",
-                                border: "2px solid #004d32",
+                                border: "2px solid #0a192f",
                                 position: "relative",
                                 overflow: "hidden",
                             }}
@@ -644,10 +644,10 @@ export default function Approval({ reports: initialReports = [] }) {
                             {/* MODAL HEADER */}
                             <div
                                 style={{
-                                    backgroundColor: "#004d32",
+                                    backgroundColor: "#0a192f",
                                     color: "#ffffff",
                                     padding: "16px 24px",
-                                    borderBottom: "3px solid #efff00",
+                                    borderBottom: "3px solid #38bdf8",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "space-between",
@@ -660,21 +660,21 @@ export default function Approval({ reports: initialReports = [] }) {
                                             width: "32px",
                                             height: "32px",
                                             borderRadius: "8px",
-                                            backgroundColor: "rgba(239, 255, 0, 0.15)",
-                                            border: "1px solid #efff00",
+                                            backgroundColor: "rgba(56,189,248,0.15)",
+                                            border: "1px solid #38bdf8",
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "center",
-                                            color: "#efff00",
+                                            color: "#38bdf8",
                                         }}
                                     >
                                         <FileText size={18} />
                                     </div>
                                     <div>
-                                        <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "900", color: "#efff00" }}>
+                                        <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "900", color: "#38bdf8" }}>
                                             Rincian Laporan HSE: {selectedReport.rig_no}
                                         </h3>
-                                        <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#d1fae5" }}>
+                                        <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#dbeafe" }}>
                                             Periode Bulan {selectedReport.period} - Tahun {selectedReport.year} | Kontrak: {selectedReport.contract_no}
                                         </p>
                                     </div>
@@ -684,7 +684,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                     style={{
                                         background: "transparent",
                                         border: "none",
-                                        color: "#efff00",
+                                        color: "#38bdf8",
                                         fontSize: "22px",
                                         fontWeight: "800",
                                         cursor: "pointer",
@@ -726,9 +726,9 @@ export default function Approval({ reports: initialReports = [] }) {
                                                 borderTopLeftRadius: "8px",
                                                 borderTopRightRadius: "8px",
                                                 border: isActive ? "1px solid #e2e8f0" : "1px solid transparent",
-                                                borderBottom: isActive ? "2px solid #004d32" : "none",
+                                                borderBottom: isActive ? "2px solid #0a192f" : "none",
                                                 backgroundColor: isActive ? "#ffffff" : "transparent",
-                                                color: isActive ? "#004d32" : "#64748b",
+                                                color: isActive ? "#0a192f" : "#64748b",
                                                 fontWeight: isActive ? "800" : "600",
                                                 fontSize: "12.5px",
                                                 cursor: "pointer",
@@ -751,13 +751,13 @@ export default function Approval({ reports: initialReports = [] }) {
                                         borderRadius: "8px",
                                         backgroundColor:
                                             selectedReport.status === "approved"
-                                                ? "#ecfdf5"
+                                                ? "#e0f2fe"
                                                 : selectedReport.status === "rejected"
                                                 ? "#fee2e2"
                                                 : "#fef3c7",
                                         border: `1px solid ${
                                             selectedReport.status === "approved"
-                                                ? "#a7f3d0"
+                                                ? "#7dd3fc"
                                                 : selectedReport.status === "rejected"
                                                 ? "#fca5a5"
                                                 : "#fde68a"
@@ -770,7 +770,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                         fontWeight: "700",
                                         color:
                                             selectedReport.status === "approved"
-                                                ? "#065f46"
+                                                ? "#1e3a8a"
                                                 : selectedReport.status === "rejected"
                                                 ? "#991b1b"
                                                 : "#92400e",
@@ -794,7 +794,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                     <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                                         {/* GENERAL INFO CARDS */}
                                         <div>
-                                            <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#004d32", fontWeight: "800", textTransform: "uppercase" }}>
+                                            <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#0a192f", fontWeight: "800", textTransform: "uppercase" }}>
                                                 Data Umum Laporan
                                             </h4>
                                             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
@@ -819,7 +819,7 @@ export default function Approval({ reports: initialReports = [] }) {
 
                                         {/* MAN HOURS SECTION */}
                                         <div>
-                                            <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#004d32", fontWeight: "800", textTransform: "uppercase" }}>
+                                            <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#0a192f", fontWeight: "800", textTransform: "uppercase" }}>
                                                 Jam Kerja (Man Hours) & Tenaga Kerja
                                             </h4>
                                             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
@@ -837,7 +837,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                                 </div>
                                                 <div style={detailBoxStyle}>
                                                     <div style={detailLabel}>Total Man Hours Actual</div>
-                                                    <div style={{ ...detailVal, color: "#004d32" }}>
+                                                    <div style={{ ...detailVal, color: "#0a192f" }}>
                                                         {(Number(manHours.premises_actual || 0) + Number(manHours.non_premises_actual || 0)).toLocaleString()} Jam
                                                     </div>
                                                 </div>
@@ -850,7 +850,7 @@ export default function Approval({ reports: initialReports = [] }) {
 
                                         {/* KILOMETER SECTION */}
                                         <div>
-                                            <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#004d32", fontWeight: "800", textTransform: "uppercase" }}>
+                                            <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#0a192f", fontWeight: "800", textTransform: "uppercase" }}>
                                                 Jarak Tempuh (Kilometer) & Kendaraan
                                             </h4>
                                             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
@@ -868,7 +868,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                                 </div>
                                                 <div style={detailBoxStyle}>
                                                     <div style={detailLabel}>Total KM Actual</div>
-                                                    <div style={{ ...detailVal, color: "#004d32" }}>
+                                                    <div style={{ ...detailVal, color: "#0a192f" }}>
                                                         {(Number(manHours.kilometer_premises_actual || 0) + Number(manHours.kilometer_non_premises_actual || 0)).toLocaleString()} KM
                                                     </div>
                                                 </div>
@@ -884,17 +884,17 @@ export default function Approval({ reports: initialReports = [] }) {
                                 {/* TAB 2: LAGGING INDICATORS */}
                                 {activeDetailTab === "lagging" && (
                                     <div>
-                                        <h4 style={{ margin: "0 0 10px", fontSize: "13px", color: "#004d32", fontWeight: "800", textTransform: "uppercase" }}>
+                                        <h4 style={{ margin: "0 0 10px", fontSize: "13px", color: "#0a192f", fontWeight: "800", textTransform: "uppercase" }}>
                                             Daftar Indikator Kinerja Lagging
                                         </h4>
                                         <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
                                             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
                                                 <thead>
-                                                    <tr style={{ backgroundColor: "#004d32", color: "#ffffff" }}>
+                                                    <tr style={{ backgroundColor: "#0a192f", color: "#ffffff" }}>
                                                         <th style={{ padding: "9px 12px", textAlign: "center", width: "40px" }}>No</th>
                                                         <th style={{ padding: "9px 12px", textAlign: "left" }}>Nama Indikator Lagging</th>
-                                                        <th style={{ padding: "9px 12px", textAlign: "center", width: "100px", color: "#efff00" }}>Plan</th>
-                                                        <th style={{ padding: "9px 12px", textAlign: "center", width: "100px", color: "#efff00" }}>Actual</th>
+                                                        <th style={{ padding: "9px 12px", textAlign: "center", width: "100px", color: "#38bdf8" }}>Plan</th>
+                                                        <th style={{ padding: "9px 12px", textAlign: "center", width: "100px", color: "#38bdf8" }}>Actual</th>
                                                         <th style={{ padding: "9px 12px", textAlign: "center", width: "90px" }}>Status</th>
                                                     </tr>
                                                 </thead>
@@ -914,8 +914,8 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                 <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9", backgroundColor: idx % 2 === 0 ? "#ffffff" : "#fcfdfc" }}>
                                                                     <td style={{ padding: "8px 12px", textAlign: "center", color: "#64748b", fontWeight: "700" }}>{idx + 1}</td>
                                                                     <td style={{ padding: "8px 12px", fontWeight: "600", color: "#1e293b" }}>{item.indicator_name}</td>
-                                                                    <td style={{ padding: "8px 12px", textAlign: "center", color: "#004d32", fontWeight: "700" }}>{planVal}</td>
-                                                                    <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: "800", color: actVal > 0 ? "#b91c1c" : "#059669" }}>{actVal}</td>
+                                                                    <td style={{ padding: "8px 12px", textAlign: "center", color: "#0a192f", fontWeight: "700" }}>{planVal}</td>
+                                                                    <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: "800", color: actVal > 0 ? "#b91c1c" : "#0284c7" }}>{actVal}</td>
                                                                     <td style={{ padding: "8px 12px", textAlign: "center" }}>
                                                                         <span
                                                                             style={{
@@ -924,8 +924,8 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                                 borderRadius: "10px",
                                                                                 fontSize: "11px",
                                                                                 fontWeight: "800",
-                                                                                backgroundColor: actVal === 0 ? "#ecfdf5" : "#fee2e2",
-                                                                                color: actVal === 0 ? "#059669" : "#991b1b",
+                                                                                backgroundColor: actVal === 0 ? "#e0f2fe" : "#fee2e2",
+                                                                                color: actVal === 0 ? "#0284c7" : "#991b1b",
                                                                             }}
                                                                         >
                                                                             {actVal === 0 ? "Normal (0)" : `${actVal} Kejadian`}
@@ -944,17 +944,17 @@ export default function Approval({ reports: initialReports = [] }) {
                                 {/* TAB 3: LEADING INDICATORS */}
                                 {activeDetailTab === "leading" && (
                                     <div>
-                                        <h4 style={{ margin: "0 0 10px", fontSize: "13px", color: "#004d32", fontWeight: "800", textTransform: "uppercase" }}>
+                                        <h4 style={{ margin: "0 0 10px", fontSize: "13px", color: "#0a192f", fontWeight: "800", textTransform: "uppercase" }}>
                                             Daftar Indikator Kinerja Leading
                                         </h4>
                                         <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
                                             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
                                                 <thead>
-                                                    <tr style={{ backgroundColor: "#004d32", color: "#ffffff" }}>
+                                                    <tr style={{ backgroundColor: "#0a192f", color: "#ffffff" }}>
                                                         <th style={{ padding: "9px 12px", textAlign: "center", width: "40px" }}>No</th>
                                                         <th style={{ padding: "9px 12px", textAlign: "left" }}>Nama Indikator Leading</th>
-                                                        <th style={{ padding: "9px 12px", textAlign: "center", width: "100px", color: "#efff00" }}>Plan</th>
-                                                        <th style={{ padding: "9px 12px", textAlign: "center", width: "100px", color: "#efff00" }}>Actual</th>
+                                                        <th style={{ padding: "9px 12px", textAlign: "center", width: "100px", color: "#38bdf8" }}>Plan</th>
+                                                        <th style={{ padding: "9px 12px", textAlign: "center", width: "100px", color: "#38bdf8" }}>Actual</th>
                                                         <th style={{ padding: "9px 12px", textAlign: "center", width: "100px" }}>Pencapaian</th>
                                                     </tr>
                                                 </thead>
@@ -974,8 +974,8 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                 <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9", backgroundColor: idx % 2 === 0 ? "#ffffff" : "#fcfdfc" }}>
                                                                     <td style={{ padding: "8px 12px", textAlign: "center", color: "#64748b", fontWeight: "700" }}>{idx + 1}</td>
                                                                     <td style={{ padding: "8px 12px", fontWeight: "600", color: "#1e293b" }}>{item.indicator_name}</td>
-                                                                    <td style={{ padding: "8px 12px", textAlign: "center", color: "#004d32", fontWeight: "700" }}>{planVal}</td>
-                                                                    <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: "800", color: actVal >= planVal ? "#059669" : "#d97706" }}>{actVal}</td>
+                                                                    <td style={{ padding: "8px 12px", textAlign: "center", color: "#0a192f", fontWeight: "700" }}>{planVal}</td>
+                                                                    <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: "800", color: actVal >= planVal ? "#0284c7" : "#d97706" }}>{actVal}</td>
                                                                     <td style={{ padding: "8px 12px", textAlign: "center" }}>
                                                                         <span
                                                                             style={{
@@ -984,8 +984,8 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                                 borderRadius: "10px",
                                                                                 fontSize: "11px",
                                                                                 fontWeight: "800",
-                                                                                backgroundColor: percent >= 100 ? "#ecfdf5" : "#fef3c7",
-                                                                                color: percent >= 100 ? "#059669" : "#b45309",
+                                                                                backgroundColor: percent >= 100 ? "#e0f2fe" : "#fef3c7",
+                                                                                color: percent >= 100 ? "#0284c7" : "#b45309",
                                                                             }}
                                                                         >
                                                                             {percent}%
@@ -1005,7 +1005,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                 {activeDetailTab === "remarks" && (
                                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                                         <div>
-                                            <h4 style={{ margin: "0 0 6px", fontSize: "13px", color: "#004d32", fontWeight: "800", textTransform: "uppercase" }}>
+                                            <h4 style={{ margin: "0 0 6px", fontSize: "13px", color: "#0a192f", fontWeight: "800", textTransform: "uppercase" }}>
                                                 Catatan Lapangan (Remarks Kru / PIC):
                                             </h4>
                                             <div
@@ -1046,7 +1046,7 @@ export default function Approval({ reports: initialReports = [] }) {
                                         )}
 
                                         <div>
-                                            <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#004d32", fontWeight: "800", textTransform: "uppercase" }}>
+                                            <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#0a192f", fontWeight: "800", textTransform: "uppercase" }}>
                                                 Informasi Penginput & Riwayat Verifikasi
                                             </h4>
                                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
@@ -1058,8 +1058,8 @@ export default function Approval({ reports: initialReports = [] }) {
                                                                 width: "20px",
                                                                 height: "20px",
                                                                 borderRadius: "50%",
-                                                                backgroundColor: "#004d32",
-                                                                color: "#efff00",
+                                                                backgroundColor: "#0a192f",
+                                                                color: "#38bdf8",
                                                                 display: "flex",
                                                                 alignItems: "center",
                                                                 justifyContent: "center",
@@ -1156,16 +1156,16 @@ export default function Approval({ reports: initialReports = [] }) {
                                                 style={{
                                                     padding: "9px 24px",
                                                     borderRadius: "8px",
-                                                    backgroundColor: "#004d32",
-                                                    border: "1px solid #efff00",
-                                                    color: "#efff00",
+                                                    backgroundColor: "#0a192f",
+                                                    border: "1px solid #38bdf8",
+                                                    color: "#38bdf8",
                                                     fontWeight: "800",
                                                     fontSize: "13px",
                                                     cursor: "pointer",
                                                     display: "flex",
                                                     alignItems: "center",
                                                     gap: "6px",
-                                                    boxShadow: "0 0 12px rgba(239, 255, 0, 0.3)",
+                                                    boxShadow: "0 0 12px rgba(56,189,248,0.3)",
                                                 }}
                                             >
                                                 <CheckCircle2 size={15} />
@@ -1285,7 +1285,7 @@ const cardStyle = {
     padding: "20px",
     position: "relative",
     overflow: "hidden",
-    boxShadow: "0 4px 18px rgba(0, 77, 50, 0.04)",
+    boxShadow: "0 4px 18px rgba(14,165,233,0.04)",
 };
 
 const cardTopStripe = {
@@ -1294,7 +1294,7 @@ const cardTopStripe = {
     left: 0,
     right: 0,
     height: "3px",
-    background: "linear-gradient(90deg, #004d32 0%, #efff00 100%)",
+    background: "linear-gradient(90deg, #1e3a8a 0%, #38bdf8 100%)",
 };
 
 const thStyle = {
@@ -1332,10 +1332,10 @@ const badgeApproved = {
     gap: "4px",
     padding: "4px 10px",
     borderRadius: "14px",
-    backgroundColor: "#004d32",
-    color: "#efff00",
-    border: "1px solid #efff00",
-    boxShadow: "0 0 8px rgba(239, 255, 0, 0.2)",
+    backgroundColor: "#0a192f",
+    color: "#38bdf8",
+    border: "1px solid #38bdf8",
+    boxShadow: "0 0 8px rgba(56,189,248,0.2)",
     fontSize: "11.5px",
     fontWeight: "800",
 };
@@ -1370,5 +1370,5 @@ const detailLabel = {
 const detailVal = {
     fontSize: "14px",
     fontWeight: "800",
-    color: "#004d32",
+    color: "#0a192f",
 };

@@ -30,8 +30,8 @@ export default function ForgotPassword({ status, resetUrl }) {
                     minHeight: "100vh",
                     backgroundColor: "#00281b",
                     backgroundImage: `
-                        radial-gradient(circle at 15% 20%, rgba(239, 255, 0, 0.08) 0%, transparent 40%),
-                        radial-gradient(circle at 85% 80%, rgba(0, 77, 50, 0.6) 0%, transparent 50%),
+                        radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%),
+                        radial-gradient(circle, rgba(10,25,47,0.8) 0%, transparent 70%),
                         linear-gradient(135deg, #001f15 0%, #003824 50%, #002417 100%)
                     `,
                     fontFamily:
@@ -55,7 +55,7 @@ export default function ForgotPassword({ status, resetUrl }) {
                         height: "450px",
                         borderRadius: "50%",
                         background:
-                            "radial-gradient(circle, rgba(239, 255, 0, 0.12) 0%, transparent 70%)",
+                            "radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%)",
                         pointerEvents: "none",
                     }}
                 />
@@ -80,9 +80,9 @@ export default function ForgotPassword({ status, resetUrl }) {
                                 padding: "16px 24px",
                                 borderRadius: "20px",
                                 backgroundColor: "#ffffff",
-                                border: "2.5px solid #efff00",
+                                border: "2.5px solid #38bdf8",
                                 boxShadow:
-                                    "0 10px 30px rgba(0, 0, 0, 0.3), 0 0 24px rgba(239, 255, 0, 0.25)",
+                                    "0 10px 30px rgba(0, 0, 0, 0.3), 0 0 24px rgba(56,189,248,0.25)",
                                 marginBottom: "16px",
                                 boxSizing: "border-box",
                             }}
@@ -112,7 +112,7 @@ export default function ForgotPassword({ status, resetUrl }) {
                         >
                             Pemulihan Kata Sandi
                         </h1>
-                        <p style={{ margin: 0, color: "#d1fae5", fontSize: "13px" }}>
+                        <p style={{ margin: 0, color: "#dbeafe", fontSize: "13px" }}>
                             PT Besmindo Materi Sewatama - HSE Portal
                         </p>
                     </div>
@@ -124,7 +124,7 @@ export default function ForgotPassword({ status, resetUrl }) {
                             borderRadius: "20px",
                             padding: "32px 28px",
                             boxShadow: "0 20px 50px rgba(0, 0, 0, 0.35)",
-                            border: "1px solid rgba(239, 255, 0, 0.4)",
+                            border: "1px solid rgba(56,189,248,0.4)",
                             position: "relative",
                             overflow: "hidden",
                         }}
@@ -138,7 +138,7 @@ export default function ForgotPassword({ status, resetUrl }) {
                                 right: 0,
                                 height: "4px",
                                 background:
-                                    "linear-gradient(90deg, #004d32 0%, #efff00 50%, #004d32 100%)",
+                                    "linear-gradient(90deg, #0a192f 0%, #38bdf8 50%, #0a192f 100%)",
                             }}
                         />
 
@@ -157,12 +157,12 @@ export default function ForgotPassword({ status, resetUrl }) {
                         {status && (
                             <div
                                 style={{
-                                    backgroundColor: "#ecfdf5",
-                                    border: "1px solid #34d399",
+                                    backgroundColor: "#e0f2fe",
+                                    border: "1px solid #38bdf8",
                                     borderRadius: "10px",
                                     padding: "12px 14px",
                                     marginBottom: "18px",
-                                    color: "#065f46",
+                                    color: "#1e3a8a",
                                     fontSize: "13px",
                                     fontWeight: "700",
                                     display: "flex",
@@ -171,7 +171,7 @@ export default function ForgotPassword({ status, resetUrl }) {
                                 }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                    <CheckCircle2 size={18} color="#059669" />
+                                    <CheckCircle2 size={18} color="#0284c7" />
                                     <span>{status}</span>
                                 </div>
 
@@ -180,17 +180,17 @@ export default function ForgotPassword({ status, resetUrl }) {
                                         style={{
                                             marginTop: "4px",
                                             paddingTop: "8px",
-                                            borderTop: "1px dashed #a7f3d0",
+                                            borderTop: "1px dashed #7dd3fc",
                                             fontSize: "12px",
                                         }}
                                     >
-                                        <div style={{ color: "#047857", fontWeight: "800", marginBottom: "4px" }}>
+                                        <div style={{ color: "#0284c7", fontWeight: "800", marginBottom: "4px" }}>
                                             🔗 Tautan Reset Langsung (Simulasi Lingkungan Lokal):
                                         </div>
                                         <a
                                             href={resetUrl}
                                             style={{
-                                                color: "#004d32",
+                                                color: "#0a192f",
                                                 fontWeight: "800",
                                                 textDecoration: "underline",
                                                 wordBreak: "break-all",
@@ -289,9 +289,9 @@ export default function ForgotPassword({ status, resetUrl }) {
                                     width: "100%",
                                     height: "44px",
                                     borderRadius: "10px",
-                                    backgroundColor: "#004d32",
-                                    color: "#efff00",
-                                    border: "1px solid #efff00",
+                                    backgroundColor: "#0a192f",
+                                    color: "#38bdf8",
+                                    border: "1px solid #38bdf8",
                                     fontWeight: "900",
                                     fontSize: "13.5px",
                                     cursor: processing
@@ -302,7 +302,7 @@ export default function ForgotPassword({ status, resetUrl }) {
                                     justifyContent: "center",
                                     gap: "8px",
                                     boxShadow:
-                                        "0 0 14px rgba(239, 255, 0, 0.3)",
+                                        "0 0 14px rgba(56,189,248,0.3)",
                                     opacity: processing ? 0.7 : 1,
                                     transition: "all 0.2s ease",
                                 }}
@@ -331,7 +331,7 @@ export default function ForgotPassword({ status, resetUrl }) {
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: "6px",
-                                    color: "#004d32",
+                                    color: "#0a192f",
                                     fontSize: "13px",
                                     fontWeight: "800",
                                     textDecoration: "none",

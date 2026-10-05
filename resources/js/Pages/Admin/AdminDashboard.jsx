@@ -626,7 +626,7 @@ export default function Dashboard() {
                             style={{
                                 fontSize: "25px",
                                 fontWeight: "700",
-                                color: "#064E3B",
+                                color: "#0a192f",
                             }}
                         >
                             RigOps HSE Manager
@@ -690,7 +690,7 @@ export default function Dashboard() {
                                         padding: "4px",
                                     }}
                                 >
-                                    <Bell size={20} color="#064E3B" />
+                                    <Bell size={20} color="#0a192f" />
                                 </button>
 
                                 {showNotifications && (
@@ -714,7 +714,7 @@ export default function Dashboard() {
                                                 display: "block",
                                                 marginBottom: "10px",
                                                 fontSize: "14px",
-                                                color: "#004d32",
+                                                color: "#0a192f",
                                             }}
                                         >
                                             System Notifications
@@ -741,7 +741,7 @@ export default function Dashboard() {
                                                     fontSize: "13px",
                                                     padding: "10px",
                                                     backgroundColor: "#dcfce7",
-                                                    border: "1px solid #bbf7d0",
+                                                    border: "1px solid #bae6fd",
                                                     borderRadius: "6px",
                                                     marginBottom: "7px",
                                                     color: "#166534",
@@ -768,9 +768,9 @@ export default function Dashboard() {
                                 )}
                             </div>
 
-                            <CircleHelp size={20} color="#064E3B" />
+                            <CircleHelp size={20} color="#0a192f" />
 
-                            <UserCircle size={21} color="#064E3B" />
+                            <UserCircle size={21} color="#0a192f" />
                         </div>
                     </header>
 
@@ -1194,9 +1194,9 @@ function MetricCard({ title, value, change, badge }) {
             style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "14px",
-                border: "1px solid #004d32",
+                border: "1px solid #0a192f",
                 padding: "18px 20px",
-                boxShadow: "0 4px 18px rgba(0, 77, 50, 0.08)",
+                boxShadow: "0 4px 18px rgba(14,165,233,0.08)",
                 position: "relative",
                 overflow: "hidden",
                 display: "flex",
@@ -1215,7 +1215,7 @@ function MetricCard({ title, value, change, badge }) {
                     right: 0,
                     height: "4px",
                     background:
-                        "linear-gradient(90deg, #004d32 0%, #efff00 100%)",
+                        "linear-gradient(90deg, #1e3a8a 0%, #38bdf8 100%)",
                 }}
             />
 
@@ -1223,7 +1223,7 @@ function MetricCard({ title, value, change, badge }) {
                 style={{
                     fontSize: "11px",
                     letterSpacing: "0.06em",
-                    color: "#004d32",
+                    color: "#0a192f",
                     fontWeight: "800",
                     textTransform: "uppercase",
                 }}
@@ -1258,10 +1258,10 @@ function MetricCard({ title, value, change, badge }) {
                             fontWeight: "800",
                             padding: "2px 7px",
                             borderRadius: "999px",
-                            backgroundColor: "#004d32",
-                            color: "#efff00",
-                            border: "1px solid #efff00",
-                            boxShadow: "0 0 6px rgba(239, 255, 0, 0.25)",
+                            backgroundColor: "#0a192f",
+                            color: "#38bdf8",
+                            border: "1px solid #38bdf8",
+                            boxShadow: "0 0 6px rgba(56,189,248,0.25)",
                         }}
                     >
                         {change}
@@ -1274,15 +1274,15 @@ function MetricCard({ title, value, change, badge }) {
                     <span
                         style={{
                             display: "inline-block",
-                            backgroundColor: "#004d32",
-                            color: "#efff00",
+                            backgroundColor: "#0a192f",
+                            color: "#38bdf8",
                             padding: "3px 9px",
                             borderRadius: "999px",
                             fontSize: "10.5px",
                             fontWeight: "800",
                             letterSpacing: "0.03em",
-                            border: "1px solid #efff00",
-                            boxShadow: "0 0 8px rgba(239, 255, 0, 0.25)",
+                            border: "1px solid #38bdf8",
+                            boxShadow: "0 0 8px rgba(56,189,248,0.25)",
                         }}
                     >
                         ● {badge}
@@ -1303,9 +1303,9 @@ function ChartCard({ title, children, menu = false }) {
             style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "14px",
-                border: "1px solid #004d32",
+                border: "1px solid #0a192f",
                 padding: "22px 24px",
-                boxShadow: "0 4px 18px rgba(0, 77, 50, 0.08)",
+                boxShadow: "0 4px 18px rgba(14,165,233,0.08)",
                 boxSizing: "border-box",
                 overflow: "hidden",
             }}
@@ -1323,7 +1323,7 @@ function ChartCard({ title, children, menu = false }) {
                         margin: 0,
                         fontSize: "16px",
                         fontWeight: "800",
-                        color: "#004d32",
+                        color: "#0a192f",
                         letterSpacing: "-0.01em",
                     }}
                 >
@@ -1333,7 +1333,7 @@ function ChartCard({ title, children, menu = false }) {
                 {menu && (
                     <MoreVertical
                         size={16}
-                        color="#004d32"
+                        color="#0a192f"
                         style={{ cursor: "pointer" }}
                     />
                 )}
@@ -1397,12 +1397,12 @@ function LineChart({ values }) {
                     >
                         <stop
                             offset="0%"
-                            stopColor="#efff00"
+                            stopColor="#38bdf8"
                             stopOpacity="0.5"
                         />
                         <stop
                             offset="100%"
-                            stopColor="#004d32"
+                            stopColor="#0a192f"
                             stopOpacity="0.05"
                         />
                     </linearGradient>
@@ -1413,7 +1413,7 @@ function LineChart({ values }) {
                 <polyline
                     points={points}
                     fill="none"
-                    stroke="#004d32"
+                    stroke="#0a192f"
                     strokeWidth="4"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1432,8 +1432,8 @@ function LineChart({ values }) {
                             cx={x}
                             cy={y}
                             r="5"
-                            fill="#efff00"
-                            stroke="#004d32"
+                            fill="#38bdf8"
+                            stroke="#0a192f"
                             strokeWidth="2.5"
                         />
                     );
@@ -1445,7 +1445,7 @@ function LineChart({ values }) {
                 style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    color: "#004d32",
+                    color: "#0a192f",
                     fontSize: "11px",
                     fontWeight: "800",
                     padding: "0 4px",
@@ -1497,7 +1497,7 @@ function BarChart({ data: propData }) {
                     fontSize: "12px",
                     marginBottom: "12px",
                     fontWeight: "700",
-                    color: "#004d32",
+                    color: "#0a192f",
                 }}
             >
                 <span
@@ -1523,7 +1523,7 @@ function BarChart({ data: propData }) {
                         display: "flex",
                         alignItems: "center",
                         gap: "5px",
-                        color: "#004d32",
+                        color: "#0a192f",
                     }}
                 >
                     <span
@@ -1532,8 +1532,8 @@ function BarChart({ data: propData }) {
                             height: "9px",
                             borderRadius: "3px",
                             background:
-                                "linear-gradient(180deg, #efff00 0%, #004d32 100%)",
-                            border: "1px solid #004d32",
+                                "linear-gradient(180deg, #38bdf8 0%, #0a192f 100%)",
+                            border: "1px solid #0a192f",
                         }}
                     />
                     Actual
@@ -1595,11 +1595,11 @@ function BarChart({ data: propData }) {
                                     width: "16px",
                                     height: `${item.actual}%`,
                                     background:
-                                        "linear-gradient(180deg, #efff00 0%, #004d32 100%)",
+                                        "linear-gradient(180deg, #38bdf8 0%, #0a192f 100%)",
                                     borderRadius: "4px 4px 0 0",
                                     boxShadow:
-                                        "0 0 10px rgba(239, 255, 0, 0.4)",
-                                    border: "1px solid #004d32",
+                                        "0 0 10px rgba(56,189,248,0.4)",
+                                    border: "1px solid #0a192f",
                                     transition: "height 0.3s ease",
                                 }}
                                 title={`Actual: ${item.actual}%`}
@@ -1609,7 +1609,7 @@ function BarChart({ data: propData }) {
                         <span
                             style={{
                                 fontSize: "11px",
-                                color: "#004d32",
+                                color: "#0a192f",
                                 fontWeight: "800",
                                 paddingBottom: "6px",
                             }}
@@ -1636,10 +1636,10 @@ function TableHead({ children }) {
                 fontSize: "11px",
                 letterSpacing: "0.05em",
                 color: "#ffffff",
-                backgroundColor: "#004d32",
+                backgroundColor: "#0a192f",
                 fontWeight: "800",
                 textTransform: "uppercase",
-                borderBottom: "2px solid #efff00",
+                borderBottom: "2px solid #38bdf8",
             }}
         >
             {children}
@@ -1671,10 +1671,10 @@ function StatusBadge({ status }) {
     const isAchieved = status === "ACHIEVED";
     const isNotAchieved = status === "NOT ACHIEVED";
 
-    let bg = "#004d32";
-    let color = "#efff00";
-    let border = "#efff00";
-    let dot = "#efff00";
+    let bg = "#0a192f";
+    let color = "#38bdf8";
+    let border = "#38bdf8";
+    let dot = "#38bdf8";
 
     if (isNotAchieved) {
         bg = "#7f1d1d";
@@ -1700,7 +1700,7 @@ function StatusBadge({ status }) {
                 color: color,
                 border: `1px solid ${border}`,
                 boxShadow: isAchieved
-                    ? "0 0 8px rgba(239, 255, 0, 0.3)"
+                    ? "0 0 8px rgba(56,189,248,0.3)"
                     : "none",
                 fontSize: "11px",
                 fontWeight: "800",
@@ -1712,7 +1712,7 @@ function StatusBadge({ status }) {
                     height: "6px",
                     borderRadius: "50%",
                     backgroundColor: dot,
-                    boxShadow: isAchieved ? "0 0 6px #efff00" : "none",
+                    boxShadow: isAchieved ? "0 0 6px #38bdf8" : "none",
                 }}
             />
             {status}

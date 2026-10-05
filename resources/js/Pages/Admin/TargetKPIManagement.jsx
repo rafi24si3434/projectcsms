@@ -400,7 +400,7 @@ export default function TargetKPIManagement() {
                     <div>
                         <div
                             style={{
-                                color: "#00583b",
+                                color: "#0284c7",
                                 fontSize: "18px",
                                 fontWeight: "700",
                             }}
@@ -600,7 +600,7 @@ export default function TargetKPIManagement() {
                             style={{
                                 ...button,
                                 backgroundColor:
-                                    "#00583b",
+                                    "#0284c7",
                                 color: "#ffffff",
                             }}
                         >
@@ -709,7 +709,7 @@ export default function TargetKPIManagement() {
                                     style={{
                                         ...actionButton,
                                         backgroundColor:
-                                            "#00583b",
+                                            "#0284c7",
                                         color:
                                             "#ffffff",
                                     }}
@@ -725,7 +725,7 @@ export default function TargetKPIManagement() {
                                     style={{
                                         ...actionButton,
                                         backgroundColor:
-                                            "#00583b",
+                                            "#0284c7",
                                         color:
                                             "#ffffff",
                                     }}
@@ -933,7 +933,7 @@ export default function TargetKPIManagement() {
                             style={{
                                 ...button,
                                 backgroundColor:
-                                    "#00583b",
+                                    "#0284c7",
                                 color:
                                     "#ffffff",
                                 width:
@@ -957,7 +957,7 @@ export default function TargetKPIManagement() {
                         right: "25px",
                         bottom: "25px",
                         backgroundColor:
-                            "#00583b",
+                            "#0284c7",
                         color: "#ffffff",
                         padding:
                             "12px 18px",
@@ -1025,7 +1025,7 @@ export default function TargetKPIManagement() {
                                     fontSize:
                                         "18px",
                                     color:
-                                        "#00583b",
+                                        "#0284c7",
                                 }}
                             >
                                 {modalType ===
@@ -1221,7 +1221,7 @@ export default function TargetKPIManagement() {
                                 style={{
                                     ...button,
                                     backgroundColor:
-                                        "#00583b",
+                                        "#0284c7",
                                     color:
                                         "#ffffff",
                                 }}
@@ -1248,11 +1248,11 @@ function Status({ status }) {
     let shadow = "none";
 
     if (status === "Approved") {
-        background = "#004d32";
-        color = "#efff00";
-        border = "#efff00";
-        dot = "#efff00";
-        shadow = "0 0 8px rgba(239, 255, 0, 0.3)";
+        background = "#0a192f";
+        color = "#38bdf8";
+        border = "#38bdf8";
+        dot = "#38bdf8";
+        shadow = "0 0 8px rgba(56,189,248,0.3)";
     } else if (status === "Waiting Approval") {
         background = "#78350f";
         color = "#fef3c7";
@@ -1288,7 +1288,7 @@ function Status({ status }) {
                     height: "6px",
                     borderRadius: "50%",
                     backgroundColor: dot,
-                    boxShadow: status === "Approved" ? "0 0 6px #efff00" : "none",
+                    boxShadow: status === "Approved" ? "0 0 6px #38bdf8" : "none",
                 }}
             />
             {status}
@@ -1303,10 +1303,10 @@ function Status({ status }) {
 const topButton = {
     width: "36px",
     height: "36px",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     backgroundColor: "#ffffff",
-    color: "#004d32",
+    color: "#0a192f",
     fontSize: "16px",
     cursor: "pointer",
     display: "flex",
@@ -1319,7 +1319,7 @@ const label = {
     display: "block",
     fontSize: "11px",
     fontWeight: "800",
-    color: "#004d32",
+    color: "#0a192f",
     marginBottom: "5px",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
@@ -1329,7 +1329,7 @@ const select = {
     width: "100%",
     height: "38px",
     boxSizing: "border-box",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     backgroundColor: "#ffffff",
     padding: "0 10px",
@@ -1342,7 +1342,7 @@ const select = {
 const button = {
     height: "38px",
     padding: "0 18px",
-    border: "1px solid #efff00",
+    border: "1px solid #38bdf8",
     borderRadius: "8px",
     fontSize: "13px",
     fontWeight: "800",
@@ -1350,20 +1350,20 @@ const button = {
     display: "inline-flex",
     alignItems: "center",
     gap: "6px",
-    backgroundColor: "#004d32",
-    color: "#efff00",
-    boxShadow: "0 0 10px rgba(239, 255, 0, 0.25)",
+    backgroundColor: "#0a192f",
+    color: "#38bdf8",
+    boxShadow: "0 0 10px rgba(56,189,248,0.25)",
 };
 
 const actionButton = {
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "6px",
     padding: "5px 10px",
     fontSize: "11px",
     fontWeight: "800",
     cursor: "pointer",
-    backgroundColor: "#004d32",
-    color: "#efff00",
+    backgroundColor: "#0a192f",
+    color: "#38bdf8",
     transition: "all 0.15s",
 };
 
@@ -1371,12 +1371,12 @@ const th = {
     padding: "14px 16px",
     fontSize: "11.5px",
     color: "#ffffff",
-    backgroundColor: "#004d32",
+    backgroundColor: "#0a192f",
     fontWeight: "800",
     textAlign: "left",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-    borderBottom: "2px solid #efff00",
+    borderBottom: "2px solid #38bdf8",
 };
 
 const td = {
@@ -1401,7 +1401,7 @@ const modalLabel = {
 const input = {
     width: "100%",
     height: "38px",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     padding: "0 10px",
     fontSize: "13px",

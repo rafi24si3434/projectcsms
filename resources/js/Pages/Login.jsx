@@ -10,13 +10,12 @@ import {
     CheckCircle2,
     ArrowRight,
     Sparkles,
-    UserCheck,
-    Shield,
 } from "lucide-react";
 
 export default function Login({ status }) {
     const [selectedRole, setSelectedRole] = useState("admin"); // "admin" | "user"
     const [showPassword, setShowPassword] = useState(false);
+    const [focusedInput, setFocusedInput] = useState(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "admin@besmindo.com",
@@ -58,34 +57,35 @@ export default function Login({ status }) {
             <div
                 style={{
                     minHeight: "100vh",
-                    backgroundColor: "#00281b",
+                    backgroundColor: "#030712",
                     backgroundImage: `
-                        radial-gradient(circle at 15% 20%, rgba(239, 255, 0, 0.08) 0%, transparent 40%),
-                        radial-gradient(circle at 85% 80%, rgba(0, 77, 50, 0.6) 0%, transparent 50%),
-                        linear-gradient(135deg, #001f15 0%, #003824 50%, #002417 100%)
+                        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(14, 165, 233, 0.22), transparent 70%),
+                        radial-gradient(circle at 15% 25%, rgba(30, 58, 138, 0.32) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 75%, rgba(15, 23, 42, 0.85) 0%, transparent 50%),
+                        linear-gradient(135deg, #020617 0%, #0a192f 45%, #020617 100%)
                     `,
                     fontFamily:
-                        "'Instrument Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+                        "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    padding: "24px 16px",
+                    padding: "28px 16px",
                     boxSizing: "border-box",
                     position: "relative",
                     overflow: "hidden",
                 }}
             >
-                {/* AMBIENT BACKGROUND GLOW LINES */}
+                {/* AMBIENT RADIAL GLOW ORBS */}
                 <div
                     style={{
                         position: "absolute",
-                        top: "-150px",
-                        right: "-150px",
-                        width: "450px",
-                        height: "450px",
+                        top: "-120px",
+                        right: "-100px",
+                        width: "500px",
+                        height: "500px",
                         borderRadius: "50%",
                         background:
-                            "radial-gradient(circle, rgba(239, 255, 0, 0.12) 0%, transparent 70%)",
+                            "radial-gradient(circle, rgba(56, 189, 248, 0.14) 0%, transparent 70%)",
                         pointerEvents: "none",
                     }}
                 />
@@ -93,13 +93,13 @@ export default function Login({ status }) {
                 <div
                     style={{
                         position: "absolute",
-                        bottom: "-150px",
-                        left: "-150px",
-                        width: "500px",
-                        height: "500px",
+                        bottom: "-140px",
+                        left: "-120px",
+                        width: "520px",
+                        height: "520px",
                         borderRadius: "50%",
                         background:
-                            "radial-gradient(circle, rgba(0, 77, 50, 0.8) 0%, transparent 70%)",
+                            "radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, transparent 70%)",
                         pointerEvents: "none",
                     }}
                 />
@@ -108,40 +108,42 @@ export default function Login({ status }) {
                 <div
                     style={{
                         width: "100%",
-                        maxWidth: "490px",
+                        maxWidth: "480px",
                         zIndex: 10,
                         position: "relative",
                     }}
                 >
                     {/* BRANDING HEADER */}
-                    <div style={{ textAlign: "center", marginBottom: "26px" }}>
+                    <div style={{ textAlign: "center", marginBottom: "22px" }}>
                         <div
                             style={{
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 width: "100%",
-                                maxWidth: "430px",
-                                padding: "18px 28px",
-                                borderRadius: "22px",
-                                backgroundColor: "#ffffff",
-                                border: "2.5px solid #efff00",
+                                maxWidth: "420px",
+                                padding: "16px 24px",
+                                borderRadius: "20px",
+                                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                                border: "1px solid rgba(56, 189, 248, 0.25)",
                                 boxShadow:
-                                    "0 12px 36px rgba(0, 0, 0, 0.35), 0 0 28px rgba(239, 255, 0, 0.3)",
-                                marginBottom: "18px",
+                                    "0 12px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(56, 189, 248, 0.15)",
+                                marginBottom: "16px",
                                 boxSizing: "border-box",
+                                backdropFilter: "blur(8px)",
                             }}
                         >
                             <img
-                                src="/images/besmindo-logo.png"
+                                src="/images/logo-besmindo.png"
                                 alt="PT BESMINDO MATERI SEWATAMA"
                                 style={{
                                     height: "auto",
-                                    maxHeight: "95px",
+                                    maxHeight: "82px",
                                     width: "100%",
-                                    maxWidth: "370px",
+                                    maxWidth: "340px",
                                     objectFit: "contain",
                                     display: "block",
+                                    imageRendering: "auto",
                                 }}
                             />
                         </div>
@@ -152,32 +154,35 @@ export default function Login({ status }) {
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: "6px",
-                                    padding: "6px 18px",
+                                    padding: "6px 16px",
                                     borderRadius: "20px",
-                                    backgroundColor: "rgba(0, 77, 50, 0.85)",
-                                    border: "1px solid rgba(239, 255, 0, 0.4)",
-                                    color: "#efff00",
-                                    fontSize: "12px",
-                                    fontWeight: "800",
+                                    backgroundColor: "rgba(14, 165, 233, 0.12)",
+                                    border: "1px solid rgba(56, 189, 248, 0.25)",
+                                    color: "#38bdf8",
+                                    fontSize: "11px",
+                                    fontWeight: "700",
                                     letterSpacing: "0.06em",
                                     textTransform: "uppercase",
-                                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.2)",
+                                    boxShadow: "0 2px 10px rgba(56, 189, 248, 0.12)",
                                 }}
                             >
-                                <Sparkles size={14} />
+                                <Sparkles size={13} />
                                 HSE Integrated Management Portal
                             </div>
                         </div>
                     </div>
 
-                    {/* LOGIN CARD */}
+                    {/* LOGIN CARD - DARK NAVY GLASSMORPHISM */}
                     <div
                         style={{
-                            backgroundColor: "#ffffff",
-                            borderRadius: "20px",
+                            backgroundColor: "rgba(15, 23, 42, 0.92)",
+                            backdropFilter: "blur(16px)",
+                            WebkitBackdropFilter: "blur(16px)",
+                            borderRadius: "24px",
                             padding: "32px 30px",
-                            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.35)",
-                            border: "1px solid rgba(239, 255, 0, 0.4)",
+                            boxShadow:
+                                "0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 25px rgba(14, 165, 233, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)",
+                            border: "1px solid rgba(51, 65, 85, 0.8)",
                             position: "relative",
                             overflow: "hidden",
                         }}
@@ -189,22 +194,22 @@ export default function Login({ status }) {
                                 top: 0,
                                 left: 0,
                                 right: 0,
-                                height: "4px",
+                                height: "3px",
                                 background:
-                                    "linear-gradient(90deg, #004d32 0%, #efff00 50%, #004d32 100%)",
+                                    "linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #6366f1 100%)",
                             }}
                         />
 
                         {/* ROLE SELECTOR TITLE */}
-                        <div style={{ marginBottom: "16px" }}>
+                        <div style={{ marginBottom: "18px" }}>
                             <label
                                 style={{
                                     display: "block",
-                                    fontSize: "12.5px",
-                                    fontWeight: "800",
-                                    color: "#004d32",
+                                    fontSize: "11.5px",
+                                    fontWeight: "700",
+                                    color: "#94a3b8",
                                     textTransform: "uppercase",
-                                    letterSpacing: "0.04em",
+                                    letterSpacing: "0.05em",
                                     marginBottom: "10px",
                                 }}
                             >
@@ -228,16 +233,16 @@ export default function Login({ status }) {
                                         borderRadius: "12px",
                                         border:
                                             selectedRole === "admin"
-                                                ? "2px solid #004d32"
-                                                : "1px solid #e2e8f0",
+                                                ? "1.5px solid #60a5fa"
+                                                : "1px solid #334155",
                                         backgroundColor:
                                             selectedRole === "admin"
-                                                ? "#004d32"
-                                                : "#f8fafc",
+                                                ? "#2563eb"
+                                                : "rgba(30, 41, 59, 0.8)",
                                         color:
                                             selectedRole === "admin"
-                                                ? "#efff00"
-                                                : "#475569",
+                                                ? "#ffffff"
+                                                : "#94a3b8",
                                         cursor: "pointer",
                                         display: "flex",
                                         flexDirection: "column",
@@ -245,9 +250,21 @@ export default function Login({ status }) {
                                         gap: "4px",
                                         boxShadow:
                                             selectedRole === "admin"
-                                                ? "0 4px 14px rgba(0, 77, 50, 0.25)"
+                                                ? "0 4px 16px rgba(37, 99, 235, 0.45)"
                                                 : "none",
                                         transition: "all 0.2s ease",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (selectedRole !== "admin") {
+                                            e.currentTarget.style.backgroundColor = "rgba(30, 41, 59, 1)";
+                                            e.currentTarget.style.color = "#e2e8f0";
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (selectedRole !== "admin") {
+                                            e.currentTarget.style.backgroundColor = "rgba(30, 41, 59, 0.8)";
+                                            e.currentTarget.style.color = "#94a3b8";
+                                        }
                                     }}
                                 >
                                     <div
@@ -255,7 +272,7 @@ export default function Login({ status }) {
                                             display: "flex",
                                             alignItems: "center",
                                             gap: "6px",
-                                            fontWeight: "800",
+                                            fontWeight: "700",
                                             fontSize: "13px",
                                         }}
                                     >
@@ -267,9 +284,9 @@ export default function Login({ status }) {
                                             fontSize: "10.5px",
                                             color:
                                                 selectedRole === "admin"
-                                                    ? "#a7f3d0"
-                                                    : "#94a3b8",
-                                            fontWeight: "600",
+                                                    ? "rgba(255, 255, 255, 0.85)"
+                                                    : "#64748b",
+                                            fontWeight: "500",
                                         }}
                                     >
                                         Dashboard & Approval
@@ -285,16 +302,16 @@ export default function Login({ status }) {
                                         borderRadius: "12px",
                                         border:
                                             selectedRole === "user"
-                                                ? "2px solid #004d32"
-                                                : "1px solid #e2e8f0",
+                                                ? "1.5px solid #60a5fa"
+                                                : "1px solid #334155",
                                         backgroundColor:
                                             selectedRole === "user"
-                                                ? "#004d32"
-                                                : "#f8fafc",
+                                                ? "#2563eb"
+                                                : "rgba(30, 41, 59, 0.8)",
                                         color:
                                             selectedRole === "user"
-                                                ? "#efff00"
-                                                : "#475569",
+                                                ? "#ffffff"
+                                                : "#94a3b8",
                                         cursor: "pointer",
                                         display: "flex",
                                         flexDirection: "column",
@@ -302,9 +319,21 @@ export default function Login({ status }) {
                                         gap: "4px",
                                         boxShadow:
                                             selectedRole === "user"
-                                                ? "0 4px 14px rgba(0, 77, 50, 0.25)"
+                                                ? "0 4px 16px rgba(37, 99, 235, 0.45)"
                                                 : "none",
                                         transition: "all 0.2s ease",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (selectedRole !== "user") {
+                                            e.currentTarget.style.backgroundColor = "rgba(30, 41, 59, 1)";
+                                            e.currentTarget.style.color = "#e2e8f0";
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (selectedRole !== "user") {
+                                            e.currentTarget.style.backgroundColor = "rgba(30, 41, 59, 0.8)";
+                                            e.currentTarget.style.color = "#94a3b8";
+                                        }
                                     }}
                                 >
                                     <div
@@ -312,7 +341,7 @@ export default function Login({ status }) {
                                             display: "flex",
                                             alignItems: "center",
                                             gap: "6px",
-                                            fontWeight: "800",
+                                            fontWeight: "700",
                                             fontSize: "13px",
                                         }}
                                     >
@@ -324,9 +353,9 @@ export default function Login({ status }) {
                                             fontSize: "10.5px",
                                             color:
                                                 selectedRole === "user"
-                                                    ? "#a7f3d0"
-                                                    : "#94a3b8",
-                                            fontWeight: "600",
+                                                    ? "rgba(255, 255, 255, 0.85)"
+                                                    : "#64748b",
+                                            fontWeight: "500",
                                         }}
                                     >
                                         Penginputan Data HSE
@@ -339,20 +368,20 @@ export default function Login({ status }) {
                         {status && (
                             <div
                                 style={{
-                                    backgroundColor: "#ecfdf5",
-                                    border: "1px solid #34d399",
+                                    backgroundColor: "rgba(14, 165, 233, 0.15)",
+                                    border: "1px solid rgba(56, 189, 248, 0.4)",
                                     borderRadius: "10px",
                                     padding: "10px 14px",
                                     marginBottom: "16px",
-                                    color: "#065f46",
+                                    color: "#38bdf8",
                                     fontSize: "12.5px",
-                                    fontWeight: "700",
+                                    fontWeight: "600",
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
                                 }}
                             >
-                                <CheckCircle2 size={16} color="#059669" />
+                                <CheckCircle2 size={16} color="#38bdf8" />
                                 <span>{status}</span>
                             </div>
                         )}
@@ -361,14 +390,14 @@ export default function Login({ status }) {
                         {errors.email && (
                             <div
                                 style={{
-                                    backgroundColor: "#fee2e2",
-                                    border: "1px solid #f87171",
+                                    backgroundColor: "rgba(239, 68, 68, 0.15)",
+                                    border: "1px solid rgba(248, 113, 113, 0.4)",
                                     borderRadius: "10px",
                                     padding: "10px 14px",
                                     marginBottom: "16px",
-                                    color: "#991b1b",
+                                    color: "#f87171",
                                     fontSize: "12.5px",
-                                    fontWeight: "700",
+                                    fontWeight: "600",
                                 }}
                             >
                                 {errors.email}
@@ -383,8 +412,8 @@ export default function Login({ status }) {
                                     style={{
                                         display: "block",
                                         fontSize: "12.5px",
-                                        fontWeight: "700",
-                                        color: "#334155",
+                                        fontWeight: "600",
+                                        color: "#cbd5e1",
                                         marginBottom: "6px",
                                     }}
                                 >
@@ -400,10 +429,11 @@ export default function Login({ status }) {
                                     <div
                                         style={{
                                             position: "absolute",
-                                            left: "12px",
-                                            color: "#64748b",
+                                            left: "13px",
+                                            color: focusedInput === "email" ? "#38bdf8" : "#64748b",
                                             display: "flex",
                                             alignItems: "center",
+                                            transition: "color 0.2s",
                                         }}
                                     >
                                         <Mail size={16} />
@@ -412,22 +442,25 @@ export default function Login({ status }) {
                                         type="text"
                                         required
                                         value={data.email}
+                                        onFocus={() => setFocusedInput("email")}
+                                        onBlur={() => setFocusedInput(null)}
                                         onChange={(e) =>
                                             setData("email", e.target.value)
                                         }
                                         placeholder="nama@besmindo.com"
                                         style={{
                                             width: "100%",
-                                            height: "42px",
-                                            padding: "0 14px 0 38px",
-                                            borderRadius: "10px",
-                                            border: "1px solid #cbd5e1",
+                                            height: "44px",
+                                            padding: "0 14px 0 40px",
+                                            borderRadius: "11px",
+                                            border: focusedInput === "email" ? "1.5px solid #38bdf8" : "1px solid #1e293b",
+                                            boxShadow: focusedInput === "email" ? "0 0 0 3px rgba(56, 189, 248, 0.25)" : "none",
                                             outline: "none",
                                             fontSize: "13.5px",
-                                            color: "#1e293b",
-                                            backgroundColor: "#f8fafc",
+                                            color: "#ffffff",
+                                            backgroundColor: "rgba(2, 6, 23, 0.7)",
                                             boxSizing: "border-box",
-                                            transition: "border-color 0.2s",
+                                            transition: "all 0.2s ease",
                                         }}
                                     />
                                 </div>
@@ -446,8 +479,8 @@ export default function Login({ status }) {
                                     <label
                                         style={{
                                             fontSize: "12.5px",
-                                            fontWeight: "700",
-                                            color: "#334155",
+                                            fontWeight: "600",
+                                            color: "#cbd5e1",
                                         }}
                                     >
                                         Kata Sandi (Password)
@@ -456,9 +489,16 @@ export default function Login({ status }) {
                                         href="/forgot-password"
                                         style={{
                                             fontSize: "12px",
-                                            color: "#004d32",
-                                            fontWeight: "700",
+                                            color: "#38bdf8",
+                                            fontWeight: "600",
                                             textDecoration: "none",
+                                            transition: "color 0.15s ease",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.color = "#7dd3fc";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.color = "#38bdf8";
                                         }}
                                     >
                                         Lupa kata sandi?
@@ -474,10 +514,11 @@ export default function Login({ status }) {
                                     <div
                                         style={{
                                             position: "absolute",
-                                            left: "12px",
-                                            color: "#64748b",
+                                            left: "13px",
+                                            color: focusedInput === "password" ? "#38bdf8" : "#64748b",
                                             display: "flex",
                                             alignItems: "center",
+                                            transition: "color 0.2s",
                                         }}
                                     >
                                         <Lock size={16} />
@@ -488,21 +529,25 @@ export default function Login({ status }) {
                                         }
                                         required
                                         value={data.password}
+                                        onFocus={() => setFocusedInput("password")}
+                                        onBlur={() => setFocusedInput(null)}
                                         onChange={(e) =>
                                             setData("password", e.target.value)
                                         }
                                         placeholder="Masukkan kata sandi..."
                                         style={{
                                             width: "100%",
-                                            height: "42px",
-                                            padding: "0 40px 0 38px",
-                                            borderRadius: "10px",
-                                            border: "1px solid #cbd5e1",
+                                            height: "44px",
+                                            padding: "0 40px 0 40px",
+                                            borderRadius: "11px",
+                                            border: focusedInput === "password" ? "1.5px solid #38bdf8" : "1px solid #1e293b",
+                                            boxShadow: focusedInput === "password" ? "0 0 0 3px rgba(56, 189, 248, 0.25)" : "none",
                                             outline: "none",
                                             fontSize: "13.5px",
-                                            color: "#1e293b",
-                                            backgroundColor: "#f8fafc",
+                                            color: "#ffffff",
+                                            backgroundColor: "rgba(2, 6, 23, 0.7)",
                                             boxSizing: "border-box",
+                                            transition: "all 0.2s ease",
                                         }}
                                     />
                                     <button
@@ -515,7 +560,7 @@ export default function Login({ status }) {
                                             right: "12px",
                                             background: "none",
                                             border: "none",
-                                            color: "#64748b",
+                                            color: "#94a3b8",
                                             cursor: "pointer",
                                             display: "flex",
                                             alignItems: "center",
@@ -545,7 +590,7 @@ export default function Login({ status }) {
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "8px",
-                                        color: "#475569",
+                                        color: "#cbd5e1",
                                         cursor: "pointer",
                                     }}
                                 >
@@ -558,7 +603,7 @@ export default function Login({ status }) {
                                                 e.target.checked
                                             )
                                         }
-                                        style={{ accentColor: "#004d32" }}
+                                        style={{ accentColor: "#0284c7" }}
                                     />
                                     Ingat sesi masuk
                                 </label>
@@ -566,8 +611,8 @@ export default function Login({ status }) {
                                 <span
                                     style={{
                                         fontSize: "11.5px",
-                                        color: "#047857",
-                                        fontWeight: "700",
+                                        color: "#38bdf8",
+                                        fontWeight: "600",
                                     }}
                                 >
                                     Tujuan:{" "}
@@ -584,13 +629,14 @@ export default function Login({ status }) {
                                 style={{
                                     width: "100%",
                                     height: "46px",
-                                    borderRadius: "10px",
-                                    backgroundColor: "#004d32",
-                                    color: "#efff00",
-                                    border: "1px solid #efff00",
-                                    fontWeight: "900",
+                                    borderRadius: "12px",
+                                    background:
+                                        "linear-gradient(135deg, #0284c7 0%, #1e3a8a 60%, #0f172a 100%)",
+                                    color: "#ffffff",
+                                    border: "1px solid rgba(56, 189, 248, 0.4)",
+                                    fontWeight: "700",
                                     fontSize: "14px",
-                                    letterSpacing: "0.02em",
+                                    letterSpacing: "0.01em",
                                     cursor: processing
                                         ? "not-allowed"
                                         : "pointer",
@@ -599,7 +645,7 @@ export default function Login({ status }) {
                                     justifyContent: "center",
                                     gap: "8px",
                                     boxShadow:
-                                        "0 0 16px rgba(239, 255, 0, 0.3)",
+                                        "0 4px 20px rgba(14, 165, 233, 0.35)",
                                     opacity: processing ? 0.7 : 1,
                                     transition: "all 0.2s ease",
                                 }}
@@ -611,7 +657,7 @@ export default function Login({ status }) {
                                         ? "Masuk ke Dashboard Admin"
                                         : "Masuk ke Form Input User"}
                                 </span>
-                                <ArrowRight size={16} strokeWidth={2.8} />
+                                <ArrowRight size={16} strokeWidth={2.4} />
                             </button>
                         </form>
 
@@ -620,19 +666,26 @@ export default function Login({ status }) {
                             style={{
                                 marginTop: "22px",
                                 paddingTop: "18px",
-                                borderTop: "1px solid #f1f5f9",
+                                borderTop: "1px solid rgba(51, 65, 85, 0.7)",
                                 textAlign: "center",
                             }}
                         >
-                            <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                            <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8" }}>
                                 Belum memiliki akun terdaftar?{" "}
                                 <Link
                                     href="/register"
                                     style={{
-                                        color: "#004d32",
-                                        fontWeight: "800",
+                                        color: "#38bdf8",
+                                        fontWeight: "600",
                                         textDecoration: "none",
                                         marginLeft: "4px",
+                                        transition: "color 0.15s ease",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = "#7dd3fc";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = "#38bdf8";
                                     }}
                                 >
                                     Daftar Akun Baru
@@ -646,7 +699,7 @@ export default function Login({ status }) {
                         style={{
                             textAlign: "center",
                             marginTop: "20px",
-                            color: "rgba(255, 255, 255, 0.5)",
+                            color: "rgba(255, 255, 255, 0.45)",
                             fontSize: "12px",
                         }}
                     >

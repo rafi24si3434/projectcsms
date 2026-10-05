@@ -371,7 +371,7 @@ export default function ContractManagement() {
                         style={{
                             fontSize: "22px",
                             fontWeight: "700",
-                            color: "#00583b",
+                            color: "#0284c7",
                         }}
                     >
                         Rig & Contract
@@ -1518,7 +1518,7 @@ export default function ContractManagement() {
                         right: "25px",
                         bottom: "25px",
                         backgroundColor:
-                            "#00583b",
+                            "#0284c7",
                         color: "#ffffff",
                         padding:
                             "13px 19px",
@@ -1553,12 +1553,12 @@ function SummaryCard({
         <div
             style={{
                 backgroundColor: "#ffffff",
-                border: "1px solid #004d32",
+                border: "1px solid #0a192f",
                 borderRadius: "14px",
                 padding: "20px",
                 minHeight: "105px",
                 boxSizing: "border-box",
-                boxShadow: "0 4px 18px rgba(0, 77, 50, 0.08)",
+                boxShadow: "0 4px 18px rgba(14,165,233,0.08)",
                 position: "relative",
                 overflow: "hidden",
                 display: "flex",
@@ -1574,7 +1574,7 @@ function SummaryCard({
                     left: 0,
                     right: 0,
                     height: "4px",
-                    background: "linear-gradient(90deg, #004d32 0%, #efff00 100%)",
+                    background: "linear-gradient(90deg, #1e3a8a 0%, #38bdf8 100%)",
                 }}
             />
 
@@ -1583,7 +1583,7 @@ function SummaryCard({
                     display: "block",
                     fontSize: "11px",
                     fontWeight: "800",
-                    color: "#004d32",
+                    color: "#0a192f",
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
                 }}
@@ -1614,10 +1614,10 @@ function SummaryCard({
 const iconButton = {
     width: "36px",
     height: "36px",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     backgroundColor: "#ffffff",
-    color: "#004d32",
+    color: "#0a192f",
     fontSize: "16px",
     cursor: "pointer",
     display: "flex",
@@ -1627,22 +1627,22 @@ const iconButton = {
 };
 
 const primaryButton = {
-    border: "1px solid #efff00",
-    background: "#004d32",
-    color: "#efff00",
+    border: "1px solid #38bdf8",
+    background: "#0a192f",
+    color: "#38bdf8",
     padding: "0 18px",
     height: "38px",
     borderRadius: "8px",
     fontSize: "13px",
     fontWeight: "800",
     cursor: "pointer",
-    boxShadow: "0 0 10px rgba(239, 255, 0, 0.25)",
+    boxShadow: "0 0 10px rgba(56,189,248,0.25)",
 };
 
 const secondaryButton = {
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     backgroundColor: "#ffffff",
-    color: "#004d32",
+    color: "#0a192f",
     padding: "0 18px",
     height: "38px",
     borderRadius: "8px",
@@ -1656,12 +1656,12 @@ const tableHeader = {
     textAlign: "left",
     fontSize: "11.5px",
     color: "#ffffff",
-    backgroundColor: "#004d32",
+    backgroundColor: "#0a192f",
     fontWeight: "800",
     whiteSpace: "nowrap",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-    borderBottom: "2px solid #efff00",
+    borderBottom: "2px solid #38bdf8",
 };
 
 const tableCell = {
@@ -1673,9 +1673,9 @@ const tableCell = {
 };
 
 const actionButton = {
-    border: "1px solid #004d32",
-    background: "#004d32",
-    color: "#efff00",
+    border: "1px solid #0a192f",
+    background: "#0a192f",
+    color: "#38bdf8",
     fontSize: "11px",
     borderRadius: "6px",
     cursor: "pointer",
@@ -1688,7 +1688,7 @@ const modalLabel = {
     display: "block",
     fontSize: "11px",
     fontWeight: "800",
-    color: "#004d32",
+    color: "#0a192f",
     marginBottom: "5px",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
@@ -1698,7 +1698,7 @@ const modalInput = {
     width: "100%",
     height: "38px",
     boxSizing: "border-box",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     padding: "0 10px",
     marginBottom: "14px",

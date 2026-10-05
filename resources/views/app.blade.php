@@ -9,6 +9,23 @@
 
     <title inertia>{{ config('app.name', 'Besmindo HSE') }}</title>
 
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('theme');
+                if (!theme) {
+                    theme = 'dark';
+                    localStorage.setItem('theme', 'dark');
+                }
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.jsx'])
     @inertiaHead

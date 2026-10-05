@@ -632,8 +632,8 @@ export default function PlanReport() {
                         <thead>
                             <tr
                                 style={{
-                                    backgroundColor: "#EFFF00",
-                                    color: "#064E3B",
+                                    backgroundColor: "#38bdf8",
+                                    color: "#0a192f",
                                 }}
                             >
                                 <th style={thStyle}>No</th>
@@ -793,7 +793,7 @@ export default function PlanReport() {
                         <h1
                             style={{
                                 margin: 0,
-                                color: "#064E3B",
+                                color: "#0a192f",
                                 fontSize: "28px",
                             }}
                         >
@@ -815,7 +815,7 @@ export default function PlanReport() {
                     <Link
                         href="/admin/reports"
                         style={{
-                            backgroundColor: "#064E3B",
+                            backgroundColor: "#0a192f",
                             color: "white",
                             padding: "11px 17px",
                             borderRadius: "6px",
@@ -841,7 +841,7 @@ export default function PlanReport() {
                     <h2
                         style={{
                             margin: "0 0 18px",
-                            color: "#064E3B",
+                            color: "#0a192f",
                             fontSize: "20px",
                         }}
                     >
@@ -939,8 +939,8 @@ export default function PlanReport() {
                             onClick={handleReset}
                             style={{
                                 backgroundColor: "white",
-                                color: "#064E3B",
-                                border: "1px solid #064E3B",
+                                color: "#0a192f",
+                                border: "1px solid #0a192f",
                                 borderRadius: "6px",
                                 padding: "11px 18px",
                                 fontSize: "14px",

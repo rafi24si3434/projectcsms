@@ -29,7 +29,7 @@ class RoleMiddleware
         if (!empty($roles) && !in_array($user->role, $roles)) {
             // If user is field user trying to access admin area
             if ($user->role === 'user') {
-                return redirect()->route('user.input-data')->with('error', 'Akses ditolak: Akun Anda tidak memiliki hak akses Administrator.');
+                return redirect()->route('csms.dashboard')->with('error', 'Akses ditolak: Akun Anda tidak memiliki hak akses Administrator.');
             }
 
             // If admin trying to access restricted user area (or other roles)

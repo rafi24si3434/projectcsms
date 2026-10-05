@@ -628,7 +628,7 @@ export default function KPIPerRig() {
                     "'Instrument Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                 color: "#0f172a",
                 backgroundImage:
-                    "radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(4, 120, 87, 0.04) 0px, transparent 50%)",
+                    "radial-gradient(at 100% 0%, rgba(56,189,248,0.3) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(2,132,199,0.15) 0px, transparent 50%)",
             }}
         >
             {/* SIDEBAR */}
@@ -675,12 +675,12 @@ export default function KPIPerRig() {
                                 height: "38px",
                                 borderRadius: "10px",
                                 background:
-                                    "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                                    "linear-gradient(135deg, #0284c7 0%, #0284c7 100%)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 color: "#ffffff",
-                                boxShadow: "0 4px 12px rgba(5, 150, 105, 0.3)",
+                                boxShadow: "0 4px 12px rgba(2,132,199,0.2)",
                             }}
                         >
                             <BarChart3 size={20} strokeWidth={2.4} />
@@ -695,7 +695,7 @@ export default function KPIPerRig() {
                             >
                                 <span
                                     style={{
-                                        color: "#065f46",
+                                        color: "#1e3a8a",
                                         fontSize: "17px",
                                         fontWeight: "800",
                                         letterSpacing: "-0.02em",
@@ -711,7 +711,7 @@ export default function KPIPerRig() {
                                         borderRadius: "999px",
                                         backgroundColor: "#dcfce7",
                                         color: "#15803d",
-                                        border: "1px solid #bbf7d0",
+                                        border: "1px solid #bae6fd",
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "4px",
@@ -763,7 +763,7 @@ export default function KPIPerRig() {
                                 fontWeight: "600",
                             }}
                         >
-                            <Sparkles size={14} color="#059669" />
+                            <Sparkles size={14} color="#0284c7" />
                             <span>Live Data Sync</span>
                         </div>
 
@@ -878,7 +878,7 @@ export default function KPIPerRig() {
                             {/* RIG */}
                             <div style={{ minWidth: "150px" }}>
                                 <label style={modernLabel}>
-                                    <Layers size={12} color="#059669" /> Rig
+                                    <Layers size={12} color="#0284c7" /> Rig
                                 </label>
                                 <select
                                     value={rig}
@@ -897,7 +897,7 @@ export default function KPIPerRig() {
                             {/* CONTRACT */}
                             <div style={{ minWidth: "150px" }}>
                                 <label style={modernLabel}>
-                                    <Briefcase size={12} color="#059669" />{" "}
+                                    <Briefcase size={12} color="#0284c7" />{" "}
                                     Contract
                                 </label>
                                 <select
@@ -921,7 +921,7 @@ export default function KPIPerRig() {
                             {/* YEAR */}
                             <div style={{ width: "95px" }}>
                                 <label style={modernLabel}>
-                                    <Calendar size={12} color="#059669" /> Year
+                                    <Calendar size={12} color="#0284c7" /> Year
                                 </label>
                                 <select
                                     value={year}
@@ -939,7 +939,7 @@ export default function KPIPerRig() {
                             {/* PERIOD */}
                             <div style={{ width: "95px" }}>
                                 <label style={modernLabel}>
-                                    <Clock size={12} color="#059669" /> Period
+                                    <Clock size={12} color="#0284c7" /> Period
                                 </label>
                                 <select
                                     value={period}
@@ -963,7 +963,7 @@ export default function KPIPerRig() {
                                     border: "none",
                                     borderRadius: "10px",
                                     background:
-                                        "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                                        "linear-gradient(135deg, #0284c7 0%, #0284c7 100%)",
                                     color: "#ffffff",
                                     fontSize: "13px",
                                     fontWeight: "700",
@@ -972,7 +972,7 @@ export default function KPIPerRig() {
                                     alignItems: "center",
                                     gap: "6px",
                                     boxShadow:
-                                        "0 4px 14px rgba(5, 150, 105, 0.35)",
+                                        "0 4px 14px rgba(2,132,199,0.2)",
                                     transition: "all 0.2s",
                                 }}
                             >
@@ -995,11 +995,11 @@ export default function KPIPerRig() {
                             title="Target (Total)"
                             value={summaryCards.target}
                             unit="pts"
-                            icon={<Target size={22} color="#059669" />}
+                            icon={<Target size={22} color="#0284c7" />}
                             badge="Benchmark"
-                            badgeBg="#ecfdf5"
-                            badgeColor="#047857"
-                            accentColor="#10b981"
+                            badgeBg="#e0f2fe"
+                            badgeColor="#0284c7"
+                            accentColor="#38bdf8"
                         />
                         <ModernMetricCard
                             title="Actual Achievement"
@@ -1027,7 +1027,7 @@ export default function KPIPerRig() {
                             unit=""
                             icon={
                                 summaryCards.status === "On Track" ? (
-                                    <ShieldCheck size={22} color="#059669" />
+                                    <ShieldCheck size={22} color="#0284c7" />
                                 ) : (
                                     <ShieldAlert size={22} color="#dc2626" />
                                 )
@@ -1039,17 +1039,17 @@ export default function KPIPerRig() {
                             }
                             badgeBg={
                                 summaryCards.status === "On Track"
-                                    ? "#ecfdf5"
+                                    ? "#e0f2fe"
                                     : "#fef2f2"
                             }
                             badgeColor={
                                 summaryCards.status === "On Track"
-                                    ? "#047857"
+                                    ? "#0284c7"
                                     : "#b91c1c"
                             }
                             accentColor={
                                 summaryCards.status === "On Track"
-                                    ? "#10b981"
+                                    ? "#38bdf8"
                                     : "#ef4444"
                             }
                         />
@@ -1071,7 +1071,7 @@ export default function KPIPerRig() {
                                 borderRadius: "14px",
                                 border: "1px solid #e2e8f0",
                                 padding: "24px",
-                                boxShadow: "0 4px 18px rgba(0, 77, 50, 0.06)",
+                                boxShadow: "0 4px 18px rgba(14,165,233,0.06)",
                                 display: "flex",
                                 flexDirection: "column",
                                 justifyContent: "space-between",
@@ -1087,7 +1087,7 @@ export default function KPIPerRig() {
                                     right: 0,
                                     height: "3px",
                                     background:
-                                        "linear-gradient(90deg, #004d32 0%, #efff00 100%)",
+                                        "linear-gradient(90deg, #1e3a8a 0%, #38bdf8 100%)",
                                 }}
                             />
 
@@ -1112,7 +1112,7 @@ export default function KPIPerRig() {
                                                 margin: 0,
                                                 fontSize: "16px",
                                                 fontWeight: "800",
-                                                color: "#004d32",
+                                                color: "#0a192f",
                                             }}
                                         >
                                             Target vs Actual Performance
@@ -1121,9 +1121,9 @@ export default function KPIPerRig() {
                                             style={{
                                                 fontSize: "11px",
                                                 fontWeight: "800",
-                                                color: "#efff00",
-                                                backgroundColor: "#004d32",
-                                                border: "1px solid #efff00",
+                                                color: "#38bdf8",
+                                                backgroundColor: "#0a192f",
+                                                border: "1px solid #38bdf8",
                                                 padding: "2px 8px",
                                                 borderRadius: "999px",
                                             }}
@@ -1174,7 +1174,7 @@ export default function KPIPerRig() {
                                             display: "flex",
                                             alignItems: "center",
                                             gap: "6px",
-                                            color: "#004d32",
+                                            color: "#0a192f",
                                         }}
                                     >
                                         <span
@@ -1183,8 +1183,8 @@ export default function KPIPerRig() {
                                                 height: "10px",
                                                 borderRadius: "3px",
                                                 background:
-                                                    "linear-gradient(180deg, #efff00 0%, #004d32 100%)",
-                                                border: "1px solid #004d32",
+                                                    "linear-gradient(180deg, #38bdf8 0%, #0a192f 100%)",
+                                                border: "1px solid #0a192f",
                                             }}
                                         />
                                         Actual
@@ -1252,11 +1252,11 @@ export default function KPIPerRig() {
                                                     width: "36%",
                                                     height: `${item.actual}%`,
                                                     background:
-                                                        "linear-gradient(180deg, #efff00 0%, #004d32 100%)",
+                                                        "linear-gradient(180deg, #38bdf8 0%, #0a192f 100%)",
                                                     borderRadius: "5px 5px 0 0",
                                                     boxShadow:
-                                                        "0 0 10px rgba(239, 255, 0, 0.35)",
-                                                    border: "1px solid #004d32",
+                                                        "0 0 10px rgba(56,189,248,0.35)",
+                                                    border: "1px solid #0a192f",
                                                     transition:
                                                         "height 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                                                 }}
@@ -1268,7 +1268,7 @@ export default function KPIPerRig() {
                                             style={{
                                                 marginTop: "10px",
                                                 fontSize: "12px",
-                                                color: "#004d32",
+                                                color: "#0a192f",
                                                 fontWeight: "800",
                                             }}
                                         >
@@ -1286,7 +1286,7 @@ export default function KPIPerRig() {
                                 borderRadius: "14px",
                                 border: "1px solid #e2e8f0",
                                 padding: "24px",
-                                boxShadow: "0 4px 18px rgba(0, 77, 50, 0.06)",
+                                boxShadow: "0 4px 18px rgba(14,165,233,0.06)",
                                 display: "flex",
                                 flexDirection: "column",
                                 justifyContent: "space-between",
@@ -1302,7 +1302,7 @@ export default function KPIPerRig() {
                                     right: 0,
                                     height: "3px",
                                     background:
-                                        "linear-gradient(90deg, #004d32 0%, #efff00 100%)",
+                                        "linear-gradient(90deg, #1e3a8a 0%, #38bdf8 100%)",
                                 }}
                             />
 
@@ -1327,7 +1327,7 @@ export default function KPIPerRig() {
                                                 margin: 0,
                                                 fontSize: "16px",
                                                 fontWeight: "800",
-                                                color: "#004d32",
+                                                color: "#0a192f",
                                             }}
                                         >
                                             Performance Trend
@@ -1336,9 +1336,9 @@ export default function KPIPerRig() {
                                             style={{
                                                 fontSize: "11px",
                                                 fontWeight: "800",
-                                                color: "#efff00",
-                                                backgroundColor: "#004d32",
-                                                border: "1px solid #efff00",
+                                                color: "#38bdf8",
+                                                backgroundColor: "#0a192f",
+                                                border: "1px solid #38bdf8",
                                                 padding: "2px 8px",
                                                 borderRadius: "999px",
                                             }}
@@ -1364,7 +1364,7 @@ export default function KPIPerRig() {
                                         backgroundColor: "#f1f5f9",
                                         borderRadius: "8px",
                                         padding: "3px",
-                                        border: "1px solid #004d32",
+                                        border: "1px solid #0a192f",
                                     }}
                                 >
                                     {["Monthly", "Quarterly", "YTD"].map(
@@ -1381,11 +1381,11 @@ export default function KPIPerRig() {
                                                     borderRadius: "6px",
                                                     backgroundColor:
                                                         performanceMode === mode
-                                                            ? "#004d32"
+                                                            ? "#0a192f"
                                                             : "transparent",
                                                     color:
                                                         performanceMode === mode
-                                                            ? "#efff00"
+                                                            ? "#38bdf8"
                                                             : "#475569",
                                                     fontWeight:
                                                         performanceMode === mode
@@ -1394,7 +1394,7 @@ export default function KPIPerRig() {
                                                     cursor: "pointer",
                                                     boxShadow:
                                                         performanceMode === mode
-                                                            ? "0 0 8px rgba(239, 255, 0, 0.25)"
+                                                            ? "0 0 8px rgba(56,189,248,0.25)"
                                                             : "none",
                                                     transition: "all 0.2s",
                                                 }}
@@ -1443,11 +1443,11 @@ export default function KPIPerRig() {
                                                     width: "100%",
                                                     height: `${bar.value}%`,
                                                     background:
-                                                        "linear-gradient(180deg, #efff00 0%, #004d32 100%)",
+                                                        "linear-gradient(180deg, #38bdf8 0%, #0a192f 100%)",
                                                     borderRadius: "5px 5px 0 0",
                                                     boxShadow:
-                                                        "0 0 8px rgba(239, 255, 0, 0.3)",
-                                                    border: "1px solid #004d32",
+                                                        "0 0 8px rgba(56,189,248,0.3)",
+                                                    border: "1px solid #0a192f",
                                                     transition:
                                                         "height 0.4s ease",
                                                 }}
@@ -1457,7 +1457,7 @@ export default function KPIPerRig() {
                                                 style={{
                                                     marginTop: "10px",
                                                     fontSize: "10px",
-                                                    color: "#004d32",
+                                                    color: "#0a192f",
                                                     fontWeight: "800",
                                                     whiteSpace: "nowrap",
                                                 }}
@@ -1477,7 +1477,7 @@ export default function KPIPerRig() {
                             background: "#ffffff",
                             borderRadius: "14px",
                             border: "1px solid #e2e8f0",
-                            boxShadow: "0 4px 18px rgba(0, 77, 50, 0.06)",
+                            boxShadow: "0 4px 18px rgba(14,165,233,0.06)",
                             overflow: "hidden",
                         }}
                     >
@@ -1507,7 +1507,7 @@ export default function KPIPerRig() {
                                             margin: 0,
                                             fontSize: "17px",
                                             fontWeight: "800",
-                                            color: "#004d32",
+                                            color: "#0a192f",
                                         }}
                                     >
                                         Detailed KPI Performance Matrix
@@ -1515,10 +1515,10 @@ export default function KPIPerRig() {
                                     <span
                                         style={{
                                             fontSize: "12px",
-                                            color: "#efff00",
+                                            color: "#38bdf8",
                                             fontWeight: "800",
-                                            backgroundColor: "#004d32",
-                                            border: "1px solid #efff00",
+                                            backgroundColor: "#0a192f",
+                                            border: "1px solid #38bdf8",
                                             padding: "2px 9px",
                                             borderRadius: "999px",
                                         }}
@@ -1553,7 +1553,7 @@ export default function KPIPerRig() {
                                         backgroundColor: "#f8fafc",
                                         borderRadius: "8px",
                                         padding: "3px",
-                                        border: "1px solid #004d32",
+                                        border: "1px solid #0a192f",
                                     }}
                                 >
                                     {["All", "Leading", "Lagging"].map(
@@ -1571,11 +1571,11 @@ export default function KPIPerRig() {
                                                     borderRadius: "6px",
                                                     backgroundColor:
                                                         tableCategory === cat
-                                                            ? "#004d32"
+                                                            ? "#0a192f"
                                                             : "transparent",
                                                     color:
                                                         tableCategory === cat
-                                                            ? "#efff00"
+                                                            ? "#38bdf8"
                                                             : "#475569",
                                                     fontWeight:
                                                         tableCategory === cat
@@ -1584,7 +1584,7 @@ export default function KPIPerRig() {
                                                     cursor: "pointer",
                                                     boxShadow:
                                                         tableCategory === cat
-                                                            ? "0 0 6px rgba(239, 255, 0, 0.25)"
+                                                            ? "0 0 6px rgba(56,189,248,0.25)"
                                                             : "none",
                                                     transition: "all 0.2s",
                                                 }}
@@ -1603,13 +1603,13 @@ export default function KPIPerRig() {
                                         display: "flex",
                                         alignItems: "center",
                                         backgroundColor: "#ffffff",
-                                        border: "1px solid #004d32",
+                                        border: "1px solid #0a192f",
                                         borderRadius: "8px",
                                         padding: "0 10px",
                                         height: "36px",
                                     }}
                                 >
-                                    <Search size={15} color="#004d32" />
+                                    <Search size={15} color="#0a192f" />
                                     <input
                                         type="text"
                                         placeholder="Search KPI..."
@@ -1645,9 +1645,9 @@ export default function KPIPerRig() {
                                         height: "36px",
                                         padding: "0 14px",
                                         borderRadius: "8px",
-                                        border: "1px solid #efff00",
-                                        backgroundColor: "#004d32",
-                                        color: "#efff00",
+                                        border: "1px solid #38bdf8",
+                                        backgroundColor: "#0a192f",
+                                        color: "#38bdf8",
                                         fontSize: "12px",
                                         fontWeight: "800",
                                         display: "flex",
@@ -1655,7 +1655,7 @@ export default function KPIPerRig() {
                                         gap: "6px",
                                         cursor: "pointer",
                                         boxShadow:
-                                            "0 0 10px rgba(239, 255, 0, 0.25)",
+                                            "0 0 10px rgba(56,189,248,0.25)",
                                         transition: "all 0.2s",
                                     }}
                                     title="Export CSV"
@@ -1914,7 +1914,7 @@ export default function KPIPerRig() {
                                                                 "center",
                                                             justifyContent:
                                                                 "center",
-                                                            color: "#059669",
+                                                            color: "#0284c7",
                                                             cursor: "pointer",
                                                             boxShadow:
                                                                 "0 1px 3px rgba(0,0,0,0.04)",
@@ -2008,7 +2008,7 @@ export default function KPIPerRig() {
                                             ...modernPageBtn(false),
                                             backgroundColor:
                                                 currentPage === page
-                                                    ? "#059669"
+                                                    ? "#0284c7"
                                                     : "#ffffff",
                                             color:
                                                 currentPage === page
@@ -2020,7 +2020,7 @@ export default function KPIPerRig() {
                                                     : "600",
                                             boxShadow:
                                                 currentPage === page
-                                                    ? "0 2px 8px rgba(5, 150, 105, 0.35)"
+                                                    ? "0 2px 8px rgba(2,132,199,0.2)"
                                                     : "none",
                                         }}
                                     >
@@ -2089,8 +2089,8 @@ export default function KPIPerRig() {
                                         width: "40px",
                                         height: "40px",
                                         borderRadius: "10px",
-                                        backgroundColor: "#ecfdf5",
-                                        color: "#059669",
+                                        backgroundColor: "#e0f2fe",
+                                        color: "#0284c7",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
@@ -2195,12 +2195,12 @@ export default function KPIPerRig() {
                                 border: "none",
                                 borderRadius: "10px",
                                 background:
-                                    "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                                    "linear-gradient(135deg, #0284c7 0%, #0284c7 100%)",
                                 color: "#ffffff",
                                 cursor: "pointer",
                                 fontWeight: "700",
                                 fontSize: "14px",
-                                boxShadow: "0 4px 12px rgba(5, 150, 105, 0.3)",
+                                boxShadow: "0 4px 12px rgba(2,132,199,0.2)",
                             }}
                         >
                             Close Detail
@@ -2231,9 +2231,9 @@ function ModernMetricCard({
             style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "14px",
-                border: "1px solid #004d32",
+                border: "1px solid #0a192f",
                 padding: "20px",
-                boxShadow: "0 4px 18px rgba(0, 77, 50, 0.08)",
+                boxShadow: "0 4px 18px rgba(14,165,233,0.08)",
                 position: "relative",
                 overflow: "hidden",
                 transition: "transform 0.2s, box-shadow 0.2s",
@@ -2248,7 +2248,7 @@ function ModernMetricCard({
                     right: 0,
                     height: "4px",
                     background:
-                        "linear-gradient(90deg, #004d32 0%, #efff00 100%)",
+                        "linear-gradient(90deg, #1e3a8a 0%, #38bdf8 100%)",
                 }}
             />
 
@@ -2263,7 +2263,7 @@ function ModernMetricCard({
                     <span
                         style={{
                             fontSize: "11px",
-                            color: "#004d32",
+                            color: "#0a192f",
                             fontWeight: "800",
                             textTransform: "uppercase",
                             letterSpacing: "0.06em",
@@ -2308,12 +2308,12 @@ function ModernMetricCard({
                         width: "44px",
                         height: "44px",
                         borderRadius: "10px",
-                        backgroundColor: "#004d32",
-                        border: "1px solid #efff00",
+                        backgroundColor: "#0a192f",
+                        border: "1px solid #38bdf8",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        boxShadow: "0 0 10px rgba(239, 255, 0, 0.25)",
+                        boxShadow: "0 0 10px rgba(56,189,248,0.25)",
                     }}
                 >
                     {icon}
@@ -2328,10 +2328,10 @@ function ModernMetricCard({
                         fontWeight: "800",
                         padding: "3px 9px",
                         borderRadius: "999px",
-                        backgroundColor: "#004d32",
-                        color: "#efff00",
-                        border: "1px solid #efff00",
-                        boxShadow: "0 0 8px rgba(239, 255, 0, 0.2)",
+                        backgroundColor: "#0a192f",
+                        color: "#38bdf8",
+                        border: "1px solid #38bdf8",
+                        boxShadow: "0 0 8px rgba(56,189,248,0.2)",
                     }}
                 >
                     {badge}
@@ -2358,11 +2358,11 @@ function ModernStatusBadge({ status }) {
                 borderRadius: "999px",
                 fontSize: "11.5px",
                 fontWeight: "800",
-                backgroundColor: isAchieved ? "#004d32" : "#7f1d1d",
-                color: isAchieved ? "#efff00" : "#fecaca",
-                border: isAchieved ? "1px solid #efff00" : "1px solid #ef4444",
+                backgroundColor: isAchieved ? "#0a192f" : "#7f1d1d",
+                color: isAchieved ? "#38bdf8" : "#fecaca",
+                border: isAchieved ? "1px solid #38bdf8" : "1px solid #ef4444",
                 boxShadow: isAchieved
-                    ? "0 0 10px rgba(239, 255, 0, 0.3)"
+                    ? "0 0 10px rgba(56,189,248,0.3)"
                     : "none",
             }}
         >
@@ -2371,9 +2371,9 @@ function ModernStatusBadge({ status }) {
                     width: "6px",
                     height: "6px",
                     borderRadius: "50%",
-                    backgroundColor: isAchieved ? "#efff00" : "#ef4444",
+                    backgroundColor: isAchieved ? "#38bdf8" : "#ef4444",
                     boxShadow: isAchieved
-                        ? "0 0 6px #efff00"
+                        ? "0 0 6px #38bdf8"
                         : "0 0 6px #ef4444",
                 }}
             />
@@ -2408,7 +2408,7 @@ function ModernDetailRow({ label, value }) {
             <strong
                 style={{
                     fontSize: "13px",
-                    color: "#004d32",
+                    color: "#0a192f",
                     textAlign: "right",
                     fontWeight: "800",
                 }}
@@ -2429,7 +2429,7 @@ const modernLabel = {
     gap: "5px",
     marginBottom: "6px",
     fontSize: "11px",
-    color: "#004d32",
+    color: "#0a192f",
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
@@ -2438,7 +2438,7 @@ const modernLabel = {
 const modernSelect = {
     height: "40px",
     padding: "0 12px",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     backgroundColor: "#ffffff",
     color: "#0f172a",
@@ -2456,11 +2456,11 @@ const modernTh = {
     textAlign: "left",
     fontSize: "11.5px",
     color: "#ffffff",
-    backgroundColor: "#004d32",
+    backgroundColor: "#0a192f",
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-    borderBottom: "2px solid #efff00",
+    borderBottom: "2px solid #38bdf8",
 };
 
 const modernTd = {
@@ -2472,10 +2472,10 @@ const modernTd = {
 const modernPageBtn = (disabled) => ({
     minWidth: "34px",
     height: "34px",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     backgroundColor: "#ffffff",
-    color: disabled ? "#cbd5e1" : "#004d32",
+    color: disabled ? "#cbd5e1" : "#0a192f",
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: "13px",
     fontWeight: "700",

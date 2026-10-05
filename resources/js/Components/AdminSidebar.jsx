@@ -1,895 +1,311 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Link, usePage, router } from "@inertiajs/react";
 
 import {
-    LayoutDashboard,
-    ClipboardList,
-    ShieldCheck,
-    BarChart3,
-    Target,
-    FileText,
-    Settings2,
-    CheckCircle2,
-    FileBarChart,
-    CalendarDays,
-    TrendingUp,
     Users,
     Settings,
     CircleHelp,
     LogOut,
-    ChevronLeft,
-    ChevronRight,
-    ArrowUpRight,
     HardDrive,
+    ShieldCheck,
+    ChevronRight,
 } from "lucide-react";
 
-function AdminSidebar({
-    collapsed: collapsedProp,
-    onToggle,
-}) {
+// Navy Radiant Blue — permanent single theme
+const COLORS = {
+    bg:          "#0b1329",
+    border:      "#1e293b",
+    profileBg:   "#131f37",
+    labelColor:  "#64748b",
+    textMain:    "#f1f5f9",
+    textMuted:   "#94a3b8",
+    activeBg:    "#1e293b",
+    hoverBg:     "#131f37",
+    hoverText:   "#38bdf8",
+    activeText:  "#ffffff",
+    iconActive:  "#38bdf8",
+    iconMuted:   "#64748b",
+};
+
+function AdminSidebar() {
     const { url } = usePage();
 
-    /*
-    |--------------------------------------------------------------------------
-    | SIDEBAR STATE
-    |--------------------------------------------------------------------------
-    */
-    const [internalCollapsed, setInternalCollapsed] = useState(() => {
-        if (typeof window !== "undefined") {
-            const saved = localStorage.getItem("besmindo_admin_sidebar_collapsed");
-            if (saved !== null) {
-                return saved === "true";
-            }
-        }
-        return false;
-    });
-
-    // Kalau dipakai bersama AdminLayout, state berasal dari parent.
-    // Kalau belum ada AdminLayout, sidebar tetap bisa berjalan sendiri.
-    const isControlled = typeof collapsedProp === "boolean";
-    const collapsed = isControlled
-        ? collapsedProp
-        : internalCollapsed;
-
-    /*
-    |--------------------------------------------------------------------------
-    | RESPONSIVE
-    |--------------------------------------------------------------------------
-    */
-    useEffect(() => {
-        if (isControlled) return;
-
-        const handleResize = () => {
-            if (window.innerWidth <= 900) {
-                setInternalCollapsed(true);
-            } else {
-                const saved = localStorage.getItem("besmindo_admin_sidebar_collapsed");
-                if (saved !== null) {
-                    setInternalCollapsed(saved === "true");
-                } else {
-                    setInternalCollapsed(false);
-                }
-            }
-        };
-
-        handleResize();
-
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-            window.removeEventListener("resize", handleResize);
-        };
-    }, [isControlled]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | MENU
-    |--------------------------------------------------------------------------
-    */
     const menuItems = [
-        {
-            name: "CSMS Storage (20 RIG)",
-            href: "/csms",
-            icon: HardDrive,
-        },
-
-        {
-            name: "User Management",
-            href: "/admin/users",
-            icon: Users,
-        },
-
-        {
-            name: "Settings",
-            href: "/admin/settings",
-            icon: Settings,
-        },
+        { name: "CSMS Storage (20 RIG)", href: "/csms",           icon: HardDrive },
+        { name: "User Management",       href: "/admin/users",    icon: Users     },
+        { name: "Settings",              href: "/admin/settings", icon: Settings  },
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | ACTIVE MENU
-    |--------------------------------------------------------------------------
-    */
-    const isActive = (href) => {
-        return (
-            url === href ||
-            url.startsWith(href + "/")
-        );
-    };
+    const isActive = (href) => url === href || url.startsWith(href + "/");
 
-    /*
-    |--------------------------------------------------------------------------
-    | LOGOUT
-    |--------------------------------------------------------------------------
-    */
     const handleLogout = () => {
-        localStorage.removeItem("isLoggedIn");
         router.post("/logout");
     };
 
-    /*
-    |--------------------------------------------------------------------------
-    | TOGGLE
-    |--------------------------------------------------------------------------
-    */
-    const toggleSidebar = () => {
-        if (typeof onToggle === "function") {
-            onToggle();
-            return;
-        }
-
-        setInternalCollapsed((prev) => {
-            const next = !prev;
-            if (typeof window !== "undefined") {
-                localStorage.setItem("besmindo_admin_sidebar_collapsed", String(next));
-            }
-            return next;
-        });
-    };
-
-    // Beri tahu layout/global page lebar sidebar saat berubah.
     useEffect(() => {
-        document.documentElement.style.setProperty(
-            "--admin-sidebar-width",
-            collapsed ? "68px" : "215px"
-        );
-        window.dispatchEvent(new CustomEvent("admin-sidebar-resize", { detail: { collapsed } }));
-    }, [collapsed]);
+        document.documentElement.style.setProperty("--admin-sidebar-width", "220px");
+        window.dispatchEvent(new CustomEvent("admin-sidebar-resize", { detail: { collapsed: false } }));
+    }, []);
 
     return (
-        <>
-            {/* =========================================================
-                SIDEBAR
-            ========================================================= */}
-            <aside
-                style={{
-                    position: "fixed",
-                    left: 0,
-                    top: 0,
+        <aside
+            style={{
+                position: "fixed",
+                left: 0,
+                top: 0,
+                width: "220px",
+                height: "100vh",
+                backgroundColor: COLORS.bg,
+                borderRight: `1px solid ${COLORS.border}`,
+                display: "flex",
+                flexDirection: "column",
+                zIndex: 1000,
+                boxSizing: "border-box",
+                overflow: "hidden",
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+            }}
+        >
+            <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
 
-                    width: collapsed
-                        ? "68px"
-                        : "215px",
-
-                    height: "100vh",
-
-                    backgroundColor: "#ffffff",
-
-                    borderRight:
-                        "1px solid #e2e8f0",
-
+                {/* ── HEADER / BRANDING ── */}
+                <div style={{
+                    height: "88px",
                     display: "flex",
-
-                    flexDirection: "column",
-
-                    zIndex: 1000,
-
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 16px",
+                    borderBottom: `1px solid ${COLORS.border}`,
                     boxSizing: "border-box",
-
-                    overflow: "visible",
-
-                    transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-            >
-                {/* =====================================================
-                    SIDEBAR INNER
-                ===================================================== */}
-                <div
-                    style={{
-                        width: "100%",
-
-                        height: "100%",
-
-                        backgroundColor:
-                            "#ffffff",
-
-                        display: "flex",
-
-                        flexDirection:
-                            "column",
-
-                        boxSizing:
-                            "border-box",
-
-                        transition:
-                            "width 0.25s ease",
-
-                        overflow: "hidden",
-
-                        borderRight:
-                            "1px solid #e2e8f0",
-                    }}
-                >
-                    {/* =================================================
-                        LOGO
-                    ================================================= */}
-                    <div
-                        style={{
-                            height: "90px",
-
-                            display: "flex",
-
-                            alignItems:
-                                "center",
-
-                            justifyContent:
-                                "center",
-
-                            padding:
-                                collapsed
-                                    ? "10px 8px"
-                                    : "10px 18px",
-
-                            borderBottom:
-                                "1px solid #e2e8f0",
-
-                            boxSizing:
-                                "border-box",
-
-                            flexShrink: 0,
-                        }}
-                    >
+                    flexShrink: 0,
+                }}>
+                    <Link href="/csms" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", textDecoration: "none" }}>
                         <img
                             src="/images/logo-besmindo.png"
                             alt="BESMINDO"
                             style={{
-                                width:
-                                    collapsed
-                                        ? "42px"
-                                        : "100%",
-
-                                maxWidth:
-                                    collapsed
-                                        ? "42px"
-                                        : "175px",
-
+                                width: "100%",
+                                maxWidth: "185px",
                                 height: "auto",
-
-                                maxHeight:
-                                    collapsed
-                                        ? "42px"
-                                        : "70px",
-
-                                objectFit:
-                                    "contain",
-
+                                maxHeight: "58px",
+                                objectFit: "contain",
                                 display: "block",
-
-                                transition:
-                                    "all 0.25s ease",
+                                imageRendering: "auto",
+                                transform: "translateZ(0)",
+                                backfaceVisibility: "hidden",
                             }}
                         />
-                    </div>
+                    </Link>
+                </div>
 
-                    {/* =================================================
-                        ADMIN PROFILE
-                    ================================================= */}
-                    <div
-                        style={{
-                            padding:
-                                collapsed
-                                    ? "16px 8px"
-                                    : "16px",
-
-                            borderBottom:
-                                "1px solid #e2e8f0",
-
-                            boxSizing:
-                                "border-box",
-
+                {/* ── USER PROFILE ── */}
+                <div style={{
+                    padding: "14px 14px",
+                    boxSizing: "border-box",
+                    flexShrink: 0,
+                }}>
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "8px 10px",
+                        borderRadius: "10px",
+                        backgroundColor: COLORS.profileBg,
+                        border: `1px solid ${COLORS.border}`,
+                    }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "8px",
+                            backgroundColor: "#0ea5e9",
+                            color: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                             flexShrink: 0,
-                        }}
-                    >
-                        <div
-                            style={{
-                                display:
-                                    "flex",
-
-                                alignItems:
-                                    "center",
-
-                                justifyContent:
-                                    collapsed
-                                        ? "center"
-                                        : "flex-start",
-
-                                gap: "12px",
-                            }}
-                        >
-                            {/* CHECK ICON */}
-                            <div
-                                style={{
-                                    width: "38px",
-                                    height: "38px",
-
-                                    borderRadius:
-                                        "50%",
-
-                                    backgroundColor:
-                                        "#004d32",
-
-                                    display:
-                                        "flex",
-
-                                    alignItems:
-                                        "center",
-
-                                    justifyContent:
-                                        "center",
-
-                                    color:
-                                        "#efff00",
-
-                                    fontSize:
-                                        "18px",
-
-                                    fontWeight:
-                                        "bold",
-
-                                    flexShrink: 0,
-                                }}
-                            >
-                                ✓
-                            </div>
-
-                            {/* PROFILE TEXT */}
-                            {!collapsed && (
-                                <div>
-                                    <div
-                                        style={{
-                                            fontSize:
-                                                "13.5px",
-
-                                            fontWeight:
-                                                "700",
-
-                                            color:
-                                                "#004d32",
-
-                                            whiteSpace:
-                                                "nowrap",
-                                        }}
-                                    >
-                                        Rig HSE Admin
-                                    </div>
-
-                                    <div
-                                        style={{
-                                            fontSize:
-                                                "11px",
-
-                                            color:
-                                                "#64748b",
-
-                                            marginTop:
-                                                "2px",
-
-                                            whiteSpace:
-                                                "nowrap",
-
-                                            fontWeight:
-                                                "500",
-                                        }}
-                                    >
-                                        Administrator
-                                    </div>
-                                </div>
-                            )}
+                            boxShadow: "0 2px 4px rgba(14, 165, 233, 0.25)",
+                        }}>
+                            <ShieldCheck size={17} strokeWidth={2.4} />
                         </div>
-                    </div>
-
-                    {/* =================================================
-                        MENU
-                    ================================================= */}
-                    <nav
-                        style={{
-                            flex: 1,
-
-                            overflowY: "auto",
-
-                            overflowX: "hidden",
-
-                            padding:
-                                collapsed
-                                    ? "18px 8px"
-                                    : "18px 12px",
-
-                            boxSizing:
-                                "border-box",
-                        }}
-                    >
-                        {menuItems.map((item) => {
-                            const active =
-                                isActive(
-                                    item.href
-                                );
-
-                            const Icon =
-                                item.icon;
-
-                            return (
-                                <Link
-                                    key={
-                                        item.href
-                                    }
-                                    href={
-                                        item.href
-                                    }
-                                    title={
-                                        collapsed
-                                            ? item.name
-                                            : ""
-                                    }
-                                    style={{
-                                        display:
-                                            "flex",
-
-                                        alignItems:
-                                            "center",
-
-                                        justifyContent:
-                                            collapsed
-                                                ? "center"
-                                                : "flex-start",
-
-                                        width:
-                                            "100%",
-
-                                        boxSizing:
-                                            "border-box",
-
-                                        padding:
-                                            collapsed
-                                                ? "10px 8px"
-                                                : "10px 14px",
-
-                                        marginBottom:
-                                            "4px",
-
-                                        borderRadius:
-                                            "10px",
-
-                                        textDecoration:
-                                            "none",
-
-                                        background:
-                                            active
-                                                ? "#004d32"
-                                                : "transparent",
-
-                                        color:
-                                            active
-                                                ? "#efff00"
-                                                : "#334155",
-
-                                        border:
-                                            active
-                                                ? "1px solid #efff00"
-                                                : "1px solid transparent",
-
-                                        fontSize:
-                                            "12.5px",
-
-                                        fontWeight:
-                                            active ? "800" : "600",
-
-                                        letterSpacing:
-                                            "-0.01em",
-
-                                        minHeight:
-                                            "40px",
-
-                                        overflow:
-                                            "hidden",
-
-                                        boxShadow:
-                                            active
-                                                ? "0 0 14px rgba(239, 255, 0, 0.35), inset 0 0 8px rgba(239, 255, 0, 0.15)"
-                                                : "none",
-
-                                        transition:
-                                            "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                                    }}
-                                >
-                                    {/* MENU ICON */}
-                                    <span
-                                        style={{
-                                            width:
-                                                "24px",
-
-                                            minWidth:
-                                                "24px",
-
-                                            height:
-                                                "24px",
-
-                                            display:
-                                                "flex",
-
-                                            alignItems:
-                                                "center",
-
-                                            justifyContent:
-                                                "center",
-
-                                            marginRight:
-                                                collapsed
-                                                    ? "0"
-                                                    : "10px",
-
-                                            color:
-                                                active
-                                                    ? "#efff00"
-                                                    : "#004d32",
-
-                                            flexShrink:
-                                                0,
-                                        }}
-                                    >
-                                        <Icon
-                                            size={17}
-                                            strokeWidth={
-                                                active ? 2.6 : 2
-                                            }
-                                        />
-                                    </span>
-
-                                    {/* MENU NAME */}
-                                    {!collapsed && (
-                                        <span
-                                            style={{
-                                                whiteSpace:
-                                                    "nowrap",
-                                                textShadow:
-                                                    active
-                                                        ? "0 0 10px rgba(239, 255, 0, 0.5)"
-                                                        : "none",
-                                            }}
-                                        >
-                                            {
-                                                item.name
-                                            }
-                                        </span>
-                                    )}
-                                </Link>
-                            );
-                        })}
-                    </nav>
-
-                    {/* =================================================
-                        BOTTOM MENU
-                    ================================================= */}
-                    <div
-                        style={{
-                            borderTop:
-                                "1px solid #e2e8f0",
-
-                            padding:
-                                collapsed
-                                    ? "12px 8px"
-                                    : "12px",
-
-                            boxSizing:
-                                "border-box",
-
-                            flexShrink: 0,
-                        }}
-                    >
-                        {/* =================================================
-                            SUPPORT
-                        ================================================= */}
-                        <button
-                            type="button"
-                            title={
-                                collapsed
-                                    ? "Support"
-                                    : ""
-                            }
-                            style={{
-                                display:
-                                    "flex",
-
-                                alignItems:
-                                    "center",
-
-                                justifyContent:
-                                    collapsed
-                                        ? "center"
-                                        : "flex-start",
-
-                                width:
-                                    "100%",
-
-                                padding:
-                                    collapsed
-                                        ? "12px 8px"
-                                        : "12px",
-
-                                border: "none",
-
-                                background:
-                                    "transparent",
-
-                                color:
-                                    "#475569",
-
-                                fontSize:
-                                    "10px",
-
-                                fontWeight:
-                                    "700",
-
-                                textTransform:
-                                    "uppercase",
-
-                                letterSpacing:
-                                    "0.08em",
-
-                                cursor:
-                                    "pointer",
-
-                                textAlign:
-                                    "left",
-
-                                boxSizing:
-                                    "border-box",
-                            }}
-                        >
-                            <span
-                                style={{
-                                    width:
-                                        "24px",
-
-                                    minWidth:
-                                        "24px",
-
-                                    height:
-                                        "24px",
-
-                                    display:
-                                        "flex",
-
-                                    alignItems:
-                                        "center",
-
-                                    justifyContent:
-                                        "center",
-
-                                    marginRight:
-                                        collapsed
-                                            ? "0"
-                                            : "8px",
-
-                                    color:
-                                        "#006b45",
-                                }}
-                            >
-                                <CircleHelp
-                                    size={17}
-                                    strokeWidth={
-                                        2.2
-                                    }
-                                />
-                            </span>
-
-                            {!collapsed && (
-                                <span>
-                                    Support
-                                </span>
-                            )}
-                        </button>
-
-                        {/* =================================================
-                            LOGOUT
-                        ================================================= */}
-                        <button
-                            type="button"
-                            onClick={
-                                handleLogout
-                            }
-                            title={
-                                collapsed
-                                    ? "Logout"
-                                    : ""
-                            }
-                            style={{
-                                display:
-                                    "flex",
-
-                                alignItems:
-                                    "center",
-
-                                justifyContent:
-                                    collapsed
-                                        ? "center"
-                                        : "flex-start",
-
-                                width:
-                                    "100%",
-
-                                padding:
-                                    collapsed
-                                        ? "12px 8px"
-                                        : "12px",
-
-                                border: "none",
-
-                                background:
-                                    "transparent",
-
-                                color:
-                                    "#475569",
-
-                                fontSize:
-                                    "10px",
-
-                                fontWeight:
-                                    "700",
-
-                                textTransform:
-                                    "uppercase",
-
-                                letterSpacing:
-                                    "0.08em",
-
-                                cursor:
-                                    "pointer",
-
-                                textAlign:
-                                    "left",
-
-                                boxSizing:
-                                    "border-box",
-                            }}
-                        >
-                            <span
-                                style={{
-                                    width:
-                                        "24px",
-
-                                    minWidth:
-                                        "24px",
-
-                                    height:
-                                        "24px",
-
-                                    display:
-                                        "flex",
-
-                                    alignItems:
-                                        "center",
-
-                                    justifyContent:
-                                        "center",
-
-                                    marginRight:
-                                        collapsed
-                                            ? "0"
-                                            : "8px",
-
-                                    color:
-                                        "#006b45",
-                                }}
-                            >
-                                <LogOut
-                                    size={17}
-                                    strokeWidth={
-                                        2.2
-                                    }
-                                />
-                            </span>
-
-                            {!collapsed && (
-                                <span>
-                                    Logout
-                                </span>
-                            )}
-                        </button>
+                        <div style={{ overflow: "hidden", flex: 1 }}>
+                            <div style={{
+                                fontSize: "12.5px",
+                                fontWeight: "600",
+                                color: COLORS.textMain,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                lineHeight: "1.2",
+                            }}>
+                                Rig HSE Admin
+                            </div>
+                            <div style={{
+                                fontSize: "11px",
+                                color: COLORS.textMuted,
+                                marginTop: "2px",
+                                whiteSpace: "nowrap",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                            }}>
+                                <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#10b981", display: "inline-block" }}></span>
+                                <span>Online</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* =====================================================
-                    TOMBOL COLLAPSE
-                ===================================================== */}
-                <button
-                    type="button"
-                    onClick={
-                        toggleSidebar
-                    }
-                    title={
-                        collapsed
-                            ? "Buka Sidebar"
-                            : "Sembunyikan Sidebar"
-                    }
-                    aria-label={
-                        collapsed
-                            ? "Buka Sidebar"
-                            : "Sembunyikan Sidebar"
-                    }
-                    style={{
-                        position:
-                            "absolute",
+                {/* ── MENU CATEGORY ── */}
+                <div style={{
+                    padding: "6px 18px 6px",
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    color: COLORS.labelColor,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    flexShrink: 0,
+                }}>
+                    Menu
+                </div>
 
-                        left:
-                            collapsed
-                                ? "56px"
-                                : "203px",
+                {/* ── NAVIGATION ── */}
+                <nav style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "2px 10px",
+                    boxSizing: "border-box",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                }}>
+                    {menuItems.map((item) => {
+                        const active = isActive(item.href);
+                        const Icon = item.icon;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    width: "100%",
+                                    boxSizing: "border-box",
+                                    padding: "9px 12px",
+                                    borderRadius: "9px",
+                                    textDecoration: "none",
+                                    backgroundColor: active ? COLORS.activeBg : "transparent",
+                                    color: active ? COLORS.activeText : COLORS.textMuted,
+                                    fontSize: "13px",
+                                    fontWeight: active ? "600" : "500",
+                                    transition: "all 0.15s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!active) {
+                                        e.currentTarget.style.backgroundColor = COLORS.hoverBg;
+                                        e.currentTarget.style.color = COLORS.hoverText;
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!active) {
+                                        e.currentTarget.style.backgroundColor = "transparent";
+                                        e.currentTarget.style.color = COLORS.textMuted;
+                                    }
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                    <Icon
+                                        size={17}
+                                        strokeWidth={active ? 2.3 : 1.9}
+                                        style={{
+                                            color: active ? COLORS.iconActive : COLORS.iconMuted,
+                                            flexShrink: 0,
+                                        }}
+                                    />
+                                    <span style={{ whiteSpace: "nowrap" }}>{item.name}</span>
+                                </div>
+                                {active && (
+                                    <ChevronRight size={13} style={{ color: COLORS.iconActive, opacity: 0.8 }} />
+                                )}
+                            </Link>
+                        );
+                    })}
+                </nav>
 
-                        top: "174px",
+                {/* ── FOOTER / ACTIONS ── */}
+                <div style={{
+                    padding: "12px 10px",
+                    borderTop: `1px solid ${COLORS.border}`,
+                    boxSizing: "border-box",
+                    flexShrink: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                }}>
+                    <button
+                        type="button"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            width: "100%",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: COLORS.textMuted,
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            boxSizing: "border-box",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = COLORS.hoverBg;
+                            e.currentTarget.style.color = COLORS.textMain;
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.style.color = COLORS.textMuted;
+                        }}
+                    >
+                        <CircleHelp size={16} strokeWidth={1.9} />
+                        <span>Bantuan / Support</span>
+                    </button>
 
-                        width: "24px",
-
-                        height: "24px",
-
-                        borderRadius:
-                            "50%",
-
-                        border:
-                            "1px solid #d1d5db",
-
-                        backgroundColor:
-                            "#ffffff",
-
-                        color:
-                            "#004d32",
-
-                        display:
-                            "flex",
-
-                        alignItems:
-                            "center",
-
-                        justifyContent:
-                            "center",
-
-                        cursor:
-                            "pointer",
-
-                        zIndex: 2000,
-
-                        boxShadow:
-                            "0 1px 4px rgba(0,0,0,0.15)",
-
-                        padding: 0,
-
-                        lineHeight: 1,
-                    }}
-                >
-                    {collapsed ? (
-                        <ChevronRight
-                            size={15}
-                            strokeWidth={2.5}
-                        />
-                    ) : (
-                        <ChevronLeft
-                            size={15}
-                            strokeWidth={2.5}
-                        />
-                    )}
-                </button>
-            </aside>
-        </>
+                    <button
+                        type="button"
+                        onClick={handleLogout}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            width: "100%",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: "#ef4444",
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            boxSizing: "border-box",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.12)";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                        }}
+                    >
+                        <LogOut size={16} strokeWidth={1.9} />
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
     );
 }
 

@@ -32,7 +32,7 @@ class AuthController extends Controller
             if ($user->role === 'admin') {
                 return redirect()->route('admin.dashboard');
             }
-            return redirect()->route('user.input-data');
+            return redirect()->route('csms.dashboard');
         }
 
         return Inertia::render('Auth/Register');

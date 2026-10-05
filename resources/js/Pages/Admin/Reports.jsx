@@ -2505,7 +2505,7 @@ export default function Reports() {
                         <h1
                             style={{
                                 margin: 0,
-                                color: "#064E3B",
+                                color: "#0a192f",
                                 fontSize: "28px",
                             }}
                         >
@@ -2527,8 +2527,8 @@ export default function Reports() {
                         onClick={handleExportExcel}
                         disabled={exporting || filteredReports.length === 0}
                         style={{
-                            backgroundColor: "#EFFF00",
-                            color: "#064E3B",
+                            backgroundColor: "#38bdf8",
+                            color: "#0a192f",
                             border: "none",
                             borderRadius: "6px",
                             padding: "12px 18px",
@@ -2555,7 +2555,7 @@ export default function Reports() {
                     <h2
                         style={{
                             margin: "0 0 18px",
-                            color: "#064E3B",
+                            color: "#0a192f",
                             fontSize: "20px",
                         }}
                     >
@@ -2704,8 +2704,8 @@ export default function Reports() {
                             onClick={handleReset}
                             style={{
                                 backgroundColor: "white",
-                                color: "#064E3B",
-                                border: "1px solid #064E3B",
+                                color: "#0a192f",
+                                border: "1px solid #0a192f",
                                 borderRadius: "6px",
                                 padding: "11px 18px",
                                 fontSize: "14px",
@@ -2718,7 +2718,7 @@ export default function Reports() {
                         <button
                             onClick={() => setPreview(true)}
                             style={{
-                                backgroundColor: "#064E3B",
+                                backgroundColor: "#0a192f",
                                 color: "white",
                                 border: "none",
                                 borderRadius: "6px",
@@ -2787,7 +2787,7 @@ export default function Reports() {
                                 <h2
                                     style={{
                                         margin: 0,
-                                        color: "#064E3B",
+                                        color: "#0a192f",
                                         fontSize: "20px",
                                     }}
                                 >
@@ -2814,8 +2814,8 @@ export default function Reports() {
                                 onClick={handleExportExcel}
                                 disabled={exporting}
                                 style={{
-                                    backgroundColor: "#EFFF00",
-                                    color: "#064E3B",
+                                    backgroundColor: "#38bdf8",
+                                    color: "#0a192f",
                                     border: "none",
                                     borderRadius: "6px",
                                     padding: "10px 16px",
@@ -3413,7 +3413,7 @@ export default function Reports() {
                         >
                             <div
                                 style={{
-                                    backgroundColor: "#064E3B",
+                                    backgroundColor: "#0a192f",
                                     color: "white",
                                     padding: "9px",
                                     fontWeight: "700",

@@ -38,8 +38,8 @@ export default function ResetPassword({ token, email: initialEmail = "" }) {
                     minHeight: "100vh",
                     backgroundColor: "#00281b",
                     backgroundImage: `
-                        radial-gradient(circle at 15% 20%, rgba(239, 255, 0, 0.08) 0%, transparent 40%),
-                        radial-gradient(circle at 85% 80%, rgba(0, 77, 50, 0.6) 0%, transparent 50%),
+                        radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%),
+                        radial-gradient(circle, rgba(10,25,47,0.8) 0%, transparent 70%),
                         linear-gradient(135deg, #001f15 0%, #003824 50%, #002417 100%)
                     `,
                     fontFamily:
@@ -63,7 +63,7 @@ export default function ResetPassword({ token, email: initialEmail = "" }) {
                         height: "450px",
                         borderRadius: "50%",
                         background:
-                            "radial-gradient(circle, rgba(239, 255, 0, 0.12) 0%, transparent 70%)",
+                            "radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%)",
                         pointerEvents: "none",
                     }}
                 />
@@ -88,9 +88,9 @@ export default function ResetPassword({ token, email: initialEmail = "" }) {
                                 padding: "16px 24px",
                                 borderRadius: "20px",
                                 backgroundColor: "#ffffff",
-                                border: "2.5px solid #efff00",
+                                border: "2.5px solid #38bdf8",
                                 boxShadow:
-                                    "0 10px 30px rgba(0, 0, 0, 0.3), 0 0 24px rgba(239, 255, 0, 0.25)",
+                                    "0 10px 30px rgba(0, 0, 0, 0.3), 0 0 24px rgba(56,189,248,0.25)",
                                 marginBottom: "16px",
                                 boxSizing: "border-box",
                             }}
@@ -120,7 +120,7 @@ export default function ResetPassword({ token, email: initialEmail = "" }) {
                         >
                             Buat Kata Sandi Baru
                         </h1>
-                        <p style={{ margin: 0, color: "#d1fae5", fontSize: "13px" }}>
+                        <p style={{ margin: 0, color: "#dbeafe", fontSize: "13px" }}>
                             PT Besmindo Materi Sewatama - HSE Portal
                         </p>
                     </div>
@@ -132,7 +132,7 @@ export default function ResetPassword({ token, email: initialEmail = "" }) {
                             borderRadius: "20px",
                             padding: "32px 28px",
                             boxShadow: "0 20px 50px rgba(0, 0, 0, 0.35)",
-                            border: "1px solid rgba(239, 255, 0, 0.4)",
+                            border: "1px solid rgba(56,189,248,0.4)",
                             position: "relative",
                             overflow: "hidden",
                         }}
@@ -146,7 +146,7 @@ export default function ResetPassword({ token, email: initialEmail = "" }) {
                                 right: 0,
                                 height: "4px",
                                 background:
-                                    "linear-gradient(90deg, #004d32 0%, #efff00 50%, #004d32 100%)",
+                                    "linear-gradient(90deg, #0a192f 0%, #38bdf8 50%, #0a192f 100%)",
                             }}
                         />
 
@@ -394,9 +394,9 @@ export default function ResetPassword({ token, email: initialEmail = "" }) {
                                     width: "100%",
                                     height: "44px",
                                     borderRadius: "10px",
-                                    backgroundColor: "#004d32",
-                                    color: "#efff00",
-                                    border: "1px solid #efff00",
+                                    backgroundColor: "#0a192f",
+                                    color: "#38bdf8",
+                                    border: "1px solid #38bdf8",
                                     fontWeight: "900",
                                     fontSize: "14px",
                                     cursor: processing
@@ -407,7 +407,7 @@ export default function ResetPassword({ token, email: initialEmail = "" }) {
                                     justifyContent: "center",
                                     gap: "8px",
                                     boxShadow:
-                                        "0 0 14px rgba(239, 255, 0, 0.3)",
+                                        "0 0 14px rgba(56,189,248,0.3)",
                                     opacity: processing ? 0.7 : 1,
                                     transition: "all 0.2s ease",
                                 }}

@@ -481,17 +481,17 @@ export default function InputData() {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: "10px",
-                                backgroundColor: "#ecfdf5",
-                                border: "1px solid #a7f3d0",
+                                backgroundColor: "#e0f2fe",
+                                border: "1px solid #7dd3fc",
                                 borderRadius: "8px",
                                 padding: "6px 14px",
                                 fontSize: "12.5px",
-                                color: "#065f46",
+                                color: "#1e3a8a",
                             }}
                         >
                             <span style={{ fontWeight: "700" }}>Diinput oleh (Admin):</span>
-                            <span style={{ fontWeight: "800", color: "#004d32" }}>{currentUser?.name || "HSE Administrator"}</span>
-                            <span style={{ color: "#047857" }}>({currentUser?.email || "admin@besmindo.com"})</span>
+                            <span style={{ fontWeight: "800", color: "#0a192f" }}>{currentUser?.name || "HSE Administrator"}</span>
+                            <span style={{ color: "#0284c7" }}>({currentUser?.email || "admin@besmindo.com"})</span>
                         </div>
                     </div>
 
@@ -789,10 +789,10 @@ export default function InputData() {
                                 style={{
                                     padding: "11px 22px",
                                     backgroundColor: "#ffffff",
-                                    border: "1px solid #004d32",
+                                    border: "1px solid #0a192f",
                                     borderRadius: "8px",
                                     cursor: "pointer",
-                                    color: "#004d32",
+                                    color: "#0a192f",
                                     fontWeight: "700",
                                     fontSize: "13px",
                                 }}
@@ -804,14 +804,14 @@ export default function InputData() {
                                 type="submit"
                                 style={{
                                     padding: "11px 25px",
-                                    backgroundColor: "#004d32",
-                                    color: "#efff00",
-                                    border: "1px solid #efff00",
+                                    backgroundColor: "#0a192f",
+                                    color: "#38bdf8",
+                                    border: "1px solid #38bdf8",
                                     borderRadius: "8px",
                                     cursor: "pointer",
                                     fontWeight: "800",
                                     fontSize: "13px",
-                                    boxShadow: "0 0 10px rgba(239, 255, 0, 0.25)",
+                                    boxShadow: "0 0 10px rgba(56,189,248,0.25)",
                                 }}
                             >
                                 Save HSE Data
@@ -844,7 +844,7 @@ function IndicatorRow({ indicator, index, type, value, onChange }) {
                 style={{
                     ...tableCellStyle,
                     fontWeight: "700",
-                    color: "#004d32",
+                    color: "#0a192f",
                 }}
             >
                 {index + 1}
@@ -873,7 +873,7 @@ function IndicatorRow({ indicator, index, type, value, onChange }) {
                                 flex: 1,
                                 height: "34px",
                                 boxSizing: "border-box",
-                                border: "1.5px solid #004d32",
+                                border: "1.5px solid #0a192f",
                                 borderRadius: "6px",
                                 padding: "0 10px",
                                 outline: "none",
@@ -890,8 +890,8 @@ function IndicatorRow({ indicator, index, type, value, onChange }) {
                             style={{
                                 padding: "4px 12px",
                                 height: "34px",
-                                backgroundColor: "#004d32",
-                                color: "#efff00",
+                                backgroundColor: "#0a192f",
+                                color: "#38bdf8",
                                 border: "none",
                                 borderRadius: "6px",
                                 cursor: "pointer",
@@ -933,7 +933,7 @@ function IndicatorRow({ indicator, index, type, value, onChange }) {
                 ) : (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                            <span style={{ fontSize: "13px", fontWeight: isEdited ? "700" : "500", color: isEdited ? "#004d32" : "#1e293b" }}>
+                            <span style={{ fontSize: "13px", fontWeight: isEdited ? "700" : "500", color: isEdited ? "#0a192f" : "#1e293b" }}>
                                 {customName}
                             </span>
                             {isEdited && (
@@ -1022,9 +1022,9 @@ function IndicatorSection({ title, type, indicators, values, onChange }) {
                     <thead>
                         <tr
                             style={{
-                                backgroundColor: "#004d32",
+                                backgroundColor: "#0a192f",
                                 color: "#ffffff",
-                                borderBottom: "2px solid #efff00",
+                                borderBottom: "2px solid #38bdf8",
                             }}
                         >
                             <th style={{ ...tableHeaderStyle, width: "50px" }}>No</th>
@@ -1101,10 +1101,10 @@ function Step({ number, title, active }) {
                     width: "30px",
                     height: "30px",
                     borderRadius: "50%",
-                    backgroundColor: active ? "#004d32" : "#e2e8f0",
-                    color: active ? "#efff00" : "#64748b",
-                    border: active ? "1px solid #efff00" : "1px solid transparent",
-                    boxShadow: active ? "0 0 8px rgba(239, 255, 0, 0.3)" : "none",
+                    backgroundColor: active ? "#0a192f" : "#e2e8f0",
+                    color: active ? "#38bdf8" : "#64748b",
+                    border: active ? "1px solid #38bdf8" : "1px solid transparent",
+                    boxShadow: active ? "0 0 8px rgba(56,189,248,0.3)" : "none",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1120,7 +1120,7 @@ function Step({ number, title, active }) {
                     style={{
                         fontSize: "12px",
                         fontWeight: "800",
-                        color: active ? "#004d32" : "#64748b",
+                        color: active ? "#0a192f" : "#64748b",
                         textTransform: "uppercase",
                         letterSpacing: "0.04em",
                     }}
@@ -1143,7 +1143,7 @@ function Section({ title, children }) {
                 backgroundColor: "#ffffff",
                 border: "1px solid #e2e8f0",
                 borderRadius: "14px",
-                boxShadow: "0 4px 18px rgba(0, 77, 50, 0.06)",
+                boxShadow: "0 4px 18px rgba(14,165,233,0.06)",
                 padding: "24px",
                 marginBottom: "20px",
                 boxSizing: "border-box",
@@ -1158,7 +1158,7 @@ function Section({ title, children }) {
                     left: 0,
                     right: 0,
                     height: "3px",
-                    background: "linear-gradient(90deg, #004d32 0%, #efff00 100%)",
+                    background: "linear-gradient(90deg, #1e3a8a 0%, #38bdf8 100%)",
                 }}
             />
 
@@ -1169,7 +1169,7 @@ function Section({ title, children }) {
                     borderBottom: "1px solid #f1f5f9",
                     fontSize: "16px",
                     fontWeight: "800",
-                    color: "#004d32",
+                    color: "#0a192f",
                 }}
             >
                 {title}

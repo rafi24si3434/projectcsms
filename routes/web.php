@@ -36,6 +36,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 */
 Route::middleware(['role:user,admin'])->group(function () {
     Route::get('/csms', [CsmsController::class, 'index'])->name('csms.dashboard');
+    Route::get('/user/input-data', [CsmsController::class, 'index'])->name('user.input-data');
     Route::get('/csms/rig/{id}', [CsmsController::class, 'showRig'])->name('csms.rig-detail');
     Route::post('/csms/upload', [CsmsController::class, 'uploadRecord'])->name('csms.upload');
     Route::delete('/csms/record/{id}', [CsmsController::class, 'deleteRecord'])->name('csms.delete');

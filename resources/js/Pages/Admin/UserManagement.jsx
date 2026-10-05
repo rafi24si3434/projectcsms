@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import AdminSidebar from "../../Components/AdminSidebar";
+import { Head } from "@inertiajs/react";
+import AdminLayout from "../../Layouts/AdminLayout";
 
 export default function UserManagement({ users: initialUsers = [] }) {
     // ==========================================
@@ -259,112 +260,49 @@ export default function UserManagement({ users: initialUsers = [] }) {
     };
 
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                backgroundColor: "#f4f7fb",
-                fontFamily: "Arial, sans-serif",
-                color: "#102033",
-            }}
-        >
-            {/* =====================================
-                SIDEBAR
-            ===================================== */}
+        <AdminLayout>
+            <Head title="User Management - CSMS Besmindo" />
 
-            <AdminSidebar />
-
-            {/* =====================================
-                MAIN CONTENT
-            ===================================== */}
-
-            <main
+            {/* =================================
+                CONTENT WRAPPER
+            ================================= */}
+            <div
                 style={{
-                    marginLeft: "var(--admin-sidebar-width, 215px)",
-                    width: "calc(100% - var(--admin-sidebar-width, 215px))",
-                    transition: "margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                     minHeight: "100vh",
-                }}
-            >
+                    padding: "18px",
+                    fontFamily: "Arial, sans-serif",
+                }}>
+
                 {/* =================================
                     HEADER
                 ================================= */}
 
-                <header
+                <div
                     style={{
-                        height: "62px",
-                        backgroundColor: "#ffffff",
-                        borderBottom:
-                            "1px solid #d9e1e8",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent:
-                            "space-between",
-                        padding: "0 18px",
-                        boxSizing: "border-box",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                        padding: "12px 0",
+                        borderBottom: "1px solid rgba(30,41,59,0.1)",
                     }}
                 >
                     <div
                         style={{
                             fontSize: "24px",
                             fontWeight: "700",
-                            color: "#00583b",
+                            color: "#0284c7",
                         }}
                     >
                         User Administration
                     </div>
-
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "18px",
-                        }}
-                    >
-                        <button
-                            onClick={() =>
-                                showMessage(
-                                    "Tidak ada notifikasi baru."
-                                )
-                            }
-                            style={iconButton}
-                        >
-                            ♧
-                        </button>
-
-                        <button
-                            onClick={() =>
-                                showMessage(
-                                    "Halaman User Management."
-                                )
-                            }
-                            style={iconButton}
-                        >
-                            ?
-                        </button>
-
-                        <button
-                            onClick={() =>
-                                showMessage(
-                                    "Login sebagai Rig HSE Admin."
-                                )
-                            }
-                            style={iconButton}
-                        >
-                            ◎
-                        </button>
-                    </div>
-                </header>
+                </div>
 
                 {/* =================================
                     CONTENT
                 ================================= */}
 
-                <div
-                    style={{
-                        padding: "18px",
-                    }}
-                >
-                    {/* TITLE + ACTION */}
+                {/* TITLE + ACTION */}
 
                     <div
                         style={{
@@ -585,9 +523,9 @@ export default function UserManagement({ users: initialUsers = [] }) {
                                                                 borderRadius:
                                                                     "50%",
                                                                 backgroundColor:
-                                                                    "#dcefe7",
+                                                                    "#dbeafe",
                                                                 color:
-                                                                    "#00583b",
+                                                                    "#0284c7",
                                                                 display:
                                                                     "flex",
                                                                 alignItems:
@@ -631,9 +569,9 @@ export default function UserManagement({ users: initialUsers = [] }) {
                                                     <span
                                                         style={{
                                                             ...roleBadge,
-                                                            backgroundColor: user.role === "admin" ? "#e0e7ff" : "#ecfdf5",
-                                                            color: user.role === "admin" ? "#4338ca" : "#047857",
-                                                            border: user.role === "admin" ? "1px solid #c7d2fe" : "1px solid #a7f3d0",
+                                                            backgroundColor: user.role === "admin" ? "#e0e7ff" : "#e0f2fe",
+                                                            color: user.role === "admin" ? "#4338ca" : "#0284c7",
+                                                            border: user.role === "admin" ? "1px solid #c7d2fe" : "1px solid #7dd3fc",
                                                             padding: "3px 8px",
                                                             borderRadius: "6px",
                                                             fontSize: "11.5px",
@@ -666,7 +604,7 @@ export default function UserManagement({ users: initialUsers = [] }) {
                                                                 borderRadius: "50%",
                                                                 backgroundColor:
                                                                     (user.status || "active").toLowerCase() === "active"
-                                                                        ? "#10b981"
+                                                                        ? "#38bdf8"
                                                                         : "#ef4444",
                                                             }}
                                                         />
@@ -674,7 +612,7 @@ export default function UserManagement({ users: initialUsers = [] }) {
                                                             style={{
                                                                 color:
                                                                     (user.status || "active").toLowerCase() === "active"
-                                                                        ? "#047857"
+                                                                        ? "#0284c7"
                                                                         : "#b91c1c",
                                                                 fontSize: "13px",
                                                                 fontWeight: "700",
@@ -813,7 +751,7 @@ export default function UserManagement({ users: initialUsers = [] }) {
                                     style={{
                                         ...paginationButton,
                                         backgroundColor:
-                                            "#00583b",
+                                            "#0284c7",
                                         color:
                                             "#ffffff",
                                     }}
@@ -833,7 +771,6 @@ export default function UserManagement({ users: initialUsers = [] }) {
                         </div>
                     </section>
                 </div>
-            </main>
 
             {/* =====================================
                 ADD / EDIT MODAL
@@ -1051,7 +988,7 @@ export default function UserManagement({ users: initialUsers = [] }) {
                         right: "25px",
                         bottom: "25px",
                         backgroundColor:
-                            "#00583b",
+                            "#0284c7",
                         color: "#ffffff",
                         padding:
                             "11px 17px",
@@ -1066,7 +1003,7 @@ export default function UserManagement({ users: initialUsers = [] }) {
                     ✓ {message}
                 </div>
             )}
-        </div>
+        </AdminLayout>
     );
 }
 
@@ -1077,10 +1014,10 @@ export default function UserManagement({ users: initialUsers = [] }) {
 const iconButton = {
     width: "36px",
     height: "36px",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     backgroundColor: "#ffffff",
-    color: "#004d32",
+    color: "#0a192f",
     fontSize: "16px",
     cursor: "pointer",
     display: "flex",
@@ -1090,22 +1027,22 @@ const iconButton = {
 };
 
 const primaryButton = {
-    border: "1px solid #efff00",
-    background: "#004d32",
-    color: "#efff00",
+    border: "1px solid #38bdf8",
+    background: "#0a192f",
+    color: "#38bdf8",
     padding: "0 18px",
     height: "38px",
     borderRadius: "8px",
     fontSize: "13px",
     fontWeight: "800",
     cursor: "pointer",
-    boxShadow: "0 0 10px rgba(239, 255, 0, 0.25)",
+    boxShadow: "0 0 10px rgba(56,189,248,0.25)",
 };
 
 const secondaryButton = {
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     backgroundColor: "#ffffff",
-    color: "#004d32",
+    color: "#0a192f",
     padding: "0 18px",
     height: "38px",
     borderRadius: "8px",
@@ -1119,11 +1056,11 @@ const tableHeader = {
     textAlign: "left",
     fontSize: "11.5px",
     color: "#ffffff",
-    backgroundColor: "#004d32",
+    backgroundColor: "#0a192f",
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-    borderBottom: "2px solid #efff00",
+    borderBottom: "2px solid #38bdf8",
 };
 
 const tableCell = {
@@ -1135,20 +1072,20 @@ const tableCell = {
 
 const roleBadge = {
     display: "inline-block",
-    backgroundColor: "#004d32",
-    border: "1px solid #efff00",
-    color: "#efff00",
+    backgroundColor: "#0a192f",
+    border: "1px solid #38bdf8",
+    color: "#38bdf8",
     borderRadius: "6px",
     padding: "3px 8px",
     fontSize: "11px",
     fontWeight: "800",
-    boxShadow: "0 0 6px rgba(239, 255, 0, 0.2)",
+    boxShadow: "0 0 6px rgba(56,189,248,0.2)",
 };
 
 const actionButton = {
-    border: "1px solid #004d32",
-    background: "#004d32",
-    color: "#efff00",
+    border: "1px solid #0a192f",
+    background: "#0a192f",
+    color: "#38bdf8",
     fontSize: "11px",
     borderRadius: "6px",
     cursor: "pointer",
@@ -1158,9 +1095,9 @@ const actionButton = {
 };
 
 const paginationButton = {
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     backgroundColor: "#ffffff",
-    color: "#004d32",
+    color: "#0a192f",
     borderRadius: "8px",
     padding: "6px 12px",
     fontSize: "12px",
@@ -1172,7 +1109,7 @@ const modalLabel = {
     display: "block",
     fontSize: "11px",
     fontWeight: "800",
-    color: "#004d32",
+    color: "#0a192f",
     marginBottom: "5px",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
@@ -1182,7 +1119,7 @@ const modalInput = {
     width: "100%",
     height: "38px",
     boxSizing: "border-box",
-    border: "1px solid #004d32",
+    border: "1px solid #0a192f",
     borderRadius: "8px",
     padding: "0 10px",
     marginBottom: "14px",
