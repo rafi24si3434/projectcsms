@@ -1,33 +1,113 @@
-import React, { useState } from "react";
-import { Head, Link, router, useForm } from "@inertiajs/react";
+import React, { useState, useEffect, useRef } from "react";
+import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
+import FileDropzone from "@/Components/FileDropzone";
+import AttachmentsModal from "@/Components/AttachmentsModal";
+import DocumentViewerModal from "@/Components/DocumentViewerModal";
 import {
     ArrowLeft,
-    Calendar,
     Upload,
-    FileText,
     CheckCircle2,
-    Clock,
-    AlertCircle,
     Eye,
     Trash2,
-    HardDrive,
     X,
+    FileText,
+    HardDrive,
     Shield,
+    RotateCcw,
+    Clock,
+    AlertCircle,
+    Calendar,
     Download,
-    ChevronDown,
+    Loader2,
+    FileUp,
+    Sparkles,
 } from "lucide-react";
 
-export default function CsmsRigDetail({ rig, categories, records, matrix, filter, allRigs }) {
-    const [selectedMonth, setSelectedMonth] = useState(filter?.bulan || "Januari");
-    const [selectedYear, setSelectedYear] = useState(filter?.tahun || 2025);
-    const [uploadTarget, setUploadTarget] = useState(null); // { catId, catNo, catName, crew }
+export default function RigDetail({ rig, categories = [], records = [], matrix = {}, filter = {}, allRigs = [], isRestricted = false }) {
+    const { auth } = usePage().props;
+    const isAdmin = !isRestricted && (auth?.user?.role === "admin" || !auth?.user?.csms_rig_id);
+
+    const [selectedMonth, setSelectedMonth] = useState(filter.bulan || "Januari");
+    const [selectedYear, setSelectedYear] = useState(filter.tahun || 2025);
+    const [uploadTarget, setUploadTarget] = useState(null); // { catId, catNo, catName, crew, currentRecord }
+    const [uploadingKey, setUploadingKey] = useState(null); // `${category.id}-${crew}`
+    const [isGlobalDragging, setIsGlobalDragging] = useState(false);
+    const [viewAttachmentsRecord, setViewAttachmentsRecord] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadStepMessage, setUploadStepMessage] = useState("");
+    const globalDragCounter = useRef(0);
+
+    // Modal Inspeksi & Pratinjau Berkas In-App (DocumentViewerModal) dengan Tombol ACC
+    const [viewerState, setViewerState] = useState({
+        isOpen: false,
+        record: null,
+        category: null,
+        crew: null,
+        initialIndex: 0,
+    });
+
+    // Sinkronisasi record yang sedang dibuka di DocumentViewerModal saat Inertia me-reload data
+    useEffect(() => {
+        if (viewerState.isOpen && viewerState.record) {
+            const updated = records.find((r) => r.id === viewerState.record.id);
+            if (updated) {
+                setViewerState((prev) => ({ ...prev, record: updated }));
+            }
+        }
+    }, [records]);
+
+    // Mencegah browser membuka file di tab baru secara global pada seluruh halaman
+    useEffect(() => {
+        const handleGlobalDragOver = (e) => {
+            e.preventDefault();
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = "copy";
+            }
+        };
+
+        const handleGlobalDragEnter = (e) => {
+            e.preventDefault();
+            globalDragCounter.current += 1;
+            if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+                setIsGlobalDragging(true);
+            }
+        };
+
+        const handleGlobalDragLeave = (e) => {
+            e.preventDefault();
+            globalDragCounter.current -= 1;
+            if (globalDragCounter.current <= 0) {
+                globalDragCounter.current = 0;
+                setIsGlobalDragging(false);
+            }
+        };
+
+        const handleGlobalDrop = (e) => {
+            e.preventDefault();
+            globalDragCounter.current = 0;
+            setIsGlobalDragging(false);
+        };
+
+        window.addEventListener("dragover", handleGlobalDragOver, false);
+        window.addEventListener("dragenter", handleGlobalDragEnter, false);
+        window.addEventListener("dragleave", handleGlobalDragLeave, false);
+        window.addEventListener("drop", handleGlobalDrop, false);
+
+        return () => {
+            window.removeEventListener("dragover", handleGlobalDragOver, false);
+            window.removeEventListener("dragenter", handleGlobalDragEnter, false);
+            window.removeEventListener("dragleave", handleGlobalDragLeave, false);
+            window.removeEventListener("drop", handleGlobalDrop, false);
+        };
+    }, []);
 
     const months = [
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
-    const years = [2024, 2025, 2026];
+    const years = [2024, 2025, 2026, 2027];
 
     const { data, setData, post, processing, reset, errors } = useForm({
         csms_rig_id: rig?.id || "",
@@ -37,7 +117,7 @@ export default function CsmsRigDetail({ rig, categories, records, matrix, filter
         crew: "Crew A",
         status: "Lengkap",
         keterangan: "",
-        file: null,
+        files: [],
     });
 
     const handleFilterChange = (month, year) => {
@@ -51,19 +131,16 @@ export default function CsmsRigDetail({ rig, categories, records, matrix, filter
     };
 
     const handleRigSwitch = (newRigId) => {
-        router.get(
-            `/csms/rig/${newRigId}`,
-            { bulan: selectedMonth, tahun: selectedYear }
-        );
+        router.get(`/csms/rig/${newRigId}?bulan=${selectedMonth}&tahun=${selectedYear}`);
     };
 
-    const openUploadModal = (category, crew) => {
-        const existingRecord = matrix?.[category.id]?.[crew];
+    const openUploadModal = (category, crew, existingRecord = null) => {
         setUploadTarget({
             catId: category.id,
             catNo: category.no,
             catName: category.nama_dokumen,
             crew: crew,
+            currentRecord: existingRecord,
         });
 
         setData({
@@ -72,187 +149,432 @@ export default function CsmsRigDetail({ rig, categories, records, matrix, filter
             periode_bulan: selectedMonth,
             periode_tahun: selectedYear,
             crew: crew,
-            status: existingRecord?.status || "Lengkap",
-            keterangan: existingRecord?.keterangan || category.keterangan_default || "",
-            file: null,
+            status: "Lengkap",
+            keterangan: existingRecord?.keterangan || "",
+            files: [],
         });
     };
 
     const handleUploadSubmit = (e) => {
         e.preventDefault();
-        post('/csms/upload', {
+        const hasExisting = Boolean(
+            uploadTarget?.currentRecord?.file_path || 
+            (uploadTarget?.currentRecord?.attachments && uploadTarget.currentRecord.attachments.length > 0)
+        );
+        const hasNewFiles = data.files && data.files.length > 0;
+
+        if (!hasExisting && !hasNewFiles) {
+            alert("Harap pilih atau tarik berkas dokumen yang akan diunggah terlebih dahulu (Maks. 500 KB per berkas: PDF, JPG, JPEG, Word).");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("csms_rig_id", rig.id);
+        formData.append("csms_document_category_id", uploadTarget.catId);
+        formData.append("periode_bulan", selectedMonth);
+        formData.append("periode_tahun", selectedYear);
+        formData.append("crew", uploadTarget.crew);
+        formData.append("status", "Lengkap");
+        formData.append("keterangan", data.keterangan || "");
+
+        if (hasNewFiles) {
+            data.files.forEach((file) => {
+                formData.append("files[]", file);
+            });
+        }
+
+        setIsUploading(true);
+        setUploadProgress(15);
+        setUploadStepMessage("Mengompresi & mempersiapkan paket dokumen...");
+
+        let currentProg = 15;
+        const progressTimer = setInterval(() => {
+            currentProg += Math.floor(Math.random() * 12) + 6;
+            if (currentProg >= 94) {
+                currentProg = 94;
+                setUploadStepMessage("Menyimpan rekaman & memverifikasi integritas CSMS...");
+            } else if (currentProg > 65) {
+                setUploadStepMessage("Mentransfer paket berkas ke peladen K3...");
+            } else if (currentProg > 35) {
+                setUploadStepMessage("Memeriksa format & integritas berkas...");
+            }
+            setUploadProgress(currentProg);
+        }, 120);
+
+        router.post("/csms/upload", formData, {
+            preserveScroll: true,
+            onProgress: (progress) => {
+                if (progress && progress.percentage) {
+                    setUploadProgress((prev) => Math.max(prev, Math.min(progress.percentage, 95)));
+                }
+            },
             onSuccess: () => {
-                setUploadTarget(null);
-                reset();
+                clearInterval(progressTimer);
+                setUploadProgress(100);
+                setUploadStepMessage("Dokumen berhasil diunggah secara sempurna!");
+                setTimeout(() => {
+                    setIsUploading(false);
+                    setUploadProgress(0);
+                    setUploadStepMessage("");
+                    setUploadTarget(null);
+                    reset();
+                }, 400);
+            },
+            onError: () => {
+                clearInterval(progressTimer);
+                setIsUploading(false);
+                setUploadProgress(0);
+                setUploadStepMessage("");
+            },
+            onFinish: () => {
+                clearInterval(progressTimer);
             },
         });
     };
 
+    // Handler setelah Drag & Drop pada Baris Tabel:
+    // Menampilkan detail berkas yang di-drop ke dalam modal, sehingga user dapat memeriksa detailnya sebelum menekan tombol "Upload"
+    const handleDropToReview = (category, crew, droppedFilesList, existingRecord = null) => {
+        if (!droppedFilesList) return;
+        const droppedFiles = droppedFilesList instanceof FileList || Array.isArray(droppedFilesList)
+            ? Array.from(droppedFilesList)
+            : [droppedFilesList];
+
+        if (droppedFiles.length === 0) return;
+
+        // Validasi ukuran berkas (Maks 500 KB per berkas) & format ekstensi
+        const maxSizeBytes = 500 * 1024;
+        const allowed = ["pdf", "jpg", "jpeg", "png", "doc", "docx"];
+
+        const validFiles = [];
+        for (const f of droppedFiles) {
+            const ext = f.name.split(".").pop().toLowerCase();
+            if (!allowed.includes(ext)) {
+                alert(`Format berkas "${f.name}" (.${ext}) tidak didukung. Harap gunakan berkas PDF, JPG, JPEG, atau Word (DOC/DOCX).`);
+                return;
+            }
+            if (f.size > maxSizeBytes) {
+                const sizeKB = Math.round(f.size / 1024);
+                alert(`Berkas "${f.name}" (${sizeKB} KB) melebihi batas maksimal 500 KB.`);
+                return;
+            }
+            validFiles.push(f);
+        }
+
+        // Buka modal upload dengan berkas yang baru saja di-drop agar pengguna dapat memeriksa detailnya sebelum menekan Upload
+        setUploadTarget({
+            catId: category.id,
+            catNo: category.no,
+            catName: category.nama_dokumen,
+            crew: crew,
+            currentRecord: existingRecord,
+            fromDrop: true,
+        });
+
+        setData({
+            csms_rig_id: rig.id,
+            csms_document_category_id: category.id,
+            periode_bulan: selectedMonth,
+            periode_tahun: selectedYear,
+            crew: crew,
+            status: "Lengkap",
+            keterangan: existingRecord?.keterangan || "",
+            files: validFiles,
+        });
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // HANDLER INSPEKSI & VERIFIKASI DOKUMEN (IN-APP VIEWER & ACC)
+    // ═══════════════════════════════════════════════════════════════
+    const openDocumentViewer = (record, category, crew, initialIndex = 0) => {
+        if (!record || !record.file_path) return;
+        setViewerState({
+            isOpen: true,
+            record,
+            category,
+            crew,
+            initialIndex,
+        });
+    };
+
+    // Handler ACC langsung dari dalam DocumentViewerModal
+    const handleApproveFromViewer = (recordId) => {
+        return new Promise((resolve, reject) => {
+            router.post(`/admin/csms/verify/${recordId}`, {
+                approval_status: "approved",
+                approval_notes: "Disetujui langsung (ACC Sah) dari pratinjau dokumen oleh Admin HSE.",
+            }, {
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    const updatedRec = page.props.records?.find((r) => r.id === recordId);
+                    if (updatedRec) {
+                        setViewerState((prev) => ({ ...prev, record: updatedRec }));
+                    }
+                    resolve();
+                },
+                onError: reject,
+            });
+        });
+    };
+
+    // Handler Revisi / Catatan dari dalam DocumentViewerModal
+    const handleReviseFromViewer = (recordId, status, notes) => {
+        return new Promise((resolve, reject) => {
+            router.post(`/admin/csms/verify/${recordId}`, {
+                approval_status: status,
+                approval_notes: notes,
+            }, {
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    const updatedRec = page.props.records?.find((r) => r.id === recordId);
+                    if (updatedRec) {
+                        setViewerState((prev) => ({ ...prev, record: updatedRec }));
+                    }
+                    resolve();
+                },
+                onError: reject,
+            });
+        });
+    };
+
     const handleDeleteRecord = (id) => {
-        if (confirm("Apakah Anda yakin ingin menghapus dokumen ini?")) {
+        if (confirm("Apakah Anda yakin ingin menghapus dokumen rekaman ini?")) {
             router.delete(`/csms/record/${id}`);
         }
     };
 
     return (
         <AdminLayout>
-            <Head title={`CSMS Record - ${rig?.name || 'RIG'}`} />
+            <Head title={`Matriks Dokumen CSMS - ${rig?.name || 'RIG'}`} />
 
-            <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans">
-                {/* Header Back & Title */}
+            {/* PITA GARIS KESELAMATAN K3 (SAFETY HAZARD RIBBON) */}
+            <div
+                className="w-full h-1.5 shrink-0"
+                style={{
+                    background:
+                        "repeating-linear-gradient(45deg, #f59e0b, #f59e0b 16px, #1e293b 16px, #1e293b 32px)",
+                }}
+            />
+
+            <div className="p-4 sm:p-6 max-w-[1560px] mx-auto space-y-6 font-sans bg-[#f8fafc] text-slate-800">
+                
+                {/* ═══════════════════════════════════════════════════════════════
+                    HEADER TOP BAR
+                ═══════════════════════════════════════════════════════════════ */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-3">
                         <Link
-                            href="/csms"
-                            className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-200 shadow-sm"
+                            href={isRestricted ? "/csms/input-rig" : "/csms"}
+                            className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-700 shadow-2xs cursor-pointer"
+                            title="Kembali"
                         >
-                            <ArrowLeft size={20} />
+                            <ArrowLeft size={18} />
                         </Link>
                         <div>
-                            <div className="flex items-center gap-2 text-xs font-bold text-sky-500 dark:text-sky-400 uppercase tracking-wider">
+                            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-wider">
                                 <Shield size={14} />
                                 <span>Penyimpanan Data Rekaman CSMS</span>
                             </div>
-                            <h1 className="text-2xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                            <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3 mt-0.5">
                                 <span>{rig?.name}</span>
-                                <span className="text-xs font-black bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800 px-2.5 py-1 rounded-md">
+                                <span className="text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-lg">
                                     {rig?.code}
                                 </span>
                             </h1>
                         </div>
                     </div>
 
-                    {/* Rig Switcher */}
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 hidden sm:inline">Pilih Rig:</span>
-                        <select
-                            value={rig?.id || ''}
-                            onChange={(e) => handleRigSwitch(e.target.value)}
-                            className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white font-bold rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none shadow-sm"
-                        >
-                            {(allRigs || []).map((r) => (
-                                <option key={r.id} value={r.id} className="dark:bg-slate-800 dark:text-white">{r.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                    {/* Rig Switcher & Periode */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        {!isRestricted ? (
+                            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+                                <HardDrive size={15} className="text-emerald-600 mr-2" />
+                                <span className="text-xs font-bold text-slate-500 mr-2">Pilih Rig:</span>
+                                <select
+                                    value={rig?.id || ''}
+                                    onChange={(e) => handleRigSwitch(e.target.value)}
+                                    className="border-none bg-transparent text-slate-800 font-bold text-xs sm:text-sm focus:ring-0 focus:outline-none cursor-pointer pr-6"
+                                >
+                                    {(allRigs || []).map((r) => (
+                                        <option key={r.id} value={r.id}>{r.name} ({r.code})</option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-800 shadow-2xs">
+                                <HardDrive size={15} className="text-emerald-600" />
+                                <span>Rig Ditugaskan: {rig?.name}</span>
+                            </div>
+                        )}
 
-                {/* Info Card & Period Filter */}
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-2xl space-y-4">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-                        <div className="space-y-1">
-                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">To: All Rig OPS BMS</p>
-                            <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100">
-                                Matriks Dokumen Rekaman HSE - {rig?.name}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 italic">
-                                Mohon bantuan untuk melengkapi 21 dokumen berikut sesuai durasi & crew.
-                            </p>
-                        </div>
-
-                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                            <Calendar size={18} className="text-sky-500 dark:text-sky-400" />
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Periode:</span>
+                        <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1.5 shadow-2xs">
+                            <Calendar size={15} className="text-emerald-600 ml-1.5 mr-1" />
                             <select
                                 value={selectedMonth}
                                 onChange={(e) => handleFilterChange(e.target.value, selectedYear)}
-                                className="border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-700 focus:outline-none"
+                                className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
                             >
                                 {months.map((m) => (
-                                    <option key={m} value={m} className="dark:bg-slate-700 dark:text-white">{m}</option>
+                                    <option key={m} value={m}>{m}</option>
                                 ))}
                             </select>
+                            <span className="text-slate-300">/</span>
                             <select
                                 value={selectedYear}
                                 onChange={(e) => handleFilterChange(selectedMonth, e.target.value)}
-                                className="border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-700 focus:outline-none"
+                                className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
                             >
                                 {years.map((y) => (
-                                    <option key={y} value={y} className="dark:bg-slate-700 dark:text-white">{y}</option>
+                                    <option key={y} value={y}>{y}</option>
                                 ))}
                             </select>
                         </div>
                     </div>
+                </div>
 
-                    {/* Table Matrix */}
-                    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                {/* ═══════════════════════════════════════════════════════════════
+                    MATRIKS TABLE CSMS - GABUNGKAN SLOT UPLOAD PER-RIG
+                ═══════════════════════════════════════════════════════════════ */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                    <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div>
+                            <p className="text-xs font-bold text-slate-400">To: All Rig OPS BMS</p>
+                            <h3 className="text-sm sm:text-base font-black text-slate-800">
+                                Matriks Dokumen Rekaman HSE - {rig?.name}
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                Kategori bertanda <em>1x/Bln/Rig</em> telah digabung tempat upload-nya untuk seluruh crew, sedangkan berkas <em>per-crew</em> tetap tersedia terpisah per Crew A, B, dan C.
+                            </p>
+                        </div>
+
+                        <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Periode: {selectedMonth} {selectedYear}
+                        </span>
+                    </div>
+
+                    <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs border-collapse">
                             <thead>
-                                <tr className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-sky-300 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200 dark:border-slate-800">
-                                    <th className="p-3 border-r border-slate-200 dark:border-slate-800 w-12 text-center">No</th>
-                                    <th className="p-3 border-r border-slate-200 dark:border-slate-800 min-w-[220px]">Dokumen Rekaman</th>
-                                    <th className="p-3 border-r border-slate-200 dark:border-slate-800 w-32">Durasi</th>
-                                    <th className="p-3 border-r border-slate-200 dark:border-slate-800 text-center w-36 bg-slate-50/50 dark:bg-slate-800/50">Crew A</th>
-                                    <th className="p-3 border-r border-slate-200 dark:border-slate-800 text-center w-36 bg-slate-50/50 dark:bg-slate-800/50">Crew B</th>
-                                    <th className="p-3 border-r border-slate-200 dark:border-slate-800 text-center w-36 bg-slate-50/50 dark:bg-slate-800/50">Crew C</th>
-                                    <th className="p-3 min-w-[180px]">Keterangan</th>
+                                <tr className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                                    <th className="p-3.5 border-r border-slate-200 w-12 text-center">No</th>
+                                    <th className="p-3.5 border-r border-slate-200 min-w-[220px]">Dokumen Rekaman</th>
+                                    <th className="p-3.5 border-r border-slate-200 w-28">Durasi</th>
+                                    <th className="p-3.5 border-r border-slate-200 text-center w-36 bg-slate-100/60">Crew A</th>
+                                    <th className="p-3.5 border-r border-slate-200 text-center w-36 bg-slate-100/60">Crew B</th>
+                                    <th className="p-3.5 border-r border-slate-200 text-center w-36 bg-slate-100/60">Crew C</th>
+                                    <th className="p-3.5 min-w-[180px]">Keterangan</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900">
-                                {(categories || []).map((cat, idx) => {
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                                {(categories || []).map((cat) => {
                                     const recordCrewA = matrix?.[cat.id]?.['Crew A'];
                                     const recordCrewB = matrix?.[cat.id]?.['Crew B'];
                                     const recordCrewC = matrix?.[cat.id]?.['Crew C'];
                                     const recordRig   = matrix?.[cat.id]?.['Rig'];
 
                                     const isCrewScope = cat.scope === 'crew';
+                                    const activeNotes = recordRig?.approval_notes || recordCrewA?.approval_notes || recordCrewB?.approval_notes || recordCrewC?.approval_notes;
 
                                     return (
-                                        <tr key={cat.id} className={idx % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/70 dark:bg-slate-800/40"}>
-                                            <td className="p-3 text-center font-bold border-r border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
+                                        <tr key={cat.id} className="hover:bg-slate-50/70 transition-colors">
+                                            {/* Nomor */}
+                                            <td className="p-3 text-center font-bold border-r border-slate-100 text-slate-500">
                                                 {cat.no}
                                             </td>
-                                            <td className="p-3 font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800">
-                                                {cat.nama_dokumen}
+
+                                            {/* Nama Dokumen */}
+                                            <td className="p-3 font-bold text-slate-800 border-r border-slate-100">
+                                                <div>{cat.nama_dokumen}</div>
+                                                <span className="text-[10px] font-semibold text-slate-400">
+                                                    {isCrewScope ? '3 Crew (A, B, C)' : '1 Unit Seluruh Rig'}
+                                                </span>
                                             </td>
-                                            <td className="p-3 border-r border-slate-200 dark:border-slate-800 font-medium text-slate-600 dark:text-slate-400 whitespace-pre-line">
+
+                                            {/* Durasi */}
+                                            <td className="p-3 border-r border-slate-100 font-medium text-slate-500 whitespace-pre-line text-[11px]">
                                                 {cat.durasi}
                                             </td>
 
-                                            {/* Crew A or Rig Upload Cell */}
-                                            <td className="p-2 border-r border-slate-200 dark:border-slate-800 text-center align-middle">
-                                                <UploadCell
-                                                    category={cat}
-                                                    crew={isCrewScope ? "Crew A" : "Rig"}
-                                                    record={isCrewScope ? recordCrewA : recordRig}
-                                                    onUpload={() => openUploadModal(cat, isCrewScope ? "Crew A" : "Rig")}
-                                                    onDelete={handleDeleteRecord}
-                                                />
-                                            </td>
+                                            {/* LOGIKA UPLOAD: JIKA CREW SCOPE, TAMPILKAN 3 KOLOM TERPISAH.
+                                                JIKA RIG SCOPE, GABUNGKAN (COLSPAN=3) MENJADI 1 TEMPAT UPLOAD TERPADU! */}
+                                            {isCrewScope ? (
+                                                <>
+                                                    {/* Crew A */}
+                                                    <td className="p-2 border-r border-slate-100 text-center align-middle">
+                                                        <UploadCell
+                                                            category={cat}
+                                                            crew="Crew A"
+                                                            record={recordCrewA}
+                                                            onUpload={() => openUploadModal(cat, "Crew A", recordCrewA)}
+                                                            onDelete={handleDeleteRecord}
+                                                            onDropFile={(files) => handleDropToReview(cat, "Crew A", files, recordCrewA)}
+                                                            onViewAttachments={() => setViewAttachmentsRecord(recordCrewA)}
+                                                            isUploading={uploadingKey === `${cat.id}-Crew A`}
+                                                            isGlobalDragging={isGlobalDragging}
+                                                            onPreview={(idx) => openDocumentViewer(recordCrewA, cat, "Crew A", idx)}
+                                                        />
+                                                    </td>
 
-                                            {/* Crew B Cell */}
-                                            <td className="p-2 border-r border-slate-200 dark:border-slate-800 text-center align-middle">
-                                                {isCrewScope ? (
-                                                    <UploadCell
+                                                    {/* Crew B */}
+                                                    <td className="p-2 border-r border-slate-100 text-center align-middle">
+                                                        <UploadCell
+                                                            category={cat}
+                                                            crew="Crew B"
+                                                            record={recordCrewB}
+                                                            onUpload={() => openUploadModal(cat, "Crew B", recordCrewB)}
+                                                            onDelete={handleDeleteRecord}
+                                                            onDropFile={(files) => handleDropToReview(cat, "Crew B", files, recordCrewB)}
+                                                            onViewAttachments={() => setViewAttachmentsRecord(recordCrewB)}
+                                                            isUploading={uploadingKey === `${cat.id}-Crew B`}
+                                                            isGlobalDragging={isGlobalDragging}
+                                                            onPreview={(idx) => openDocumentViewer(recordCrewB, cat, "Crew B", idx)}
+                                                        />
+                                                    </td>
+
+                                                    {/* Crew C */}
+                                                    <td className="p-2 border-r border-slate-100 text-center align-middle">
+                                                        <UploadCell
+                                                            category={cat}
+                                                            crew="Crew C"
+                                                            record={recordCrewC}
+                                                            onUpload={() => openUploadModal(cat, "Crew C", recordCrewC)}
+                                                            onDelete={handleDeleteRecord}
+                                                            onDropFile={(files) => handleDropToReview(cat, "Crew C", files, recordCrewC)}
+                                                            onViewAttachments={() => setViewAttachmentsRecord(recordCrewC)}
+                                                            isUploading={uploadingKey === `${cat.id}-Crew C`}
+                                                            isGlobalDragging={isGlobalDragging}
+                                                            onPreview={(idx) => openDocumentViewer(recordCrewC, cat, "Crew C", idx)}
+                                                        />
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                /* ═══════════════════════════════════════════════════════════════
+                                                   GABUNGAN (COLSPAN=3): TEMPAT UPLOAD SATUAN UNTUK CREW A, B, C
+                                                ═══════════════════════════════════════════════════════════════ */
+                                                <td colSpan={3} className="p-2 border-r border-slate-100 text-center align-middle">
+                                                    <UnifiedRigUploadCell
                                                         category={cat}
-                                                        crew="Crew B"
-                                                        record={recordCrewB}
-                                                        onUpload={() => openUploadModal(cat, "Crew B")}
+                                                        record={recordRig}
+                                                        onUpload={() => openUploadModal(cat, "Rig", recordRig)}
                                                         onDelete={handleDeleteRecord}
+                                                        onDropFile={(files) => handleDropToReview(cat, "Rig", files, recordRig)}
+                                                        onViewAttachments={() => setViewAttachmentsRecord(recordRig)}
+                                                        isUploading={uploadingKey === `${cat.id}-Rig`}
+                                                        isGlobalDragging={isGlobalDragging}
+                                                        onPreview={(idx) => openDocumentViewer(recordRig, cat, "Rig", idx)}
                                                     />
-                                                ) : (
-                                                    <span className="text-slate-300 dark:text-slate-600 italic text-[11px]">- (Per Rig) -</span>
-                                                )}
-                                            </td>
+                                                </td>
+                                            )}
 
-                                            {/* Crew C Cell */}
-                                            <td className="p-2 border-r border-slate-200 dark:border-slate-800 text-center align-middle">
-                                                {isCrewScope ? (
-                                                    <UploadCell
-                                                        category={cat}
-                                                        crew="Crew C"
-                                                        record={recordCrewC}
-                                                        onUpload={() => openUploadModal(cat, "Crew C")}
-                                                        onDelete={handleDeleteRecord}
-                                                    />
+                                            {/* Keterangan & Catatan Feedback */}
+                                            <td className="p-3 font-medium text-slate-500 text-[11px] leading-relaxed">
+                                                {activeNotes ? (
+                                                    <div className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 font-semibold">
+                                                        Catatan: {activeNotes}
+                                                    </div>
                                                 ) : (
-                                                    <span className="text-slate-300 dark:text-slate-600 italic text-[11px]">- (Per Rig) -</span>
+                                                    <span>{recordRig?.keterangan || recordCrewA?.keterangan || cat.keterangan_default || "-"}</span>
                                                 )}
-                                            </td>
-
-                                            {/* Keterangan Cell */}
-                                            <td className="p-3 font-medium text-slate-600 dark:text-slate-300 text-xs">
-                                                {recordRig?.keterangan || recordCrewA?.keterangan || cat.keterangan_default || "-"}
                                             </td>
                                         </tr>
                                     );
@@ -260,147 +582,643 @@ export default function CsmsRigDetail({ rig, categories, records, matrix, filter
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Footer Note */}
-                    <div className="bg-amber-50 dark:bg-slate-800/80 border border-amber-200 dark:border-slate-700/80 rounded-xl p-4 text-amber-900 dark:text-amber-200 text-xs space-y-1">
-                        <p className="font-bold">Catatan Penting CSMS:</p>
-                        <p>- Seluruh dokumen HSE agar dipersiapkan & diperbarui setiap bulan.</p>
-                        <p>- Jika ada yang kurang jelas silahkan menghubungi HSE Coordinator Masing - Masing / ISO (0852 6393 9902).</p>
-                    </div>
                 </div>
             </div>
 
-            {/* Upload Modal */}
+            {/* ═══════════════════════════════════════════════════════════════
+                MODAL UPLOAD DOKUMEN
+            ═══════════════════════════════════════════════════════════════ */}
             {uploadTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4 relative animate-in fade-in zoom-in duration-200">
-                        <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-                            <div>
-                                <span className="text-xs font-bold text-sky-400 uppercase">RIG BMS - {rig?.name}</span>
-                                <h3 className="text-base font-extrabold text-slate-800 dark:text-white">
-                                    Upload: {uploadTarget.catNo}. {uploadTarget.catName} ({uploadTarget.crew})
+                <div
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer) e.dataTransfer.dropEffect = "copy"; }}
+                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs"
+                >
+                    <div
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer) e.dataTransfer.dropEffect = "copy"; }}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+                                const newFiles = Array.from(e.dataTransfer.files);
+                                setData("files", [...(data.files || []), ...newFiles]);
+                            }
+                        }}
+                        className="bg-white border border-slate-200/90 rounded-3xl max-w-4xl xl:max-w-5xl w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 text-slate-800 my-auto"
+                    >
+                        {/* Machined Header */}
+                        <div className="flex items-start justify-between border-b border-slate-100 pb-3.5 mb-4">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-black bg-slate-900 text-white uppercase tracking-wider">
+                                        {uploadTarget.catNo ? `NO. ${uploadTarget.catNo}` : 'CSMS'}
+                                    </span>
+                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                                        {rig?.name} • {uploadTarget.crew === 'Rig' ? 'Seluruh Rig' : uploadTarget.crew}
+                                    </span>
+                                </div>
+                                <h3 className="text-base font-extrabold text-slate-900 tracking-tight leading-snug">
+                                    {uploadTarget.catName}
                                 </h3>
                             </div>
-                            <button onClick={() => setUploadTarget(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                                <X size={20} />
+                            <button
+                                onClick={() => !isUploading && setUploadTarget(null)}
+                                disabled={isUploading}
+                                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-30"
+                            >
+                                <X size={18} />
                             </button>
                         </div>
 
+                        {/* Catatan Evaluasi Admin HSE jika ada */}
+                        {uploadTarget.currentRecord?.approval_notes && (
+                            <div className="p-3 mb-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                                <strong className="font-bold flex items-center gap-1 text-amber-800 mb-0.5">
+                                    <AlertCircle size={14} />
+                                    <span>Catatan Evaluasi Admin HSE:</span>
+                                </strong>
+                                <span>{uploadTarget.currentRecord.approval_notes}</span>
+                            </div>
+                        )}
+
                         <form onSubmit={handleUploadSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
+                            {/* GRID 2-KOLOM: MELEBAR KE KANAN, BUKAN KE BAWAH */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                                {/* KOLOM KIRI: Lingkup, Drop Area, & Catatan */}
+                                <div className="space-y-3">
+                                    {/* Metadata Strip */}
+                                    <div className="grid grid-cols-2 gap-2.5 p-2.5 bg-slate-50/90 rounded-xl border border-slate-200/80 text-xs">
+                                        <div>
+                                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">Lingkup Pelaporan</span>
+                                            <span className="font-bold text-slate-800 text-xs truncate block">
+                                                {uploadTarget.crew === 'Rig' ? 'Seluruh Rig (Crew A, B, C)' : uploadTarget.crew}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">Periode CSMS</span>
+                                            <span className="font-bold text-slate-800 text-xs block">
+                                                {selectedMonth} {selectedYear}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Area Drop Berkas (Kiri) */}
+                                    <div>
+                                        <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                            Tarik & Lepas Berkas ke Sini
+                                        </label>
+                                        <FileDropzone
+                                            viewMode="dropOnly"
+                                            files={data.files}
+                                            onFilesChange={(newFiles) => setData("files", newFiles)}
+                                            existingAttachments={uploadTarget.currentRecord?.attachments || []}
+                                            existingFileName={uploadTarget.currentRecord?.file_name}
+                                            existingFilePath={uploadTarget.currentRecord?.file_path}
+                                            error={errors.files || errors.file}
+                                            maxSizeKB={500}
+                                            multiple={true}
+                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                        />
+                                    </div>
+
+                                    {/* Catatan / Keterangan Opsional (Kiri) */}
+                                    <div>
+                                        <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                            Catatan / Keterangan Dokumen (Opsional)
+                                        </label>
+                                        <textarea
+                                            value={data.keterangan}
+                                            onChange={(e) => setData("keterangan", e.target.value)}
+                                            disabled={isUploading}
+                                            rows="2"
+                                            placeholder="Tuliskan catatan singkat jika ada..."
+                                            className="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-slate-50/50 hover:bg-white focus:bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-200 outline-none text-slate-800 placeholder-slate-400 transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* KOLOM KANAN: Daftar Berkas Terpilih & Animasi Panjang Bar */}
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                            Pratinjau Berkas Siap Diunggah
+                                        </label>
+                                        <FileDropzone
+                                            viewMode="filesOnly"
+                                            files={data.files}
+                                            onFilesChange={(newFiles) => setData("files", newFiles)}
+                                            maxSizeKB={500}
+                                            multiple={true}
+                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                        />
+                                    </div>
+
+                                    {/* ANIMASI PANJANG BAR PROSES UPLOAD (KANAN) */}
+                                    {isUploading && (
+                                        <div className="p-4 rounded-2xl bg-slate-950 text-white shadow-xl border border-slate-800 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                                    </span>
+                                                    <span className="font-semibold text-slate-200 tracking-wide text-[11px] truncate">
+                                                        {uploadStepMessage || "Mentransfer Berkas ke Peladen CSMS..."}
+                                                    </span>
+                                                </div>
+                                                <span className="font-mono text-xs font-black text-emerald-400 tracking-wider shrink-0 ml-2">
+                                                    {Math.round(uploadProgress)}%
+                                                </span>
+                                            </div>
+
+                                            {/* PANJANG BAR (TRACK & FILL WITH SHIMMER & STRIPES) */}
+                                            <div className="h-3.5 w-full bg-slate-800/90 rounded-full overflow-hidden p-0.5 border border-slate-700/60 shadow-inner relative">
+                                                <div
+                                                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-300 progress-striped transition-all duration-300 ease-out relative overflow-hidden shadow-xs"
+                                                    style={{ width: `${uploadProgress}%` }}
+                                                >
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer" />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-center text-[10px] text-slate-400 pt-0.5 font-mono">
+                                                <span>Total Muatan: {data.files?.length || 1} Berkas</span>
+                                                <span className={uploadProgress === 100 ? "text-emerald-400 font-bold" : "text-slate-400"}>
+                                                    {uploadProgress === 100 ? "UNGGAH BERHASIL ✓" : "TRANSFER AKTIF..."}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Footer: Direct Drop Pill & Action Buttons */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3.5 border-t border-slate-100">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Status</label>
-                                    <select
-                                        value={data.status}
-                                        onChange={(e) => setData("status", e.target.value)}
-                                        className="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs font-bold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 focus:outline-none"
+                                    {uploadTarget.fromDrop ? (
+                                        <div className="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs inline-flex items-center gap-2 shadow-xs">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                                            <span className="text-[11px] font-medium text-slate-200">
+                                                Berkas terdeteksi via Drag & Drop
+                                            </span>
+                                            <span className="font-mono text-[9px] font-bold text-emerald-400 px-1.5 py-0.2 rounded bg-emerald-950 border border-emerald-800 uppercase">
+                                                DIRECT DROP
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-[11px] text-slate-400 font-mono">
+                                            Maksimal ukuran 500 KB per berkas dokumen
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-end gap-2.5">
+                                    <button
+                                        type="button"
+                                        disabled={isUploading}
+                                        onClick={() => setUploadTarget(null)}
+                                        className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-40 cursor-pointer"
                                     >
-                                        <option value="Lengkap">Lengkap</option>
-                                        <option value="Pending">Pending</option>
-                                        <option value="Tidak Ada">Tidak Ada</option>
-                                    </select>
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isUploading || (!data.files || data.files.length === 0)}
+                                        className="px-5 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-black disabled:opacity-50 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer group"
+                                    >
+                                        <div className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                            {isUploading ? (
+                                                <Loader2 size={13} className="animate-spin text-emerald-400" />
+                                            ) : (
+                                                <Upload size={13} className="text-white" />
+                                            )}
+                                        </div>
+                                        <span>
+                                            {isUploading
+                                                ? `Mengunggah (${Math.round(uploadProgress)}%)...`
+                                                : `Upload ${data.files && data.files.length > 0 ? `(${data.files.length} Berkas)` : ""} Sekarang`}
+                                        </span>
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Crew / Scope</label>
-                                    <input
-                                        type="text"
-                                        disabled
-                                        value={uploadTarget.crew}
-                                        className="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Pilih File (PDF, Image, Doc, Excel)</label>
-                                <input
-                                    type="file"
-                                    onChange={(e) => setData("file", e.target.files[0])}
-                                    className="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Keterangan / Notes</label>
-                                <textarea
-                                    value={data.keterangan}
-                                    onChange={(e) => setData("keterangan", e.target.value)}
-                                    rows="2"
-                                    placeholder="Tuliskan keterangan bila ada..."
-                                    className="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-sky-400 focus:outline-none"
-                                ></textarea>
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <button
-                                    type="button"
-                                    onClick={() => setUploadTarget(null)}
-                                    className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-md transition"
-                                >
-                                    {processing ? "Menyimpan..." : "Simpan Dokumen"}
-                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+
+            {/* Modal Pratinjau / Daftar Lampiran Berkas CSMS */}
+            <AttachmentsModal
+                isOpen={Boolean(viewAttachmentsRecord)}
+                onClose={() => setViewAttachmentsRecord(null)}
+                record={viewAttachmentsRecord}
+                onPreviewAttachment={(rec, att, idx) => {
+                    setViewAttachmentsRecord(null);
+                    openDocumentViewer(rec, rec.category, rec.crew || "Rig", idx);
+                }}
+            />
+
+            {/* ═══════════════════════════════════════════════════════════════
+                MODAL INSPEKSI & PRATINJAU DOKUMEN IN-APP DENGAN TOMBOL ACC
+            ═══════════════════════════════════════════════════════════════ */}
+            <DocumentViewerModal
+                isOpen={viewerState.isOpen}
+                onClose={() => setViewerState((prev) => ({ ...prev, isOpen: false }))}
+                record={viewerState.record}
+                category={viewerState.category}
+                crew={viewerState.crew}
+                isAdmin={isAdmin}
+                onApprove={handleApproveFromViewer}
+                onRevise={handleReviseFromViewer}
+                initialIndex={viewerState.initialIndex}
+            />
         </AdminLayout>
     );
 }
 
-function UploadCell({ category, crew, record, onUpload, onDelete }) {
-    if (!record) {
+/**
+ * Slot Upload Terpadu untuk Dokumen Per-Rig (Menggabungkan Kolom Crew A, B, C)
+ * Mendukung Drag & Drop Langsung pada Tombol Tabel!
+ */
+function UnifiedRigUploadCell({
+    category,
+    record,
+    onUpload,
+    onDelete,
+    onDropFile,
+    onViewAttachments,
+    isUploading = false,
+    isGlobalDragging = false,
+    onPreview,
+}) {
+    const [isHoveringDrag, setIsHoveringDrag] = useState(false);
+    const dragCounter = useRef(0);
+
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current += 1;
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        setIsHoveringDrag(true);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        if (!isHoveringDrag) setIsHoveringDrag(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current -= 1;
+        if (dragCounter.current <= 0) {
+            dragCounter.current = 0;
+            setIsHoveringDrag(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current = 0;
+        setIsHoveringDrag(false);
+
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            onDropFile(e.dataTransfer.files);
+        }
+    };
+
+    // State saat proses upload berlangsung
+    if (isUploading) {
         return (
-            <button
-                onClick={onUpload}
-                className="w-full py-1.5 px-2 bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 text-slate-500 dark:text-sky-400 rounded-lg font-semibold text-[11px] transition flex items-center justify-center gap-1 group"
-            >
-                <Upload size={12} className="group-hover:scale-110 transition" />
-                <span>Upload</span>
-            </button>
+            <div className="w-full py-2.5 px-4 bg-emerald-100/90 border border-emerald-400 text-emerald-900 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs animate-pulse">
+                <Loader2 size={16} className="animate-spin text-emerald-700 shrink-0" />
+                <span>Sedang Mengunggah & Menyimpan Berkas Dokumen...</span>
+            </div>
         );
     }
 
-    return (
-        <div className="flex flex-col items-center gap-1 bg-sky-50/70 dark:bg-sky-950/40 p-1.5 rounded-lg border border-sky-400 dark:border-sky-800">
-            <div className="flex items-center gap-1">
-                <CheckCircle2 size={13} className="text-sky-400 flex-shrink-0" />
-                <span className="font-bold text-sky-400 dark:text-sky-300 text-[11px]">{record.status}</span>
+    if (!record || !record.file_path) {
+        return (
+            <div
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={onUpload}
+                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer group shadow-2xs select-none relative ${
+                    isHoveringDrag
+                        ? "bg-emerald-200 border-2 border-emerald-600 ring-4 ring-emerald-400/50 scale-[1.02] text-emerald-950 shadow-md font-black"
+                        : isGlobalDragging
+                        ? "bg-emerald-100/80 border-2 border-dashed border-emerald-500 text-emerald-800 animate-pulse ring-2 ring-emerald-200"
+                        : "bg-emerald-50/70 hover:bg-emerald-100/80 border border-dashed border-emerald-300 hover:border-emerald-500 text-emerald-800"
+                }`}
+                title="Tarik & lepas satu atau banyak file (maks 500KB) ke kotak ini, atau klik untuk buka form"
+            >
+                {isHoveringDrag ? (
+                    <>
+                        <FileUp size={16} className="animate-bounce text-emerald-800 shrink-0" />
+                        <span className="font-black text-emerald-950 text-sm">
+                            Lepaskan Berkas untuk Langsung Unggah (Seluruh Unit Rig)!
+                        </span>
+                    </>
+                ) : (
+                    <>
+                        <Upload size={14} className="group-hover:-translate-y-0.5 transition-transform text-emerald-600 shrink-0" />
+                        <span>Upload Dokumen (Tarik & Lepas File ke Sini / Klik)</span>
+                    </>
+                )}
             </div>
+        );
+    }
 
-            {record.file_path && (
-                <div className="flex items-center gap-1 mt-0.5">
-                    <a
-                        href={`/storage/${record.file_path}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 bg-white dark:bg-slate-800 text-sky-400 hover:text-sky-300 border border-sky-400 dark:border-sky-700 rounded shadow-xs hover:bg-sky-100 dark:hover:bg-slate-700 transition"
-                        title="Lihat File"
-                    >
-                        <Eye size={12} />
-                    </a>
-                    <button
-                        onClick={onUpload}
-                        className="p-1 bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-slate-700 rounded shadow-xs hover:bg-blue-50 dark:hover:bg-slate-700 transition"
-                        title="Ganti File"
-                    >
-                        <Upload size={12} />
-                    </button>
-                    <button
-                        onClick={() => onDelete(record.id)}
-                        className="p-1 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 border border-red-200 dark:border-slate-700 rounded shadow-xs hover:bg-red-50 dark:hover:bg-slate-700 transition"
-                        title="Hapus"
-                    >
-                        <Trash2 size={12} />
-                    </button>
+    const isApproved = record.approval_status === "approved";
+    const isRevision = record.approval_status === "revision" || record.approval_status === "rejected";
+    const hasMultiple = record.attachments && Array.isArray(record.attachments) && record.attachments.length > 1;
+
+    return (
+        <div
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`flex items-center justify-between p-2 px-3 rounded-xl border transition-all duration-150 relative ${
+                isHoveringDrag
+                    ? "bg-blue-100 border-2 border-blue-500 ring-4 ring-blue-300 scale-[1.01] shadow-md"
+                    : isApproved
+                    ? "bg-emerald-50/80 border-emerald-300"
+                    : isRevision
+                    ? "bg-red-50/80 border-red-300"
+                    : "bg-amber-50/80 border-amber-300"
+            }`}
+        >
+            {isHoveringDrag ? (
+                <div className="w-full py-1 text-center flex items-center justify-center gap-2 text-blue-900 font-black text-xs">
+                    <FileUp size={15} className="animate-bounce text-blue-600 shrink-0" />
+                    <span>Lepaskan berkas baru di sini untuk mengganti dokumen ini!</span>
                 </div>
+            ) : (
+                <>
+                    {/* Status & Nama File */}
+                    <div className="flex items-center gap-2.5 truncate text-left">
+                        <span className={`inline-flex items-center gap-1 font-black text-[10px] tracking-wide uppercase px-2 py-0.5 rounded-md ${
+                            isApproved ? "bg-emerald-100 text-emerald-800" : isRevision ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
+                        }`}>
+                            {isApproved && <CheckCircle2 size={11} />}
+                            {isRevision && <RotateCcw size={11} />}
+                            {!isApproved && !isRevision && <Clock size={11} />}
+                            <span>{isApproved ? "DI-ACC SAH" : isRevision ? "REVISI" : "MENUNGGU ACC"}</span>
+                        </span>
+
+                        <div className="truncate max-w-[260px]">
+                            {hasMultiple ? (
+                                <button
+                                    type="button"
+                                    onClick={() => (onPreview ? onPreview(0) : onViewAttachments())}
+                                    className="text-xs font-bold text-slate-800 hover:text-emerald-700 hover:underline truncate block text-left cursor-pointer"
+                                    title="Klik untuk melihat semua lampiran berkas di pratinjau"
+                                >
+                                    {record.file_name}
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => (onPreview ? onPreview(0) : null)}
+                                    className="text-xs font-bold text-slate-800 hover:text-emerald-700 hover:underline truncate block text-left cursor-pointer"
+                                    title="Klik untuk melihat pratinjau berkas"
+                                >
+                                    {record.file_name}
+                                </button>
+                            )}
+                            <span className="text-[10px] text-slate-500">Berlaku untuk Crew A, B, C (Seluruh Rig)</span>
+                        </div>
+                    </div>
+
+                    {/* Tombol Aksi */}
+                    <div className="flex items-center gap-1 shrink-0 ml-3">
+                        {hasMultiple ? (
+                            <button
+                                type="button"
+                                onClick={() => (onPreview ? onPreview(0) : onViewAttachments())}
+                                className="p-1.5 bg-white text-emerald-700 border border-slate-200 rounded-lg hover:bg-emerald-50 transition-colors shadow-2xs cursor-pointer"
+                                title="Lihat Semua Lampiran Berkas (In-App)"
+                            >
+                                <Eye size={13} />
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => (onPreview ? onPreview(0) : null)}
+                                className="p-1.5 bg-white text-emerald-700 border border-slate-200 rounded-lg hover:bg-emerald-50 transition-colors shadow-2xs cursor-pointer"
+                                title="Lihat Pratinjau Berkas (In-App)"
+                            >
+                                <Eye size={13} />
+                            </button>
+                        )}
+
+                        <button
+                            onClick={onUpload}
+                            className="p-1.5 bg-white text-blue-700 border border-slate-200 rounded-lg hover:bg-blue-50 transition-colors shadow-2xs cursor-pointer"
+                            title={isRevision ? "Unggah Dokumen Revisi" : "Ganti Dokumen"}
+                        >
+                            <Upload size={13} />
+                        </button>
+
+                        <button
+                            onClick={() => onDelete(record.id)}
+                            className="p-1.5 bg-white text-red-600 border border-slate-200 rounded-lg hover:bg-red-50 transition-colors shadow-2xs cursor-pointer"
+                            title="Hapus Dokumen"
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Slot Upload Satuan untuk Dokumen Spesifik Per-Crew (Crew A, Crew B, Crew C)
+ * Mendukung Drag & Drop Banyak Berkas Langsung pada Baris Tabel!
+ */
+function UploadCell({
+    category,
+    crew,
+    record,
+    onUpload,
+    onDelete,
+    onDropFile,
+    onViewAttachments,
+    isUploading = false,
+    isGlobalDragging = false,
+    onPreview,
+}) {
+    const [isHoveringDrag, setIsHoveringDrag] = useState(false);
+    const dragCounter = useRef(0);
+
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current += 1;
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        setIsHoveringDrag(true);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        if (!isHoveringDrag) setIsHoveringDrag(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current -= 1;
+        if (dragCounter.current <= 0) {
+            dragCounter.current = 0;
+            setIsHoveringDrag(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current = 0;
+        setIsHoveringDrag(false);
+
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            onDropFile(e.dataTransfer.files);
+        }
+    };
+
+    // State saat proses upload berlangsung
+    if (isUploading) {
+        return (
+            <div className="w-full py-2 px-1 bg-emerald-100 border border-emerald-400 text-emerald-900 rounded-lg font-bold text-[9px] flex items-center justify-center gap-1 shadow-xs animate-pulse">
+                <Loader2 size={12} className="animate-spin text-emerald-700 shrink-0" />
+                <span className="truncate">Mengunggah...</span>
+            </div>
+        );
+    }
+
+    if (!record || !record.file_path) {
+        return (
+            <div
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={onUpload}
+                className={`w-full py-2 px-2 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer group select-none ${
+                    isHoveringDrag
+                        ? "bg-emerald-200 border-2 border-emerald-600 ring-2 ring-emerald-400 scale-105 text-emerald-950 font-black shadow-md"
+                        : isGlobalDragging
+                        ? "bg-emerald-100/80 border border-dashed border-emerald-500 text-emerald-800 animate-pulse"
+                        : "bg-slate-50 hover:bg-emerald-50 border border-dashed border-slate-300 hover:border-emerald-400 text-slate-500 hover:text-emerald-700"
+                }`}
+                title={`Tarik & lepas satu atau beberapa berkas (maks 500KB) ke sini atau klik (${crew})`}
+            >
+                {isHoveringDrag ? (
+                    <span className="text-emerald-950 font-black">Lepas di sini!</span>
+                ) : (
+                    <>
+                        <Upload size={12} className="group-hover:-translate-y-0.5 transition-transform text-emerald-600" />
+                        <span>Upload</span>
+                    </>
+                )}
+            </div>
+        );
+    }
+
+    const isApproved = record.approval_status === "approved";
+    const isRevision = record.approval_status === "revision" || record.approval_status === "rejected";
+    const hasMultiple = record.attachments && Array.isArray(record.attachments) && record.attachments.length > 1;
+
+    return (
+        <div
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
+                isHoveringDrag
+                    ? "bg-blue-100 border-2 border-blue-500 ring-2 ring-blue-300 scale-105 shadow-md"
+                    : isApproved
+                    ? "bg-emerald-50/80 border-emerald-300"
+                    : isRevision
+                    ? "bg-red-50/80 border-red-300"
+                    : "bg-amber-50/80 border-amber-300"
+            }`}
+        >
+            {isHoveringDrag ? (
+                <span className="text-[10px] font-black text-blue-900 py-1">Ganti Berkas</span>
+            ) : (
+                <>
+                    <div className="flex items-center gap-1">
+                        {isApproved && <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />}
+                        {isRevision && <RotateCcw size={12} className="text-red-600 shrink-0" />}
+                        {!isApproved && !isRevision && <Clock size={12} className="text-amber-600 shrink-0" />}
+
+                        <span className={`font-black text-[10px] tracking-wide uppercase ${
+                            isApproved ? "text-emerald-700" : isRevision ? "text-red-700" : "text-amber-700"
+                        }`}>
+                            {isApproved ? "DI-ACC" : isRevision ? "REVISI" : "PENDING"}
+                        </span>
+                    </div>
+
+                    {/* Jika lebih dari 1 file lampiran */}
+                    {hasMultiple && (
+                        <button
+                            type="button"
+                            onClick={() => (onPreview ? onPreview(0) : onViewAttachments())}
+                            className="px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[9px] font-black cursor-pointer transition-all shadow-2xs"
+                            title="Klik untuk melihat semua lampiran berkas di pratinjau"
+                        >
+                            {record.attachments.length} Berkas
+                        </button>
+                    )}
+
+                    <div className="flex items-center gap-1 mt-0.5">
+                        {hasMultiple ? (
+                            <button
+                                type="button"
+                                onClick={() => (onPreview ? onPreview(0) : onViewAttachments())}
+                                className="p-1 bg-white text-emerald-700 border border-slate-200 rounded hover:bg-emerald-50 transition-colors shadow-2xs cursor-pointer"
+                                title="Lihat Semua Lampiran Berkas (In-App)"
+                            >
+                                <Eye size={12} />
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => (onPreview ? onPreview(0) : null)}
+                                className="p-1 bg-white text-emerald-700 border border-slate-200 rounded hover:bg-emerald-50 transition-colors shadow-2xs cursor-pointer"
+                                title="Lihat Pratinjau Berkas (In-App)"
+                            >
+                                <Eye size={12} />
+                            </button>
+                        )}
+
+                        <button
+                            onClick={onUpload}
+                            className="p-1 bg-white text-blue-700 border border-slate-200 rounded hover:bg-blue-50 transition-colors shadow-2xs cursor-pointer"
+                            title={isRevision ? "Unggah Dokumen Revisi" : "Ganti Berkas"}
+                        >
+                            <Upload size={12} />
+                        </button>
+
+                        <button
+                            onClick={() => onDelete(record.id)}
+                            className="p-1 bg-white text-red-600 border border-slate-200 rounded hover:bg-red-50 transition-colors shadow-2xs cursor-pointer"
+                            title="Hapus Dokumen"
+                        >
+                            <Trash2 size={12} />
+                        </button>
+                    </div>
+                </>
             )}
         </div>
     );

@@ -36,7 +36,8 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 */
 Route::middleware(['role:user,admin'])->group(function () {
     Route::get('/csms', [CsmsController::class, 'index'])->name('csms.dashboard');
-    Route::get('/user/input-data', [CsmsController::class, 'index'])->name('user.input-data');
+    Route::get('/csms/input-rig/{rig_id?}', [CsmsController::class, 'userRigInput'])->name('csms.user-rig-input');
+    Route::get('/user/input-data', [CsmsController::class, 'userRigInput'])->name('user.input-data');
     Route::get('/csms/rig/{id}', [CsmsController::class, 'showRig'])->name('csms.rig-detail');
     Route::post('/csms/upload', [CsmsController::class, 'uploadRecord'])->name('csms.upload');
     Route::delete('/csms/record/{id}', [CsmsController::class, 'deleteRecord'])->name('csms.delete');
@@ -44,7 +45,7 @@ Route::middleware(['role:user,admin'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN CSMS MANAGEMENT
+| ADMIN CSMS MANAGEMENT & VERIFICATION
 |--------------------------------------------------------------------------
 */
 
@@ -52,6 +53,13 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
 
     Route::get('/dashboard', [CsmsController::class, 'index'])->name('admin.dashboard');
     Route::get('/csms', [CsmsController::class, 'index'])->name('admin.csms');
+
+    // CSMS Verification & ACC Routes
+    Route::get('/csms/verification', function () {
+        return redirect('/csms/input-rig');
+    })->name('admin.csms.verification');
+    Route::post('/csms/verify/{id}', [CsmsController::class, 'verifyRecord'])->name('admin.csms.verify');
+    Route::post('/csms/verify-bulk', [CsmsController::class, 'verifyBulk'])->name('admin.csms.verify-bulk');
 
     // User Management
     Route::get('/users', [UserController::class, 'index'])->name('admin.users');
@@ -65,3 +73,11 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     Route::post('/settings/profile', [SettingController::class, 'updateProfile'])->name('admin.settings.profile');
     Route::post('/settings/password', [SettingController::class, 'updatePassword'])->name('admin.settings.password');
 });
+
+// Fallback route untuk file storage publik (memastikan berkas selalu dapat diakses dan tidak pernah 403 Forbidden)
+Route::get('/storage/{path}', function (string $path) {
+    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+        return \Illuminate\Support\Facades\Storage::disk('public')->response($path);
+    }
+    abort(404, 'Berkas tidak ditemukan.');
+})->where('path', '.*');

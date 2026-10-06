@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext({
-    theme: "dark",
+    theme: "light",
     toggleTheme: () => {},
     setTheme: () => {},
 });
@@ -9,12 +9,13 @@ const ThemeContext = createContext({
 export function ThemeProvider({ children }) {
     const [theme, setThemeState] = useState(() => {
         if (typeof window !== "undefined") {
-            const saved = localStorage.getItem("theme");
+            // Gunakan key theme_v2 agar me-reset settingan lama yang terkunci di dark mode
+            const saved = localStorage.getItem("theme_v2");
             if (saved === "light" || saved === "dark") {
                 return saved;
             }
         }
-        return "dark"; // Default to dark mode
+        return "light"; // Pastikan selalu default ke putih/terang
     });
 
     const applyTheme = (newTheme) => {
@@ -24,7 +25,7 @@ export function ThemeProvider({ children }) {
         } else {
             root.classList.remove("dark");
         }
-        localStorage.setItem("theme", newTheme);
+        localStorage.setItem("theme_v2", newTheme);
         setThemeState(newTheme);
         window.dispatchEvent(new CustomEvent("theme-change", { detail: { theme: newTheme } }));
     };

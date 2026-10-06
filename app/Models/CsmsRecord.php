@@ -17,9 +17,19 @@ class CsmsRecord extends Model
         'file_name',
         'file_size',
         'file_type',
+        'attachments',
         'status',
+        'approval_status',
+        'approval_notes',
+        'approved_by',
+        'approved_at',
         'keterangan',
         'uploaded_by',
+    ];
+
+    protected $casts = [
+        'attachments' => 'array',
+        'approved_at' => 'datetime',
     ];
 
     public function rig(): BelongsTo

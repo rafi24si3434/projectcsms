@@ -72,15 +72,15 @@ const LEADING_INDICATORS = [
     "REVIEW, TINJAUAN MANAJEMEN *)",
     "HYGIENE MONITORING : NOISE & LUX MONITORING **)",
     "HYGIENE MONITORING : Mess, Catering, DAM*)",
-    "INSPEKSI \"HOUSEKEEPING RIG\"",
-    "PENGHARGAAN: KONTES \"HOUSEKEEPING RIG\" *)",
+    'INSPEKSI "HOUSEKEEPING RIG"',
+    'PENGHARGAAN: KONTES "HOUSEKEEPING RIG" *)',
     "PELAPORAN LINGKUNGAN KE DINAS LH",
     "PENGHARGAAN: RIG OF THE MONTH INTERNAL / EXTERNAL **)",
     "PENGHARGAAN THE BEST BBS / PEKA",
     "PENGHARGAAN THE BEST DRIVER",
     "PENGHARGAAN: PENCAPAIAN KERJA SELAMAT TAHUNAN",
     "PENGHARGAAN HES REFRESHING",
-    "\"ON SITE TRAINING\" DI LOKASI *)",
+    '"ON SITE TRAINING" DI LOKASI *)',
     "ERP DRILL RIG : H2S&SCBA / FIRE / MEDIVAC/ PENYELAMATAN KERJA DI KETINGGIAN / TUMPAHAN. **)",
     "ERP DRILL YARD : FIRE / MEDIVAC / TUMPAHAN *)",
 ];
@@ -223,17 +223,23 @@ export default function UserInputData() {
                 submitterEmail: form.submitterEmail,
 
                 manHoursPremisesPlan: Number(form.manHoursPremisesPlan) || 0,
-                manHoursNonPremisesPlan: Number(form.manHoursNonPremisesPlan) || 0,
-                manHoursPremisesActual: Number(form.manHoursPremisesActual) || 0,
-                manHoursNonPremisesActual: Number(form.manHoursNonPremisesActual) || 0,
+                manHoursNonPremisesPlan:
+                    Number(form.manHoursNonPremisesPlan) || 0,
+                manHoursPremisesActual:
+                    Number(form.manHoursPremisesActual) || 0,
+                manHoursNonPremisesActual:
+                    Number(form.manHoursNonPremisesActual) || 0,
 
                 totalEmployees: Number(form.employees) || 0,
                 totalVehicles: Number(form.totalVehicles) || 0,
 
                 kilometerPremisesPlan: Number(form.kilometerPremisesPlan) || 0,
-                kilometerNonPremisesPlan: Number(form.kilometerNonPremisesPlan) || 0,
-                kilometerPremisesActual: Number(form.kilometerPremisesActual) || 0,
-                kilometerNonPremisesActual: Number(form.kilometerNonPremisesActual) || 0,
+                kilometerNonPremisesPlan:
+                    Number(form.kilometerNonPremisesPlan) || 0,
+                kilometerPremisesActual:
+                    Number(form.kilometerPremisesActual) || 0,
+                kilometerNonPremisesActual:
+                    Number(form.kilometerNonPremisesActual) || 0,
 
                 lagging: Object.entries(form.lagging).map(
                     ([name, values], index) => ({
@@ -277,7 +283,10 @@ export default function UserInputData() {
             const result = await response.json().catch(() => null);
 
             if (!response.ok) {
-                let errorMsg = (result && result.message) ? result.message : "Data HSE gagal disimpan. Periksa kembali form input Anda.";
+                let errorMsg =
+                    result && result.message
+                        ? result.message
+                        : "Data HSE gagal disimpan. Periksa kembali form input Anda.";
                 if (result && result.errors) {
                     const firstError = Object.values(result.errors)[0];
                     if (firstError && firstError.length > 0) {
@@ -290,18 +299,27 @@ export default function UserInputData() {
             }
 
             setSubmitSuccess(true);
-            alert(`Data HSE periode ${selectedMonthLabel} berhasil dikirim! Status saat ini: PENDING (Menunggu Persetujuan / Approval dari Admin via Email atau Menu Approval).`);
+            alert(
+                `Data HSE periode ${selectedMonthLabel} berhasil dikirim! Status saat ini: PENDING (Menunggu Persetujuan / Approval dari Admin via Email atau Menu Approval).`,
+            );
             window.scrollTo({ top: 0, behavior: "smooth" });
         } catch (error) {
             console.error("ERROR SUBMIT HSE:", error);
-            alert("Terjadi kendala saat mengirim data HSE: " + (error?.message || "Silakan periksa koneksi."));
+            alert(
+                "Terjadi kendala saat mengirim data HSE: " +
+                    (error?.message || "Silakan periksa koneksi."),
+            );
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleReset = () => {
-        if (window.confirm("Apakah Anda yakin ingin mengosongkan seluruh isian formulir?")) {
+        if (
+            window.confirm(
+                "Apakah Anda yakin ingin mengosongkan seluruh isian formulir?",
+            )
+        ) {
             setForm({
                 ...INITIAL_FORM,
                 lagging: createIndicatorValues(LAGGING_INDICATORS),
@@ -350,7 +368,13 @@ export default function UserInputData() {
                         zIndex: 90,
                     }}
                 >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                        }}
+                    >
                         <div
                             style={{
                                 width: "32px",
@@ -379,7 +403,13 @@ export default function UserInputData() {
                         </span>
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "14px",
+                        }}
+                    >
                         <div
                             style={{
                                 display: "flex",
@@ -411,7 +441,13 @@ export default function UserInputData() {
                 {/* =====================================================
                     PAGE BODY
                 ===================================================== */}
-                <div style={{ padding: "28px 32px 60px", maxWidth: "1400px", margin: "0 auto" }}>
+                <div
+                    style={{
+                        padding: "28px 32px 60px",
+                        maxWidth: "1400px",
+                        margin: "0 auto",
+                    }}
+                >
                     {/* HERO BANNER */}
                     <div
                         style={{
@@ -439,7 +475,14 @@ export default function UserInputData() {
                             }}
                         />
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                marginBottom: "8px",
+                            }}
+                        >
                             <span
                                 style={{
                                     padding: "3px 8px",
@@ -455,16 +498,40 @@ export default function UserInputData() {
                             >
                                 Field Portal
                             </span>
-                            <span style={{ color: "#a7f3d0", fontSize: "12px", fontWeight: "600" }}>
+                            <span
+                                style={{
+                                    color: "#a7f3d0",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                }}
+                            >
                                 PT Besmindo HSE Operations
                             </span>
                         </div>
 
-                        <h1 style={{ margin: "0 0 6px", fontSize: "24px", fontWeight: "900", letterSpacing: "-0.02em" }}>
+                        <h1
+                            style={{
+                                margin: "0 0 6px",
+                                fontSize: "24px",
+                                fontWeight: "900",
+                                letterSpacing: "-0.02em",
+                            }}
+                        >
                             Formulir Penginputan Data HSE
                         </h1>
-                        <p style={{ margin: "0 0 16px", color: "#d1fae5", fontSize: "13.5px", maxWidth: "720px", lineHeight: "1.5" }}>
-                            Silakan input realisasi kinerja keselamatan kerja (HSE) untuk rig dan periode yang bersangkutan. Data yang Anda simpan akan secara otomatis terintegrasi ke seluruh laporan dan matriks KPI per Rig.
+                        <p
+                            style={{
+                                margin: "0 0 16px",
+                                color: "#d1fae5",
+                                fontSize: "13.5px",
+                                maxWidth: "720px",
+                                lineHeight: "1.5",
+                            }}
+                        >
+                            Silakan input realisasi kinerja keselamatan kerja
+                            (HSE) untuk rig dan periode yang bersangkutan. Data
+                            yang Anda simpan akan secara otomatis terintegrasi
+                            ke seluruh laporan dan matriks KPI per Rig.
                         </p>
 
                         {/* SUBMITTER IDENTITY CARD */}
@@ -496,16 +563,49 @@ export default function UserInputData() {
                                     flexShrink: 0,
                                 }}
                             >
-                                {(form.submitterName || currentUser?.name || "P").charAt(0).toUpperCase()}
+                                {(
+                                    form.submitterName ||
+                                    currentUser?.name ||
+                                    "P"
+                                )
+                                    .charAt(0)
+                                    .toUpperCase()}
                             </div>
                             <div>
-                                <div style={{ fontSize: "11px", color: "#a7f3d0", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                                <div
+                                    style={{
+                                        fontSize: "11px",
+                                        color: "#a7f3d0",
+                                        fontWeight: "700",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.04em",
+                                    }}
+                                >
                                     Petugas Penginput (PIC Terautentikasi):
                                 </div>
-                                <div style={{ fontSize: "13.5px", fontWeight: "800", color: "#ffffff", marginTop: "1px" }}>
-                                    {form.submitterName || currentUser?.name || "User Lapangan"}{" "}
-                                    <span style={{ color: "#38bdf8", fontWeight: "600", fontSize: "12px" }}>
-                                        ({form.submitterEmail || currentUser?.email || "user@besmindo.com"})
+                                <div
+                                    style={{
+                                        fontSize: "13.5px",
+                                        fontWeight: "800",
+                                        color: "#ffffff",
+                                        marginTop: "1px",
+                                    }}
+                                >
+                                    {form.submitterName ||
+                                        currentUser?.name ||
+                                        "User Lapangan"}{" "}
+                                    <span
+                                        style={{
+                                            color: "#38bdf8",
+                                            fontWeight: "600",
+                                            fontSize: "12px",
+                                        }}
+                                    >
+                                        (
+                                        {form.submitterEmail ||
+                                            currentUser?.email ||
+                                            "user@besmindo.com"}
+                                        )
                                     </span>
                                 </div>
                             </div>
@@ -530,11 +630,12 @@ export default function UserInputData() {
                             }}
                         >
                             <CheckCircle2 size={20} color="#059669" />
-                            <span>Data HSE berhasil disimpan dan disinkronkan ke database sistem!</span>
+                            <span>
+                                Data HSE berhasil disimpan dan disinkronkan ke
+                                database sistem!
+                            </span>
                         </div>
                     )}
-
-
 
                     {/* FORM CONTAINER */}
                     <form onSubmit={handleSubmit}>
@@ -543,7 +644,8 @@ export default function UserInputData() {
                             <div
                                 style={{
                                     display: "grid",
-                                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                                    gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(200px, 1fr))",
                                     gap: "16px",
                                 }}
                             >
@@ -610,10 +712,13 @@ export default function UserInputData() {
                                     value={form.period}
                                     onChange={handleChange}
                                     options={MONTHS.map((month) => month.value)}
-                                    optionLabels={MONTHS.reduce((result, month) => {
-                                        result[month.value] = month.label;
-                                        return result;
-                                    }, {})}
+                                    optionLabels={MONTHS.reduce(
+                                        (result, month) => {
+                                            result[month.value] = month.label;
+                                            return result;
+                                        },
+                                        {},
+                                    )}
                                     required
                                 />
 
@@ -656,7 +761,8 @@ export default function UserInputData() {
                             <div
                                 style={{
                                     display: "grid",
-                                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                                    gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(220px, 1fr))",
                                     gap: "16px",
                                 }}
                             >
@@ -771,7 +877,15 @@ export default function UserInputData() {
                                     color: "#334155",
                                 }}
                             >
-                                Catatan Tambahan / Ringkasan Realisasi Lapangan <span style={{ color: "#64748b", fontWeight: "normal" }}>(Opsional)</span>
+                                Catatan Tambahan / Ringkasan Realisasi Lapangan{" "}
+                                <span
+                                    style={{
+                                        color: "#64748b",
+                                        fontWeight: "normal",
+                                    }}
+                                >
+                                    (Opsional)
+                                </span>
                             </label>
 
                             <textarea
@@ -838,7 +952,9 @@ export default function UserInputData() {
                                     color: "#38bdf8",
                                     border: "1px solid #38bdf8",
                                     borderRadius: "8px",
-                                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                                    cursor: isSubmitting
+                                        ? "not-allowed"
+                                        : "pointer",
                                     fontWeight: "800",
                                     fontSize: "13.5px",
                                     display: "flex",
@@ -850,7 +966,9 @@ export default function UserInputData() {
                                 }}
                             >
                                 <CheckCircle2 size={16} strokeWidth={2.6} />
-                                {isSubmitting ? "Menyimpan Data..." : "Simpan Data HSE Lapangan"}
+                                {isSubmitting
+                                    ? "Menyimpan Data..."
+                                    : "Simpan Data HSE Lapangan"}
                             </button>
                         </div>
                     </form>
@@ -944,7 +1062,12 @@ function IndicatorSection({ title, type, indicators, values, onChange }) {
                                         {indicator}
                                     </td>
 
-                                    <td style={{ ...tableCellStyle, width: "140px" }}>
+                                    <td
+                                        style={{
+                                            ...tableCellStyle,
+                                            width: "140px",
+                                        }}
+                                    >
                                         <NumberTableField
                                             value={value.plan}
                                             onChange={(event) =>
@@ -958,7 +1081,12 @@ function IndicatorSection({ title, type, indicators, values, onChange }) {
                                         />
                                     </td>
 
-                                    <td style={{ ...tableCellStyle, width: "140px" }}>
+                                    <td
+                                        style={{
+                                            ...tableCellStyle,
+                                            width: "140px",
+                                        }}
+                                    >
                                         <NumberTableField
                                             value={value.actual}
                                             onChange={(event) =>
@@ -985,13 +1113,13 @@ function IndicatorSection({ title, type, indicators, values, onChange }) {
                     color: "#64748b",
                 }}
             >
-                Isi nilai <strong>Plan</strong> sesuai target yang ditentukan, lalu isi <strong>Actual</strong> sesuai realisasi pada bulan berjalan.
+                Isi nilai <strong>Plan</strong> sesuai target yang ditentukan,
+                lalu isi <strong>Actual</strong> sesuai realisasi pada bulan
+                berjalan.
             </p>
         </Section>
     );
 }
-
-
 
 function Section({ title, children }) {
     return (
@@ -1015,7 +1143,8 @@ function Section({ title, children }) {
                     left: 0,
                     right: 0,
                     height: "3px",
-                    background: "linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%)",
+                    background:
+                        "linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%)",
                 }}
             />
 
@@ -1058,7 +1187,11 @@ function InputField({
                 }}
             >
                 {label}
-                {required && <span style={{ color: "#dc2626", marginLeft: "4px" }}>*</span>}
+                {required && (
+                    <span style={{ color: "#dc2626", marginLeft: "4px" }}>
+                        *
+                    </span>
+                )}
             </label>
 
             <input
@@ -1098,7 +1231,11 @@ function NumberField({ label, name, value, onChange, required }) {
                 }}
             >
                 {label}
-                {required && <span style={{ color: "#dc2626", marginLeft: "4px" }}>*</span>}
+                {required && (
+                    <span style={{ color: "#dc2626", marginLeft: "4px" }}>
+                        *
+                    </span>
+                )}
             </label>
 
             <input
@@ -1176,7 +1313,11 @@ function SelectField({
                 }}
             >
                 {label}
-                {required && <span style={{ color: "#dc2626", marginLeft: "4px" }}>*</span>}
+                {required && (
+                    <span style={{ color: "#dc2626", marginLeft: "4px" }}>
+                        *
+                    </span>
+                )}
             </label>
 
             <select
@@ -1198,7 +1339,14 @@ function SelectField({
                 }}
             >
                 <option value="">
-                    {placeholder || (name === "period" ? "Pilih Periode (Bulan)" : name === "year" ? "Pilih Tahun" : name === "rigNo" ? "Pilih Rig" : `-- Pilih ${label || "Pilihan"} --`)}
+                    {placeholder ||
+                        (name === "period"
+                            ? "Pilih Periode (Bulan)"
+                            : name === "year"
+                              ? "Pilih Tahun"
+                              : name === "rigNo"
+                                ? "Pilih Rig"
+                                : `-- Pilih ${label || "Pilihan"} --`)}
                 </option>
 
                 {options.map((option) => (

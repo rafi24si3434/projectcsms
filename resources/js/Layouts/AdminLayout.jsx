@@ -3,7 +3,7 @@ import AdminSidebar from "../Components/AdminSidebar";
 import { ThemeProvider, useTheme } from "../Contexts/ThemeContext";
 
 function AdminLayoutInner({ children }) {
-    const sidebarWidth = 220;
+    const sidebarWidth = 240;
     const { theme } = useTheme();
     const isDark = theme === "dark";
 

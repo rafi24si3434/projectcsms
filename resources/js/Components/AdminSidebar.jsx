@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Link, usePage, router } from "@inertiajs/react";
-
 import {
     Users,
     Settings,
@@ -9,301 +8,264 @@ import {
     HardDrive,
     ShieldCheck,
     ChevronRight,
+    HardHat,
+    FileSpreadsheet,
+    PhoneCall,
+    Activity,
+    Layers,
+    UserCheck,
 } from "lucide-react";
 
-// Navy Radiant Blue — permanent single theme
-const COLORS = {
-    bg:          "#0b1329",
-    border:      "#1e293b",
-    profileBg:   "#131f37",
-    labelColor:  "#64748b",
-    textMain:    "#f1f5f9",
-    textMuted:   "#94a3b8",
-    activeBg:    "#1e293b",
-    hoverBg:     "#131f37",
-    hoverText:   "#38bdf8",
-    activeText:  "#ffffff",
-    iconActive:  "#38bdf8",
-    iconMuted:   "#64748b",
-};
-
 function AdminSidebar() {
-    const { url } = usePage();
+    const { url, props } = usePage();
+    const currentUser = props.auth?.user;
+    const isRigUser = currentUser?.role === "user";
+    const userRig = currentUser?.rig;
 
-    const menuItems = [
-        { name: "CSMS Storage (20 RIG)", href: "/csms",           icon: HardDrive },
-        { name: "User Management",       href: "/admin/users",    icon: Users     },
-        { name: "Settings",              href: "/admin/settings", icon: Settings  },
+    // Menu untuk Admin HSE
+    const adminMainMenu = [
+        { name: "CSMS Storage (20 RIG)", href: "/csms", icon: HardDrive },
+        { name: "Verifikasi & ACC CSMS", href: "/csms/input-rig", icon: ShieldCheck },
     ];
 
-    const isActive = (href) => url === href || url.startsWith(href + "/");
+    const adminManagementMenu = [
+        { name: "User Management",       href: "/admin/users",             icon: Users },
+        { name: "Pengaturan Sistem",     href: "/admin/settings",          icon: Settings },
+    ];
+
+    // Menu khusus untuk User Rig Lapangan (BMS 01, BMS 02, BMS 03, dst)
+    const rigUserMenu = [
+        { 
+            name: `Input Dokumen (${userRig?.code || 'Rig Saya'})`, 
+            href: "/csms/input-rig", 
+            icon: FileSpreadsheet 
+        },
+        { 
+            name: "Matriks Dokumen K3", 
+            href: `/csms/rig/${currentUser?.csms_rig_id || 1}`, 
+            icon: Layers 
+        },
+    ];
+
+    const isActive = (href) => url === href || (href !== "/csms" && url.startsWith(href));
 
     const handleLogout = () => {
         router.post("/logout");
     };
 
     useEffect(() => {
-        document.documentElement.style.setProperty("--admin-sidebar-width", "220px");
+        document.documentElement.style.setProperty("--admin-sidebar-width", "240px");
         window.dispatchEvent(new CustomEvent("admin-sidebar-resize", { detail: { collapsed: false } }));
     }, []);
 
     return (
         <aside
-            style={{
-                position: "fixed",
-                left: 0,
-                top: 0,
-                width: "220px",
-                height: "100vh",
-                backgroundColor: COLORS.bg,
-                borderRight: `1px solid ${COLORS.border}`,
-                display: "flex",
-                flexDirection: "column",
-                zIndex: 1000,
-                boxSizing: "border-box",
-                overflow: "hidden",
-                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-            }}
+            className="fixed left-0 top-0 h-screen flex flex-col bg-white border-r border-slate-200 z-50 shadow-xs font-sans transition-colors duration-200"
+            style={{ width: "240px" }}
         >
-            <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
+            {/* ── SAFETY HAZARD ACCENT STRIPE AT TOP ── */}
+            <div
+                className="w-full h-1.5 shrink-0"
+                style={{
+                    background:
+                        "repeating-linear-gradient(45deg, #f59e0b, #f59e0b 10px, #1e293b 10px, #1e293b 20px)",
+                }}
+            />
 
-                {/* ── HEADER / BRANDING ── */}
-                <div style={{
-                    height: "88px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "0 16px",
-                    borderBottom: `1px solid ${COLORS.border}`,
-                    boxSizing: "border-box",
-                    flexShrink: 0,
-                }}>
-                    <Link href="/csms" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", textDecoration: "none" }}>
-                        <img
-                            src="/images/logo-besmindo.png"
-                            alt="BESMINDO"
-                            style={{
-                                width: "100%",
-                                maxWidth: "185px",
-                                height: "auto",
-                                maxHeight: "58px",
-                                objectFit: "contain",
-                                display: "block",
-                                imageRendering: "auto",
-                                transform: "translateZ(0)",
-                                backfaceVisibility: "hidden",
-                            }}
-                        />
-                    </Link>
+            {/* ── BRANDING & LOGO SECTION ── */}
+            <div className="p-5 border-b border-slate-100 shrink-0 flex flex-col items-center justify-center">
+                <Link href={isRigUser ? "/csms/input-rig" : "/csms"} className="block focus:outline-none">
+                    <img
+                        src="/images/logo-besmindo.png"
+                        alt="PT BESMINDO MATERI SEWATAMA"
+                        className="w-auto h-auto max-h-[46px] max-w-[185px] object-contain"
+                    />
+                </Link>
+                <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">
+                    <HardHat size={12} className="text-emerald-600" />
+                    <span>{isRigUser ? `RIG OPS • ${userRig?.code || 'LAPANGAN'}` : 'HSE & CSMS Portal'}</span>
                 </div>
+            </div>
 
-                {/* ── USER PROFILE ── */}
-                <div style={{
-                    padding: "14px 14px",
-                    boxSizing: "border-box",
-                    flexShrink: 0,
-                }}>
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        padding: "8px 10px",
-                        borderRadius: "10px",
-                        backgroundColor: COLORS.profileBg,
-                        border: `1px solid ${COLORS.border}`,
-                    }}>
-                        <div style={{
-                            width: "32px",
-                            height: "32px",
-                            borderRadius: "8px",
-                            backgroundColor: "#0ea5e9",
-                            color: "#ffffff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            boxShadow: "0 2px 4px rgba(14, 165, 233, 0.25)",
-                        }}>
-                            <ShieldCheck size={17} strokeWidth={2.4} />
+            {/* ── USER PROFILE CARD (DINAMIS SESUAI ROLE & RIG) ── */}
+            <div className="p-4 pb-2 shrink-0">
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        {isRigUser ? <HardHat size={18} strokeWidth={2.4} /> : <ShieldCheck size={18} strokeWidth={2.4} />}
+                    </div>
+                    <div className="overflow-hidden flex-1">
+                        <div className="text-[12px] font-black text-slate-800 truncate leading-tight">
+                            {currentUser?.name || (isRigUser ? 'Operator Rig' : 'HSE Officer')}
                         </div>
-                        <div style={{ overflow: "hidden", flex: 1 }}>
-                            <div style={{
-                                fontSize: "12.5px",
-                                fontWeight: "600",
-                                color: COLORS.textMain,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                lineHeight: "1.2",
-                            }}>
-                                Rig HSE Admin
-                            </div>
-                            <div style={{
-                                fontSize: "11px",
-                                color: COLORS.textMuted,
-                                marginTop: "2px",
-                                whiteSpace: "nowrap",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                            }}>
-                                <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#10b981", display: "inline-block" }}></span>
-                                <span>Online</span>
-                            </div>
+                        <div className="text-[10px] text-slate-500 font-semibold mt-0.5 flex items-center gap-1.5 truncate">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                            <span className="truncate">
+                                {isRigUser ? (userRig ? userRig.name : 'Rig Ditugaskan') : 'Admin Pusat'}
+                            </span>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* ── MENU CATEGORY ── */}
-                <div style={{
-                    padding: "6px 18px 6px",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: COLORS.labelColor,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    flexShrink: 0,
-                }}>
-                    Menu
+            {/* ── SCROLLABLE NAVIGATION ── */}
+            <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4">
+                {isRigUser ? (
+                    /* ═══════════════════════════════════════════
+                       NAVIGASI KHUSUS USER LAPANGAN (PER RIG)
+                    ═══════════════════════════════════════════ */
+                    <div>
+                        <div className="px-3 pb-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+                            <span>Pelaporan Rig Saya</span>
+                            <span className="text-[9px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded font-bold">
+                                {userRig?.code || 'RIG'}
+                            </span>
+                        </div>
+                        <div className="space-y-1">
+                            {rigUserMenu.map((item) => {
+                                const active = isActive(item.href);
+                                const Icon = item.icon;
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
+                                            active
+                                                ? "bg-emerald-50 text-emerald-800 border-l-4 border-emerald-600 shadow-2xs"
+                                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Icon
+                                                size={17}
+                                                strokeWidth={active ? 2.5 : 2}
+                                                className={active ? "text-emerald-600" : "text-slate-400"}
+                                            />
+                                            <span className="truncate">{item.name}</span>
+                                        </div>
+                                        {active && (
+                                            <ChevronRight size={14} className="text-emerald-600 opacity-80" />
+                                        )}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                    /* ═══════════════════════════════════════════
+                       NAVIGASI LENGKAP KHUSUS ADMIN HSE
+                    ═══════════════════════════════════════════ */
+                    <>
+                        {/* Section 1: Modul CSMS */}
+                        <div>
+                            <div className="px-3 pb-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                Modul CSMS & K3
+                            </div>
+                            <div className="space-y-1">
+                                {adminMainMenu.map((item) => {
+                                    const active = isActive(item.href);
+                                    const Icon = item.icon;
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
+                                                active
+                                                    ? "bg-emerald-50 text-emerald-800 border-l-4 border-emerald-600 shadow-2xs"
+                                                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Icon
+                                                    size={17}
+                                                    strokeWidth={active ? 2.5 : 2}
+                                                    className={active ? "text-emerald-600" : "text-slate-400"}
+                                                />
+                                                <span className="truncate">{item.name}</span>
+                                            </div>
+                                            {active && (
+                                                <ChevronRight size={14} className="text-emerald-600 opacity-80" />
+                                            )}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Section 2: Administrasi & Approval */}
+                        <div>
+                            <div className="px-3 pb-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                Administrasi Pusat
+                            </div>
+                            <div className="space-y-1">
+                                {adminManagementMenu.map((item) => {
+                                    const active = isActive(item.href);
+                                    const Icon = item.icon;
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
+                                                active
+                                                    ? "bg-emerald-50 text-emerald-800 border-l-4 border-emerald-600 shadow-2xs"
+                                                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Icon
+                                                    size={17}
+                                                    strokeWidth={active ? 2.5 : 2}
+                                                    className={active ? "text-emerald-600" : "text-slate-400"}
+                                                />
+                                                <span className="truncate">{item.name}</span>
+                                            </div>
+                                            {active && (
+                                                <ChevronRight size={14} className="text-emerald-600 opacity-80" />
+                                            )}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* ── SAFETY MOTTO & EMERGENCY HOTLINE (K3 IDENTITY) ── */}
+                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/70 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold text-[11px]">
+                        <Activity size={14} className="text-emerald-600" />
+                        <span>K3 & Safety Culture</span>
+                    </div>
+                    <p className="text-[10.5px] text-slate-600 leading-relaxed font-medium">
+                        {isRigUser 
+                            ? `"Utamakan Keselamatan Kerja dan patuhi SOP di Rig ${userRig?.code || ''}."`
+                            : `"Utamakan Keselamatan dan Kesehatan Kerja di Seluruh 20 Rig BMS."`
+                        }
+                    </p>
+                    <div className="pt-1 border-t border-emerald-200/50 flex items-center justify-between text-[9.5px] text-emerald-700 font-bold">
+                        <span>ISO / HSE Center</span>
+                        <span>0852-6393-9902</span>
+                    </div>
                 </div>
+            </div>
 
-                {/* ── NAVIGATION ── */}
-                <nav style={{
-                    flex: 1,
-                    overflowY: "auto",
-                    padding: "2px 10px",
-                    boxSizing: "border-box",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                }}>
-                    {menuItems.map((item) => {
-                        const active = isActive(item.href);
-                        const Icon = item.icon;
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    width: "100%",
-                                    boxSizing: "border-box",
-                                    padding: "9px 12px",
-                                    borderRadius: "9px",
-                                    textDecoration: "none",
-                                    backgroundColor: active ? COLORS.activeBg : "transparent",
-                                    color: active ? COLORS.activeText : COLORS.textMuted,
-                                    fontSize: "13px",
-                                    fontWeight: active ? "600" : "500",
-                                    transition: "all 0.15s ease",
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!active) {
-                                        e.currentTarget.style.backgroundColor = COLORS.hoverBg;
-                                        e.currentTarget.style.color = COLORS.hoverText;
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!active) {
-                                        e.currentTarget.style.backgroundColor = "transparent";
-                                        e.currentTarget.style.color = COLORS.textMuted;
-                                    }
-                                }}
-                            >
-                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                    <Icon
-                                        size={17}
-                                        strokeWidth={active ? 2.3 : 1.9}
-                                        style={{
-                                            color: active ? COLORS.iconActive : COLORS.iconMuted,
-                                            flexShrink: 0,
-                                        }}
-                                    />
-                                    <span style={{ whiteSpace: "nowrap" }}>{item.name}</span>
-                                </div>
-                                {active && (
-                                    <ChevronRight size={13} style={{ color: COLORS.iconActive, opacity: 0.8 }} />
-                                )}
-                            </Link>
-                        );
-                    })}
-                </nav>
+            {/* ── FOOTER ACTIONS ── */}
+            <div className="p-3 border-t border-slate-100 shrink-0 space-y-1">
+                <a
+                    href="tel:085263939902"
+                    className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                >
+                    <PhoneCall size={15} className="text-slate-400" />
+                    <span>Kontak HSE Coord</span>
+                </a>
 
-                {/* ── FOOTER / ACTIONS ── */}
-                <div style={{
-                    padding: "12px 10px",
-                    borderTop: `1px solid ${COLORS.border}`,
-                    boxSizing: "border-box",
-                    flexShrink: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                }}>
-                    <button
-                        type="button"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                            width: "100%",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            border: "none",
-                            backgroundColor: "transparent",
-                            color: COLORS.textMuted,
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            cursor: "pointer",
-                            textAlign: "left",
-                            boxSizing: "border-box",
-                            transition: "all 0.15s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = COLORS.hoverBg;
-                            e.currentTarget.style.color = COLORS.textMain;
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "transparent";
-                            e.currentTarget.style.color = COLORS.textMuted;
-                        }}
-                    >
-                        <CircleHelp size={16} strokeWidth={1.9} />
-                        <span>Bantuan / Support</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleLogout}
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                            width: "100%",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            border: "none",
-                            backgroundColor: "transparent",
-                            color: "#ef4444",
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            cursor: "pointer",
-                            textAlign: "left",
-                            boxSizing: "border-box",
-                            transition: "all 0.15s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.12)";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "transparent";
-                        }}
-                    >
-                        <LogOut size={16} strokeWidth={1.9} />
-                        <span>Logout</span>
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                >
+                    <LogOut size={15} />
+                    <span>Keluar / Logout</span>
+                </button>
             </div>
         </aside>
     );
