@@ -72,12 +72,12 @@ html.dark #app {
 }
 
 ::selection {
-    background: #1e3a8a;
-    color: #e0f2fe;
+    background: #065f46;
+    color: #ecfdf5;
 }
 
 html.dark ::selection {
-    background: #0284c7;
+    background: #059669;
     color: #ffffff;
 }
 
@@ -87,25 +87,25 @@ html.dark ::selection {
 }
 
 ::-webkit-scrollbar-track {
-    background: #e0f2fe;
+    background: #f0fdf4;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #0284c7;
+    background: #10b981;
     border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #0a192f;
+    background: #047857;
 }
 
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 2px solid #38bdf8;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2);
+    outline: 2px solid #10b981;
+    outline-offset: 1px;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
 }
 
 /* ── Upload Progress Bar Animations ── */
@@ -144,4 +144,65 @@ textarea:focus-visible {
     );
     background-size: 1.5rem 1.5rem;
     animation: progress-stripe 0.8s linear infinite;
+}
+
+/* ── Dynamic 3D Logo Motion, Light Sweep & Thin LED Animations ── */
+@keyframes dynamic-logo-float {
+    0% {
+        transform: translateY(0px) rotate(0deg) scale(1);
+    }
+    25% {
+        transform: translateY(-9px) rotate(-3deg) scale(1.04);
+    }
+    50% {
+        transform: translateY(-2px) rotate(1.5deg) scale(1.015);
+    }
+    75% {
+        transform: translateY(-10px) rotate(3deg) scale(1.05);
+    }
+    100% {
+        transform: translateY(0px) rotate(0deg) scale(1);
+    }
+}
+
+.animate-dynamic-logo {
+    animation: dynamic-logo-float 4.5s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+    transform-origin: center center;
+}
+
+@keyframes light-sweep {
+    0% {
+        transform: translateX(-160%) skewX(-20deg);
+        opacity: 0;
+    }
+    15% {
+        opacity: 0.75;
+    }
+    35% {
+        transform: translateX(180%) skewX(-20deg);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(180%) skewX(-20deg);
+        opacity: 0;
+    }
+}
+
+.animate-light-sweep {
+    animation: light-sweep 3.8s ease-in-out infinite;
+}
+
+/* ── Exact Diamond Contour Neon Beam Sweep ── */
+@keyframes diamond-neon-sweep {
+    0% {
+        stroke-dashoffset: 1680;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.animate-diamond-neon {
+    stroke-dasharray: 440 1240;
+    animation: diamond-neon-sweep 3s linear infinite;
 }

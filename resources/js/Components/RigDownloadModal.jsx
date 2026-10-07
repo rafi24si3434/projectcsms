@@ -102,12 +102,7 @@ export default function RigDownloadModal({
             <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-lg overflow-hidden flex flex-col relative animate-in fade-in zoom-in-95 duration-200">
                 
                 {/* Top Accent Gradient */}
-                <div
-                    className="h-1.5 w-full"
-                    style={{
-                        background: "linear-gradient(90deg, #10b981 0%, #34d399 50%, #0b3c74 100%)",
-                    }}
-                />
+                <div className="h-1.5 w-full rounded-t-3xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
 
                 {/* Header */}
                 <div className="px-6 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between">

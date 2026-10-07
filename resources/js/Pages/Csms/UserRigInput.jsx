@@ -265,7 +265,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
         const hasNewFiles = data.files && data.files.length > 0;
 
         if (!hasExisting && !hasNewFiles) {
-            alert("Harap pilih atau tarik berkas dokumen yang akan diunggah terlebih dahulu (Maks. 500 KB per berkas: PDF, JPG, JPEG, Word).");
+            alert("Harap pilih atau tarik berkas dokumen yang akan diunggah terlebih dahulu (Maks. 5 MB per berkas: PDF, JPG, JPEG, Word).");
             return;
         }
 
@@ -327,7 +327,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                 setUploadProgress(0);
                 setUploadStepMessage("");
                 console.error("Upload error:", errs);
-                alert("Pengunggahan dokumen gagal. Pastikan berkas berformat PDF, JPG, PNG, atau Word dan ukuran maks 500 KB per berkas.");
+                alert("Pengunggahan dokumen gagal. Pastikan berkas berformat PDF, JPG, PNG, atau Word dan ukuran maks 5 MB per berkas.");
             },
             onFinish: () => {
                 clearInterval(progressTimer);
@@ -345,8 +345,8 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
 
         if (droppedFiles.length === 0) return;
 
-        // Validasi ukuran berkas (Maks 500 KB per berkas) & format ekstensi
-        const maxSizeBytes = 500 * 1024;
+        // Validasi ukuran berkas (Maks 5 MB per berkas) & format ekstensi
+        const maxSizeBytes = 5 * 1024 * 1024; // 5 MB (5242880 bytes)
         const allowed = ["pdf", "jpg", "jpeg", "png", "doc", "docx"];
 
         const validFiles = [];
@@ -357,8 +357,8 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                 return;
             }
             if (f.size > maxSizeBytes) {
-                const sizeKB = Math.round(f.size / 1024);
-                alert(`Berkas "${f.name}" (${sizeKB} KB) melebihi batas maksimal 500 KB.`);
+                const sizeMB = (f.size / (1024 * 1024)).toFixed(2);
+                alert(`Berkas "${f.name}" (${sizeMB} MB) melebihi batas maksimal 5 MB.`);
                 return;
             }
             validFiles.push(f);
@@ -533,12 +533,8 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                     1. HEADER CARD (PORTAL INPUT DOKUMEN PER-RIG)
                 ═══════════════════════════════════════════════════════════════ */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative">
-                    <div
-                        className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-                        style={{
-                            background: "linear-gradient(90deg, #10b981 0%, #34d399 50%, #f59e0b 100%)",
-                        }}
-                    />
+                    {/* Garis Aksen K3 Emerald Pekat di bagian atas card */}
+                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
 
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div className="space-y-2">
@@ -1092,7 +1088,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                             existingFileName={uploadTarget.currentRecord?.file_name}
                                             existingFilePath={uploadTarget.currentRecord?.file_path}
                                             error={errors.files || errors.file}
-                                            maxSizeKB={500}
+                                            maxSizeKB={5120}
                                             multiple={true}
                                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                         />
@@ -1124,7 +1120,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                             viewMode="filesOnly"
                                             files={data.files}
                                             onFilesChange={(newFiles) => setData("files", newFiles)}
-                                            maxSizeKB={500}
+                                            maxSizeKB={5120}
                                             multiple={true}
                                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                         />
@@ -1184,7 +1180,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                         </div>
                                     ) : (
                                         <span className="text-[11px] text-slate-400 font-mono">
-                                            Maksimal ukuran 500 KB per berkas dokumen
+                                            Maksimal ukuran 5 MB per berkas dokumen
                                         </span>
                                     )}
                                 </div>
@@ -1640,7 +1636,7 @@ function UserUploadCell({
                         ? "bg-emerald-100/80 border border-dashed border-emerald-500 text-emerald-800 animate-pulse"
                         : "bg-slate-50 hover:bg-emerald-50 border border-dashed border-slate-300 hover:border-emerald-400 text-slate-500 hover:text-emerald-700"
                 }`}
-                title={`Tarik & lepas satu atau beberapa file (maks 500KB) ke sini atau klik (${crew})`}
+                title={`Tarik & lepas satu atau beberapa file (maks 5MB) ke sini atau klik (${crew})`}
             >
                 {isHoveringDrag ? (
                     <span className="text-emerald-950 font-black">Lepas di sini!</span>
@@ -1857,7 +1853,7 @@ function UnifiedRigUploadCell({
                         ? "bg-emerald-100/80 border-2 border-dashed border-emerald-500 text-emerald-800 animate-pulse ring-2 ring-emerald-200"
                         : "bg-emerald-50/70 hover:bg-emerald-100/80 border border-dashed border-emerald-300 hover:border-emerald-500 text-emerald-800"
                 }`}
-                title="Tarik & lepas satu atau banyak file (maks 500KB) ke kotak ini, atau klik untuk buka form"
+                title="Tarik & lepas satu atau banyak file (maks 5MB) ke kotak ini, atau klik untuk buka form"
             >
                 {isHoveringDrag ? (
                     <>

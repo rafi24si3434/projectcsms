@@ -408,12 +408,12 @@ class CsmsController extends Controller
             'crew' => 'nullable|string',
             'status' => 'required|in:Lengkap,Tidak Ada,Pending,In Progress',
             'keterangan' => 'nullable|string',
-            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:500', // max 500KB
+            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120', // max 5MB (5120 KB)
             'files' => 'nullable|array',
-            'files.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:500', // max 500KB per berkas
+            'files.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120', // max 5MB per berkas
         ], [
-            'file.max' => 'Ukuran berkas tidak boleh melebihi 500 KB.',
-            'files.*.max' => 'Ukuran setiap berkas tidak boleh melebihi 500 KB.',
+            'file.max' => 'Ukuran file dokumen tidak boleh melebihi 5 MB.',
+            'files.*.max' => 'Ukuran file dokumen tidak boleh melebihi 5 MB.',
             'file.mimes' => 'Format berkas harus PDF, JPG, JPEG, PNG, atau Word (DOC/DOCX).',
             'files.*.mimes' => 'Format setiap berkas harus PDF, JPG, JPEG, PNG, atau Word (DOC/DOCX).',
         ]);
@@ -495,8 +495,8 @@ class CsmsController extends Controller
 
         $count = count($uploadedAttachments);
         $pesan = $count > 1 
-            ? "{$count} berkas dokumen CSMS (Maks 500 KB) berhasil diunggah!"
-            : "Dokumen CSMS (Maks 500 KB) berhasil diunggah!";
+            ? "{$count} berkas dokumen CSMS (Maks 5 MB) berhasil diunggah!"
+            : "Dokumen CSMS (Maks 5 MB) berhasil diunggah!";
 
         return redirect()->back()->with('success', $pesan);
     }

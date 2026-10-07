@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 3. Buat Akun untuk SELURUH 20 RIG (BMS 01 sampai BMS 23)
+        // 3. Buat Akun untuk SELURUH 20 RIG (BMS 01 sampai BMS 23) dengan password sesuai nomor BMS
         $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
 
         foreach ($rigs as $rig) {
@@ -56,11 +56,15 @@ class DatabaseSeeder extends Seeder
             $email = "{$cleanCode}@besmindo.com";
             $name = "Crew {$rig->name}";
 
+            // Password sesuai nomor BMS diulang 4x (contoh: BMS 01 = 01010101, BMS 10 = 10101010)
+            $bmsNum = substr($cleanCode, 3); // "01", "02", "03a", "05", etc.
+            $rigPassword = str_repeat($bmsNum, 4);
+
             User::updateOrCreate(
                 ['email' => $email],
                 [
                     'name' => $name,
-                    'password' => $defaultPassword,
+                    'password' => Hash::make($rigPassword),
                     'role' => 'user',
                     'status' => 'Active',
                     'csms_rig_id' => $rig->id,

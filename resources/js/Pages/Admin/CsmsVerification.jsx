@@ -157,12 +157,8 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                     1. HEADER CARD (ADMIN VERIFIKASI CSMS)
                 ═══════════════════════════════════════════════════════════════ */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative">
-                    <div
-                        className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-                        style={{
-                            background: "linear-gradient(90deg, #10b981 0%, #34d399 50%, #f59e0b 100%)",
-                        }}
-                    />
+                    {/* Garis Aksen K3 Emerald Pekat di bagian atas card */}
+                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
 
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div className="space-y-2">

@@ -328,19 +328,29 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
     const apiCall = (url, method, body, onSuccess) => {
         setProcessing(true);
         setModalErrors({});
-        router[method](url, body, {
+
+        const options = {
             preserveScroll: true,
             onSuccess: (page) => {
-                onSuccess(page);
+                if (onSuccess) onSuccess(page);
                 setProcessing(false);
             },
             onError: (errs) => {
-                setModalErrors(errs);
-                const first = Object.values(errs)[0];
-                addToast(first || "Terjadi kesalahan validasi.", "error");
+                setModalErrors(errs || {});
+                const first = Object.values(errs || {})[0];
+                addToast(first || "Terjadi kesalahan.", "error");
                 setProcessing(false);
             },
-        });
+            onFinish: () => {
+                setProcessing(false);
+            },
+        };
+
+        if (method === "delete") {
+            router.delete(url, options);
+        } else {
+            router[method](url, body, options);
+        }
     };
 
     const handleSave = (form) => {
@@ -348,7 +358,7 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
         const url    = isEdit ? `/admin/users/${editUser.id}` : "/admin/users";
         const method = isEdit ? "put" : "post";
         apiCall(url, method, form, (page) => {
-            const updated = page.props.users || [];
+            const updated = page?.props?.users || [];
             setUserList(updated);
             setPendingBadge(updated.filter(u => (u.status||"").toLowerCase() === "pending").length);
             setShowAddModal(false);
@@ -362,14 +372,15 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
         router.post(`/admin/users/${user.id}/approve`, {}, {
             preserveScroll: true,
             onSuccess: (page) => {
-                const updated = page.props.users || [];
+                const updated = page?.props?.users || [];
                 setUserList(updated);
                 setPendingBadge(updated.filter(u => (u.status||"").toLowerCase() === "pending").length);
                 addToast(`✅ Akun ${user.name} berhasil di-ACC! Pengguna sekarang dapat login.`, "success");
-                setProcessing(false);
             },
             onError: () => {
                 addToast("Gagal menyetujui akun. Coba lagi.", "error");
+            },
+            onFinish: () => {
                 setProcessing(false);
             },
         });
@@ -377,27 +388,30 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
 
     const handleRejectConfirm = (reason) => {
         const user = rejectUser;
+        setProcessing(true);
         router.post(`/admin/users/${user.id}/reject`, { reason }, {
             preserveScroll: true,
             onSuccess: (page) => {
-                const updated = page.props.users || [];
+                const updated = page?.props?.users || [];
                 setUserList(updated);
                 setPendingBadge(updated.filter(u => (u.status||"").toLowerCase() === "pending").length);
                 setRejectUser(null);
                 addToast(`Akun ${user.name} telah ditolak.`, "warning");
-                setProcessing(false);
             },
             onError: () => {
                 addToast("Gagal menolak akun. Coba lagi.", "error");
+            },
+            onFinish: () => {
                 setProcessing(false);
             },
         });
     };
 
     const handleDelete = () => {
+        if (!deleteUser) return;
         const user = deleteUser;
         apiCall(`/admin/users/${user.id}`, "delete", {}, (page) => {
-            const updated = page.props.users || [];
+            const updated = page?.props?.users || [];
             setUserList(updated);
             setPendingBadge(updated.filter(u => (u.status||"").toLowerCase() === "pending").length);
             setDeleteUser(null);

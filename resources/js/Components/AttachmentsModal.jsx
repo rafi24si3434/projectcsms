@@ -88,12 +88,7 @@ export default function AttachmentsModal({ isOpen, onClose, record, onPreviewAtt
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header Top Accent */}
-                <div
-                    className="w-full h-1 shrink-0"
-                    style={{
-                        background: "linear-gradient(90deg, #10b981 0%, #34d399 50%, #f59e0b 100%)",
-                    }}
-                />
+                <div className="w-full h-1 shrink-0 rounded-t-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
 
                 {/* Modal Header */}
                 <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
@@ -110,7 +105,7 @@ export default function AttachmentsModal({ isOpen, onClose, record, onPreviewAtt
                             {record.category?.nama_dokumen || record.file_name || "Lampiran Berkas Dokumen CSMS"}
                         </h3>
                         <p className="text-xs text-slate-500">
-                            Total {attachments.length} berkas terlampir (Maks. 500 KB per berkas)
+                            Total {attachments.length} berkas terlampir (Maks. 5 MB per berkas)
                         </p>
                     </div>
 
@@ -212,7 +207,7 @@ export default function AttachmentsModal({ isOpen, onClose, record, onPreviewAtt
                 <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                     <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
                         <CheckCircle2 size={14} className="text-emerald-600" />
-                        Format didukung: PDF, JPG, JPEG, Word (DOC/DOCX) maks 500 KB/berkas
+                        Format didukung: PDF, JPG, JPEG, Word (DOC/DOCX) maks 5 MB/berkas
                     </span>
                     <button
                         onClick={onClose}

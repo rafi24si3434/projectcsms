@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import FileDropzone from "@/Components/FileDropzone";
@@ -50,6 +50,8 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
     const [downloadRigTarget, setDownloadRigTarget] = useState(null);
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
     const [showAddRigModal, setShowAddRigModal] = useState(false);
+    const [rigToDelete, setRigToDelete] = useState(null);
+    const [isDeletingRig, setIsDeletingRig] = useState(false);
     const [addRigForm, setAddRigForm] = useState({
         name: "",
         code: "",
@@ -57,6 +59,25 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
     });
     const [addRigErrors, setAddRigErrors] = useState({});
     const [isSubmittingRig, setIsSubmittingRig] = useState(false);
+
+    const handleConfirmDeleteRig = () => {
+        if (!rigToDelete) return;
+        setIsDeletingRig(true);
+
+        router.delete(`/admin/csms/rigs/${rigToDelete.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsDeletingRig(false);
+                setRigToDelete(null);
+            },
+            onError: () => {
+                setIsDeletingRig(false);
+            },
+            onFinish: () => {
+                setIsDeletingRig(false);
+            },
+        });
+    };
 
     const handleOpenAddRigModal = () => {
         setAddRigForm({
@@ -121,7 +142,7 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
     const handleUploadSubmit = (e) => {
         e.preventDefault();
         if (!data.files || data.files.length === 0) {
-            alert("Harap pilih atau tarik berkas dokumen yang akan diunggah terlebih dahulu (Maks. 500 KB per berkas: PDF, JPG, JPEG, Word).");
+            alert("Harap pilih atau tarik berkas dokumen yang akan diunggah terlebih dahulu (Maks. 5 MB per berkas: PDF, JPG, JPEG, Word).");
             return;
         }
 
@@ -197,13 +218,8 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                     1. PORTAL HEADER CARD - PUTIH BERSIH & BERWIBAWA
                 ═══════════════════════════════════════════════════════════════ */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative">
-                    {/* Garis Aksen K3 Hijau-Amber di bagian atas card */}
-                    <div
-                        className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-                        style={{
-                            background: "linear-gradient(90deg, #10b981 0%, #34d399 50%, #f59e0b 100%)",
-                        }}
-                    />
+                    {/* Garis Aksen K3 Emerald Pekat di bagian atas card */}
+                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
 
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div className="space-y-2">
@@ -472,19 +488,34 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
 
                                                 <div className="flex items-center gap-1.5">
                                                     {isAdmin && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setDownloadRigTarget(rig);
-                                                                setIsDownloadModalOpen(true);
-                                                            }}
-                                                            title={`Unduh Paket Dokumen ${rig.name} (${rig.code})`}
-                                                            className="p-1 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition-all cursor-pointer"
-                                                        >
-                                                            <Download size={13} />
-                                                        </button>
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setDownloadRigTarget(rig);
+                                                                    setIsDownloadModalOpen(true);
+                                                                }}
+                                                                title={`Unduh Paket Dokumen ${rig.name} (${rig.code})`}
+                                                                className="p-1 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition-all cursor-pointer"
+                                                            >
+                                                                <Download size={13} />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setRigToDelete(rig);
+                                                                }}
+                                                                title={`Hapus Unit ${rig.name} (${rig.code})`}
+                                                                className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all cursor-pointer"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        </div>
                                                     )}
 
                                                     <span
@@ -810,7 +841,7 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                     files={data.files}
                                     onFilesChange={(newFiles) => setData("files", newFiles)}
                                     error={errors.files || errors.file}
-                                    maxSizeKB={500}
+                                    maxSizeKB={5120}
                                     multiple={true}
                                     accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                     required={true}
@@ -973,6 +1004,58 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Konfirmasi Hapus Unit RIG (Khusus Admin) */}
+            {isAdmin && rigToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-3.5 border border-red-100 shadow-2xs">
+                            <Trash2 size={24} />
+                        </div>
+                        <h3 className="text-base font-black text-slate-800 mb-1">
+                            Hapus Unit RIG?
+                        </h3>
+                        <p className="text-xs text-slate-500 leading-relaxed mb-4">
+                            Apakah Anda yakin ingin menghapus unit <strong className="text-slate-800 font-bold">"{rigToDelete.name}" ({rigToDelete.code})</strong>?
+                        </p>
+
+                        <div className="p-3 bg-red-50/60 rounded-xl border border-red-100 text-left text-[11.5px] text-red-700 leading-relaxed mb-5">
+                            <div className="flex items-start gap-2">
+                                <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
+                                <span>
+                                    <strong>Peringatan:</strong> Seluruh data rekaman dokumen CSMS, matriks, dan berkas lampiran yang terhubung dengan unit RIG ini akan ikut dihapus secara permanen dari sistem.
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-2.5">
+                            <button
+                                type="button"
+                                disabled={isDeletingRig}
+                                onClick={() => setRigToDelete(null)}
+                                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isDeletingRig}
+                                onClick={handleConfirmDeleteRig}
+                                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
+                            >
+                                {isDeletingRig ? (
+                                    <span>Menghapus...</span>
+                                ) : (
+                                    <>
+                                        <Trash2 size={14} />
+                                        <span>Ya, Hapus RIG</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

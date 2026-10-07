@@ -80,7 +80,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email'    => ['required', 'string'],
             'password' => ['required', 'string'],
-            'role'     => ['nullable', 'string', 'in:admin,user'],
+            'role'     => ['nullable', 'string', 'in:admin,user,officer,crew'],
         ]);
 
         $credentials = [

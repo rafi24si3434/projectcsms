@@ -24,7 +24,7 @@ export default function FileDropzone({
     existingFilePath = null,
     error = null,
     accept = ".pdf,.jpg,.jpeg,.png,.doc,.docx",
-    maxSizeKB = 500, // 500 KB sesuai arahan pengguna
+    maxSizeKB = 5120, // 5 MB (5120 KB)
     multiple = true, // Dukung upload banyak berkas
     required = false,
     viewMode = "all", // "all" | "dropOnly" | "filesOnly"
@@ -60,7 +60,8 @@ export default function FileDropzone({
 
         Array.from(incomingFiles).forEach((f) => {
             const ext = f.name.split(".").pop().toLowerCase();
-            const sizeKB = Math.round(f.size / 1024);
+            const formattedSize = formatBytes(f.size);
+            const maxLabel = maxSizeKB >= 1024 ? `${Math.round(maxSizeKB / 1024)} MB` : `${maxSizeKB} KB`;
 
             // Validasi format ekstensi
             if (allowedExts.length > 0 && !allowedExts.includes(ext)) {
@@ -68,9 +69,9 @@ export default function FileDropzone({
                 return;
             }
 
-            // Validasi ukuran berkas (Maksimal 500 KB)
+            // Validasi ukuran berkas (Maksimal 5 MB / 5120 KB)
             if (f.size > maxSizeBytes) {
-                errors.push(`Berkas "${f.name}" (${sizeKB} KB) melebihi batas maksimal ${maxSizeKB} KB.`);
+                errors.push(`Berkas "${f.name}" (${formattedSize}) melebihi batas maksimal ${maxLabel}.`);
                 return;
             }
 
@@ -336,11 +337,11 @@ export default function FileDropzone({
                                                 <span>Ukuran: <strong className="text-slate-700 font-bold">{formatBytes(f.size)}</strong></span>
                                                 {isOver ? (
                                                     <span className="text-rose-600 font-bold text-[9px] px-1 rounded bg-rose-50 border border-rose-200">
-                                                        Melebihi Batas {maxSizeKB} KB
+                                                        Melebihi Batas {maxSizeKB >= 1024 ? `${Math.round(maxSizeKB / 1024)} MB` : `${maxSizeKB} KB`}
                                                     </span>
                                                 ) : (
                                                     <span className="text-emerald-700 font-bold text-[9px] px-1 rounded bg-emerald-50 border border-emerald-200">
-                                                        ✓ Sesuai SOP (≤ {maxSizeKB} KB)
+                                                        ✓ Sesuai SOP (≤ {maxSizeKB >= 1024 ? `${Math.round(maxSizeKB / 1024)} MB` : `${maxSizeKB} KB`})
                                                     </span>
                                                 )}
                                             </div>
@@ -429,7 +430,7 @@ export default function FileDropzone({
                 </p>
 
                 <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                    PDF • Word • JPG • PNG • Maksimal <strong className="text-slate-700 font-bold">{maxSizeKB} KB / berkas</strong>
+                    PDF • Word • JPG • PNG • Maksimal <strong className="text-slate-700 font-bold">{maxSizeKB >= 1024 ? `${Math.round(maxSizeKB / 1024)} MB` : `${maxSizeKB} KB`} / berkas</strong>
                 </p>
             </div>
 
