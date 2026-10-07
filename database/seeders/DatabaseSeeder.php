@@ -21,68 +21,51 @@ class DatabaseSeeder extends Seeder
             CsmsSeeder::class,
         ]);
 
-        $rigBms01 = CsmsRig::where('code', 'BMS 01')->first() ?? CsmsRig::first();
-        $rigBms02 = CsmsRig::where('code', 'BMS 02')->first() ?? CsmsRig::skip(1)->first();
-        $rigBms03 = CsmsRig::where('code', 'BMS 03')->first() ?? CsmsRig::skip(2)->first();
+        $defaultPassword = Hash::make('password');
 
         // 1. Default Admin User (Bisa melihat & ACC seluruh 20 Rig)
         User::updateOrCreate(
             ['email' => 'admin@besmindo.com'],
             [
                 'name' => 'Administrator HSE Pusat',
-                'password' => Hash::make('password'),
+                'password' => $defaultPassword,
                 'role' => 'admin',
                 'status' => 'Active',
                 'csms_rig_id' => null,
             ]
         );
 
-        // 2. Default HSE User Lapangan (Hanya ditugaskan di Rig BMS 01)
+        // 2. Default HSE General Field PIC
         User::updateOrCreate(
             ['email' => 'hse@besmindo.com'],
             [
                 'name' => 'HSE Officer BMS 01',
-                'password' => Hash::make('password'),
+                'password' => $defaultPassword,
                 'role' => 'user',
                 'status' => 'Active',
-                'csms_rig_id' => $rigBms01?->id ?? 1,
+                'csms_rig_id' => CsmsRig::where('code', 'BMS 01')->first()?->id ?? 1,
             ]
         );
 
-        // 3. Operator Rig BMS 01
-        User::updateOrCreate(
-            ['email' => 'bms01@besmindo.com'],
-            [
-                'name' => 'Crew RIG BMS 01',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'Active',
-                'csms_rig_id' => $rigBms01?->id ?? 1,
-            ]
-        );
+        // 3. Buat Akun untuk SELURUH 20 RIG (BMS 01 sampai BMS 23)
+        $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
 
-        // 4. Operator Rig BMS 02
-        User::updateOrCreate(
-            ['email' => 'bms02@besmindo.com'],
-            [
-                'name' => 'Crew RIG BMS 02',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'Active',
-                'csms_rig_id' => $rigBms02?->id ?? 2,
-            ]
-        );
+        foreach ($rigs as $rig) {
+            // Bersihkan format kode rig untuk email (misal: "BMS 01" -> "bms01", "BMS 03A" -> "bms03a")
+            $cleanCode = strtolower(str_replace(' ', '', $rig->code));
+            $email = "{$cleanCode}@besmindo.com";
+            $name = "Crew {$rig->name}";
 
-        // 5. Operator Rig BMS 03
-        User::updateOrCreate(
-            ['email' => 'bms03@besmindo.com'],
-            [
-                'name' => 'Crew RIG BMS 03',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'Active',
-                'csms_rig_id' => $rigBms03?->id ?? 3,
-            ]
-        );
+            User::updateOrCreate(
+                ['email' => $email],
+                [
+                    'name' => $name,
+                    'password' => $defaultPassword,
+                    'role' => 'user',
+                    'status' => 'Active',
+                    'csms_rig_id' => $rig->id,
+                ]
+            );
+        }
     }
 }

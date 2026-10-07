@@ -66,6 +66,8 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
     Route::put('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
     Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
+    Route::post('/users/{id}/approve', [UserController::class, 'approve'])->name('admin.users.approve');
+    Route::post('/users/{id}/reject', [UserController::class, 'reject'])->name('admin.users.reject');
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
     // Settings

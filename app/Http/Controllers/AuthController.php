@@ -39,81 +39,118 @@ class AuthController extends Controller
     }
 
     /**
-     * Menyimpan data pendaftaran akun baru langsung ke database MySQL.
+     * Menyimpan data pendaftaran akun baru.
+     * Status default: PENDING — harus di-ACC oleh HSE Admin sebelum bisa login.
      */
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'string', 'in:admin,user'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'name'                  => ['required', 'string', 'max:255'],
+            'email'                 => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password'              => ['required', 'string', 'min:6', 'confirmed'],
         ], [
-            'name.required' => 'Nama lengkap wajib diisi.',
-            'email.required' => 'Alamat email wajib diisi.',
-            'email.email' => 'Format alamat email tidak valid.',
-            'email.unique' => 'Alamat email ini sudah terdaftar di database.',
-            'role.required' => 'Pilih peran akun (Role Access).',
-            'role.in' => 'Pilihan peran tidak valid.',
-            'password.required' => 'Kata sandi wajib diisi.',
-            'password.min' => 'Kata sandi minimal harus 6 karakter.',
-            'password.confirmed' => 'Konfirmasi kata sandi tidak sesuai.',
+            'name.required'              => 'Nama lengkap wajib diisi.',
+            'email.required'             => 'Alamat email wajib diisi.',
+            'email.email'                => 'Format alamat email tidak valid.',
+            'email.unique'               => 'Alamat email ini sudah terdaftar di sistem.',
+            'password.required'          => 'Kata sandi wajib diisi.',
+            'password.min'               => 'Kata sandi minimal harus 6 karakter.',
+            'password.confirmed'         => 'Konfirmasi kata sandi tidak sesuai.',
         ]);
 
-        $user = User::create([
-            'name' => trim($validated['name']),
-            'email' => strtolower(trim($validated['email'])),
-            'role' => $validated['role'],
-            'status' => 'active',
+        User::create([
+            'name'     => trim($validated['name']),
+            'email'    => strtolower(trim($validated['email'])),
+            'role'     => 'user',       // Semua registrasi mandiri = user biasa
+            'status'   => 'Pending',    // ← WAJIB di-ACC admin sebelum bisa login
             'password' => Hash::make($validated['password']),
         ]);
 
-        // Setelah registrasi berhasil, arahkan kembali ke halaman Login dengan pesan sukses
-        return redirect()->route('login')->with('status', 'Registrasi akun berhasil! Silakan masuk dengan email dan kata sandi Anda.');
+        return redirect()
+            ->route('login')
+            ->with('status', 'Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan HSE Admin. Silakan hubungi Admin untuk proses aktivasi.');
     }
 
     /**
-     * Proses autentikasi login dengan 2 role (Admin & User/PIC).
+     * Proses autentikasi login.
+     * Menolak akun Pending dan Inactive dengan pesan yang jelas.
      */
     public function login(Request $request)
     {
         $validated = $request->validate([
-            'email' => ['required', 'string'],
+            'email'    => ['required', 'string'],
             'password' => ['required', 'string'],
-            'role' => ['nullable', 'string', 'in:admin,user'],
+            'role'     => ['nullable', 'string', 'in:admin,user'],
         ]);
 
         $credentials = [
-            'email' => $validated['email'],
+            'email'    => $validated['email'],
             'password' => $validated['password'],
         ];
 
-        // Jika user memilih login role shortcut tapi email berupa username
+        // Shortcut username → email resolusi
         if (!str_contains($credentials['email'], '@')) {
-            if ($credentials['email'] === 'admin') {
+            $inputUser = strtolower(trim($credentials['email']));
+            if ($inputUser === 'admin') {
                 $credentials['email'] = 'admin@besmindo.com';
-            } elseif ($credentials['email'] === 'user') {
+            } elseif ($inputUser === 'user') {
                 $credentials['email'] = 'user@besmindo.com';
+            } elseif (str_starts_with($inputUser, 'bms')) {
+                $suffix = substr($inputUser, 3);
+                if (is_numeric($suffix) && strlen($suffix) === 1) {
+                    $suffix = '0' . $suffix;
+                }
+                $credentials['email'] = "bms{$suffix}@besmindo.com";
             }
         }
 
-        if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
-            $request->session()->regenerate();
+        // Cek user dulu sebelum Auth::attempt agar bisa berikan pesan status yang tepat
+        $user = User::where('email', strtolower(trim($credentials['email'])))->first();
 
-            return redirect()->route('csms.dashboard');
-        }
+        if ($user) {
+            // Verifikasi password terlebih dahulu
+            if (!Hash::check($credentials['password'], $user->password)) {
+                return back()->withErrors([
+                    'email' => 'Email atau kata sandi yang Anda masukkan tidak sesuai.',
+                ])->onlyInput('email');
+            }
 
-        // Fallback demo matching jika password default
-        $user = User::where('email', $credentials['email'])->first();
-        if ($user && Hash::check($credentials['password'], $user->password)) {
+            $status = strtolower($user->status ?? 'active');
+
+            // ── STATUS: PENDING ──────────────────────────────────────────────
+            if ($status === 'pending') {
+                return back()->withErrors([
+                    'email' => '⏳ Akun Anda masih menunggu persetujuan HSE Admin. Silakan hubungi Admin untuk aktivasi.',
+                ])->onlyInput('email');
+            }
+
+            // ── STATUS: REJECTED ─────────────────────────────────────────────
+            if ($status === 'rejected') {
+                $reason = $user->rejection_reason
+                    ? " Alasan: {$user->rejection_reason}"
+                    : '';
+                return back()->withErrors([
+                    'email' => "❌ Permintaan akun Anda telah ditolak oleh HSE Admin.{$reason} Hubungi Admin untuk informasi lebih lanjut.",
+                ])->onlyInput('email');
+            }
+
+            // ── STATUS: INACTIVE ──────────────────────────────────────────────
+            if ($status === 'inactive') {
+                return back()->withErrors([
+                    'email' => '🚫 Akun Anda telah dinonaktifkan. Silakan hubungi HSE Admin untuk mengaktifkan kembali.',
+                ])->onlyInput('email');
+            }
+
+            // ── STATUS: ACTIVE → Proses login ────────────────────────────────
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
             return redirect()->route('csms.dashboard');
         }
 
+        // Akun tidak ditemukan
         return back()->withErrors([
-            'email' => 'Email, password, atau role yang Anda masukkan tidak sesuai.',
+            'email' => 'Email yang Anda masukkan tidak terdaftar di sistem.',
         ])->onlyInput('email');
     }
 
@@ -123,7 +160,7 @@ class AuthController extends Controller
     public function showForgotPassword()
     {
         return Inertia::render('Auth/ForgotPassword', [
-            'status' => session('status'),
+            'status'   => session('status'),
             'resetUrl' => session('resetUrl'),
         ]);
     }
@@ -137,25 +174,24 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'exists:users,email'],
         ], [
             'email.required' => 'Harap masukkan alamat email Anda.',
-            'email.email' => 'Format alamat email tidak valid.',
-            'email.exists' => 'Alamat email ini tidak terdaftar di sistem kami.',
+            'email.email'    => 'Format alamat email tidak valid.',
+            'email.exists'   => 'Alamat email ini tidak terdaftar di sistem kami.',
         ]);
 
         $email = $request->email;
-        $user = User::where('email', $email)->first();
+        $user  = User::where('email', $email)->first();
         $token = \Illuminate\Support\Str::random(60);
 
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $email],
             [
-                'token' => \Illuminate\Support\Facades\Hash::make($token),
+                'token'      => \Illuminate\Support\Facades\Hash::make($token),
                 'created_at' => now(),
             ]
         );
 
         $resetUrl = url("/reset-password/{$token}?email=" . urlencode($email));
 
-        // Kirim email
         try {
             \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\PasswordResetMail($user, $resetUrl));
         } catch (\Throwable $e) {
@@ -163,7 +199,7 @@ class AuthController extends Controller
         }
 
         return back()->with([
-            'status' => 'Tautan untuk mengatur ulang kata sandi telah dikirimkan ke email Anda!',
+            'status'   => 'Tautan untuk mengatur ulang kata sandi telah dikirimkan ke email Anda!',
             'resetUrl' => $resetUrl,
         ]);
     }
@@ -185,12 +221,12 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email', 'exists:users,email'],
+            'token'    => ['required'],
+            'email'    => ['required', 'email', 'exists:users,email'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ], [
-            'password.required' => 'Kata sandi baru wajib diisi.',
-            'password.min' => 'Kata sandi minimal 6 karakter.',
+            'password.required'  => 'Kata sandi baru wajib diisi.',
+            'password.min'       => 'Kata sandi minimal 6 karakter.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
         ]);
 
@@ -199,7 +235,6 @@ class AuthController extends Controller
             ->first();
 
         if (!$record || !\Illuminate\Support\Facades\Hash::check($request->token, $record->token)) {
-            // Periksa juga jika waktu token lebih dari 60 menit
             return back()->withErrors([
                 'email' => 'Token reset kata sandi tidak valid atau telah kadaluarsa. Silakan ajukan kembali.',
             ]);
@@ -210,7 +245,6 @@ class AuthController extends Controller
             'password' => \Illuminate\Support\Facades\Hash::make($request->password),
         ]);
 
-        // Hapus token yang sudah dipakai
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')
             ->where('email', $request->email)
             ->delete();

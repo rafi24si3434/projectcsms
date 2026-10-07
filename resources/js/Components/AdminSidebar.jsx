@@ -1,9 +1,8 @@
-import React, { useEffect } from "react";
-import { Link, usePage, router } from "@inertiajs/react";
+import React, { useState } from "react";
+import { Link, usePage } from "@inertiajs/react";
 import {
     Users,
     Settings,
-    CircleHelp,
     LogOut,
     HardDrive,
     ShieldCheck,
@@ -14,49 +13,48 @@ import {
     Activity,
     Layers,
     UserCheck,
+    Clock,
 } from "lucide-react";
+import { router } from "@inertiajs/react";
 
 function AdminSidebar() {
     const { url, props } = usePage();
-    const currentUser = props.auth?.user;
-    const isRigUser = currentUser?.role === "user";
-    const userRig = currentUser?.rig;
+    const currentUser      = props.auth?.user;
+    const isRigUser        = currentUser?.role === "user";
+    const userRig          = currentUser?.rig;
+    const pendingCount     = props.pendingUsersCount ?? 0;
 
     // Menu untuk Admin HSE
     const adminMainMenu = [
-        { name: "CSMS Storage (20 RIG)", href: "/csms", icon: HardDrive },
-        { name: "Verifikasi & ACC CSMS", href: "/csms/input-rig", icon: ShieldCheck },
+        { name: "CSMS Storage (20 RIG)", href: "/csms",            icon: HardDrive },
+        { name: "Verifikasi & ACC CSMS", href: "/csms/input-rig",  icon: ShieldCheck },
     ];
 
     const adminManagementMenu = [
-        { name: "User Management",       href: "/admin/users",             icon: Users },
-        { name: "Pengaturan Sistem",     href: "/admin/settings",          icon: Settings },
+        { name: "User Management",   href: "/admin/users",    icon: Users,    badge: pendingCount },
+        { name: "Pengaturan Sistem", href: "/admin/settings", icon: Settings, badge: 0 },
     ];
 
-    // Menu khusus untuk User Rig Lapangan (BMS 01, BMS 02, BMS 03, dst)
+    // Menu khusus untuk User Rig Lapangan
     const rigUserMenu = [
-        { 
-            name: `Input Dokumen (${userRig?.code || 'Rig Saya'})`, 
-            href: "/csms/input-rig", 
-            icon: FileSpreadsheet 
+        {
+            name: `Input Dokumen (${userRig?.code || "Rig Saya"})`,
+            href: "/csms/input-rig",
+            icon: FileSpreadsheet,
         },
-        { 
-            name: "Matriks Dokumen K3", 
-            href: `/csms/rig/${currentUser?.csms_rig_id || 1}`, 
-            icon: Layers 
+        {
+            name: "Matriks Dokumen K3",
+            href: `/csms/rig/${currentUser?.csms_rig_id || 1}`,
+            icon: Layers,
         },
     ];
 
-    const isActive = (href) => url === href || (href !== "/csms" && url.startsWith(href));
+    const isActive = (href) =>
+        url === href || (href !== "/csms" && url.startsWith(href));
 
     const handleLogout = () => {
         router.post("/logout");
     };
-
-    useEffect(() => {
-        document.documentElement.style.setProperty("--admin-sidebar-width", "240px");
-        window.dispatchEvent(new CustomEvent("admin-sidebar-resize", { detail: { collapsed: false } }));
-    }, []);
 
     return (
         <aside
@@ -83,24 +81,28 @@ function AdminSidebar() {
                 </Link>
                 <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">
                     <HardHat size={12} className="text-emerald-600" />
-                    <span>{isRigUser ? `RIG OPS • ${userRig?.code || 'LAPANGAN'}` : 'HSE & CSMS Portal'}</span>
+                    <span>{isRigUser ? `RIG OPS • ${userRig?.code || "LAPANGAN"}` : "HSE & CSMS Portal"}</span>
                 </div>
             </div>
 
-            {/* ── USER PROFILE CARD (DINAMIS SESUAI ROLE & RIG) ── */}
+            {/* ── USER PROFILE CARD ── */}
             <div className="p-4 pb-2 shrink-0">
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
                     <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                        {isRigUser ? <HardHat size={18} strokeWidth={2.4} /> : <ShieldCheck size={18} strokeWidth={2.4} />}
+                        {isRigUser ? (
+                            <HardHat size={18} strokeWidth={2.4} />
+                        ) : (
+                            <ShieldCheck size={18} strokeWidth={2.4} />
+                        )}
                     </div>
                     <div className="overflow-hidden flex-1">
                         <div className="text-[12px] font-black text-slate-800 truncate leading-tight">
-                            {currentUser?.name || (isRigUser ? 'Operator Rig' : 'HSE Officer')}
+                            {currentUser?.name || (isRigUser ? "Operator Rig" : "HSE Officer")}
                         </div>
                         <div className="text-[10px] text-slate-500 font-semibold mt-0.5 flex items-center gap-1.5 truncate">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                             <span className="truncate">
-                                {isRigUser ? (userRig ? userRig.name : 'Rig Ditugaskan') : 'Admin Pusat'}
+                                {isRigUser ? (userRig ? userRig.name : "Rig Ditugaskan") : "Admin Pusat"}
                             </span>
                         </div>
                     </div>
@@ -110,20 +112,18 @@ function AdminSidebar() {
             {/* ── SCROLLABLE NAVIGATION ── */}
             <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4">
                 {isRigUser ? (
-                    /* ═══════════════════════════════════════════
-                       NAVIGASI KHUSUS USER LAPANGAN (PER RIG)
-                    ═══════════════════════════════════════════ */
+                    /* ═══════════ NAVIGASI USER LAPANGAN ═══════════ */
                     <div>
                         <div className="px-3 pb-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
                             <span>Pelaporan Rig Saya</span>
                             <span className="text-[9px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded font-bold">
-                                {userRig?.code || 'RIG'}
+                                {userRig?.code || "RIG"}
                             </span>
                         </div>
                         <div className="space-y-1">
                             {rigUserMenu.map((item) => {
                                 const active = isActive(item.href);
-                                const Icon = item.icon;
+                                const Icon   = item.icon;
                                 return (
                                     <Link
                                         key={item.href}
@@ -142,18 +142,14 @@ function AdminSidebar() {
                                             />
                                             <span className="truncate">{item.name}</span>
                                         </div>
-                                        {active && (
-                                            <ChevronRight size={14} className="text-emerald-600 opacity-80" />
-                                        )}
+                                        {active && <ChevronRight size={14} className="text-emerald-600 opacity-80" />}
                                     </Link>
                                 );
                             })}
                         </div>
                     </div>
                 ) : (
-                    /* ═══════════════════════════════════════════
-                       NAVIGASI LENGKAP KHUSUS ADMIN HSE
-                    ═══════════════════════════════════════════ */
+                    /* ═══════════ NAVIGASI ADMIN HSE ═══════════ */
                     <>
                         {/* Section 1: Modul CSMS */}
                         <div>
@@ -163,7 +159,7 @@ function AdminSidebar() {
                             <div className="space-y-1">
                                 {adminMainMenu.map((item) => {
                                     const active = isActive(item.href);
-                                    const Icon = item.icon;
+                                    const Icon   = item.icon;
                                     return (
                                         <Link
                                             key={item.href}
@@ -182,16 +178,14 @@ function AdminSidebar() {
                                                 />
                                                 <span className="truncate">{item.name}</span>
                                             </div>
-                                            {active && (
-                                                <ChevronRight size={14} className="text-emerald-600 opacity-80" />
-                                            )}
+                                            {active && <ChevronRight size={14} className="text-emerald-600 opacity-80" />}
                                         </Link>
                                     );
                                 })}
                             </div>
                         </div>
 
-                        {/* Section 2: Administrasi & Approval */}
+                        {/* Section 2: Administrasi Pusat */}
                         <div>
                             <div className="px-3 pb-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 Administrasi Pusat
@@ -199,7 +193,7 @@ function AdminSidebar() {
                             <div className="space-y-1">
                                 {adminManagementMenu.map((item) => {
                                     const active = isActive(item.href);
-                                    const Icon = item.icon;
+                                    const Icon   = item.icon;
                                     return (
                                         <Link
                                             key={item.href}
@@ -218,9 +212,15 @@ function AdminSidebar() {
                                                 />
                                                 <span className="truncate">{item.name}</span>
                                             </div>
-                                            {active && (
+                                            {/* Badge notifikasi pending */}
+                                            {item.badge > 0 ? (
+                                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[9px] font-black animate-pulse">
+                                                    <Clock size={9} />
+                                                    {item.badge}
+                                                </span>
+                                            ) : active ? (
                                                 <ChevronRight size={14} className="text-emerald-600 opacity-80" />
-                                            )}
+                                            ) : null}
                                         </Link>
                                     );
                                 })}
@@ -229,17 +229,16 @@ function AdminSidebar() {
                     </>
                 )}
 
-                {/* ── SAFETY MOTTO & EMERGENCY HOTLINE (K3 IDENTITY) ── */}
+                {/* ── K3 SAFETY MOTTO ── */}
                 <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/70 space-y-1.5">
                     <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold text-[11px]">
                         <Activity size={14} className="text-emerald-600" />
                         <span>K3 & Safety Culture</span>
                     </div>
                     <p className="text-[10.5px] text-slate-600 leading-relaxed font-medium">
-                        {isRigUser 
-                            ? `"Utamakan Keselamatan Kerja dan patuhi SOP di Rig ${userRig?.code || ''}."`
-                            : `"Utamakan Keselamatan dan Kesehatan Kerja di Seluruh 20 Rig BMS."`
-                        }
+                        {isRigUser
+                            ? `"Utamakan Keselamatan Kerja dan patuhi SOP di Rig ${userRig?.code || ""}."`
+                            : `"Utamakan Keselamatan dan Kesehatan Kerja di Seluruh 20 Rig BMS."`}
                     </p>
                     <div className="pt-1 border-t border-emerald-200/50 flex items-center justify-between text-[9.5px] text-emerald-700 font-bold">
                         <span>ISO / HSE Center</span>

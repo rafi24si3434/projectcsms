@@ -1,620 +1,411 @@
 import React, { useState } from "react";
-import { useForm, Head, Link } from "@inertiajs/react";
+import { useForm, Head, Link, usePage } from "@inertiajs/react";
 import {
     User,
     Mail,
     Lock,
     Eye,
     EyeOff,
+    Clock,
     ShieldCheck,
-    ClipboardList,
+    CheckCircle,
     ArrowRight,
-    Sparkles,
+    HardHat,
+    Info,
 } from "lucide-react";
 
 export default function Register() {
-    const [showPassword, setShowPassword] = useState(false);
+    const { props } = usePage();
+    const flashStatus = props.flash?.status || null;
+
+    const [showPassword, setShowPassword]               = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [submitted, setSubmitted]                     = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        name: "",
-        email: "",
-        role: "user",
-        password: "",
+        name:                  "",
+        email:                 "",
+        password:              "",
         password_confirmation: "",
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
         post("/register", {
+            onSuccess: () => {
+                setSubmitted(true);
+                reset("password", "password_confirmation");
+            },
             onFinish: () => reset("password", "password_confirmation"),
         });
     };
 
-    return (
-        <>
-            <Head title="Registrasi Akun Baru - PT Besmindo Materi Sewatama" />
-
-            <div
-                style={{
+    // ────────────────────────────────────────────────────────────────────────
+    // HALAMAN SUKSES — Tampil setelah registrasi berhasil
+    // ────────────────────────────────────────────────────────────────────────
+    if (submitted) {
+        return (
+            <>
+                <Head title="Pendaftaran Dikirim — Portal HSE" />
+                <div style={{
                     minHeight: "100vh",
-                    backgroundColor: "#00281b",
-                    backgroundImage: `
-                        radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%),
-                        radial-gradient(circle, rgba(10,25,47,0.8) 0%, transparent 70%),
-                        linear-gradient(135deg, #001f15 0%, #003824 50%, #002417 100%)
-                    `,
-                    fontFamily:
-                        "'Instrument Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    background: "linear-gradient(135deg, #001f15 0%, #003824 50%, #002417 100%)",
+                    fontFamily: "'Instrument Sans', 'Plus Jakarta Sans', -apple-system, sans-serif",
                     padding: "24px 16px",
-                    boxSizing: "border-box",
-                    position: "relative",
-                    overflow: "hidden",
-                }}
-            >
-                {/* AMBIENT BACKGROUND GLOW */}
-                <div
-                    style={{
-                        position: "absolute",
-                        top: "-150px",
-                        right: "-150px",
-                        width: "450px",
-                        height: "450px",
-                        borderRadius: "50%",
-                        background:
-                            "radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%)",
-                        pointerEvents: "none",
-                    }}
-                />
+                }}>
+                    <div style={{ width: "100%", maxWidth: "420px", textAlign: "center" }}>
+                        {/* Icon */}
+                        <div style={{
+                            width: "80px", height: "80px", borderRadius: "50%",
+                            background: "linear-gradient(135deg, #10b981, #059669)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            margin: "0 auto 24px",
+                            boxShadow: "0 0 40px rgba(16,185,129,0.4)",
+                        }}>
+                            <Clock size={36} color="#fff" strokeWidth={2.5} />
+                        </div>
 
-                <div
-                    style={{
-                        width: "100%",
-                        maxWidth: "480px",
-                        zIndex: 10,
-                        position: "relative",
-                    }}
-                >
-                    {/* BRANDING HEADER */}
-                    <div style={{ textAlign: "center", marginBottom: "24px" }}>
-                        <div
+                        <h1 style={{ color: "#fff", fontSize: "22px", fontWeight: "900", margin: "0 0 8px", letterSpacing: "-0.02em" }}>
+                            Pendaftaran Terkirim!
+                        </h1>
+                        <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: "1.6", margin: "0 0 28px" }}>
+                            Akun Anda telah terdaftar dan sedang menunggu persetujuan{" "}
+                            <span style={{ color: "#10b981", fontWeight: "700" }}>HSE Admin</span>.
+                            Anda akan bisa login setelah admin menyetujui permintaan ini.
+                        </p>
+
+                        {/* Steps */}
+                        <div style={{
+                            background: "rgba(255,255,255,0.06)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            borderRadius: "16px",
+                            padding: "20px",
+                            marginBottom: "24px",
+                            textAlign: "left",
+                        }}>
+                            {[
+                                { icon: CheckCircle, color: "#10b981", label: "Akun berhasil terdaftar di sistem" },
+                                { icon: Clock,       color: "#f59e0b", label: "Menunggu review oleh HSE Admin" },
+                                { icon: ShieldCheck, color: "#94a3b8", label: "Setelah di-ACC, Anda bisa login" },
+                            ].map((step, i) => (
+                                <div key={i} style={{
+                                    display: "flex", alignItems: "center", gap: "12px",
+                                    padding: "8px 0",
+                                    borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                                }}>
+                                    <step.icon size={18} color={step.color} strokeWidth={2.5} />
+                                    <span style={{ color: "#cbd5e1", fontSize: "13px", fontWeight: "600" }}>
+                                        {step.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Info kontak */}
+                        <div style={{
+                            background: "rgba(245,158,11,0.12)",
+                            border: "1px solid rgba(245,158,11,0.3)",
+                            borderRadius: "12px",
+                            padding: "14px 16px",
+                            marginBottom: "24px",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "10px",
+                            textAlign: "left",
+                        }}>
+                            <Info size={16} color="#f59e0b" style={{ marginTop: "2px", flexShrink: 0 }} />
+                            <p style={{ color: "#fcd34d", fontSize: "12.5px", margin: 0, lineHeight: "1.5", fontWeight: "600" }}>
+                                Hubungi HSE Coordinator di <strong>0852-6393-9902</strong> untuk mempercepat proses verifikasi akun Anda.
+                            </p>
+                        </div>
+
+                        <Link
+                            href="/login"
                             style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                width: "100%",
-                                maxWidth: "390px",
-                                padding: "16px 24px",
-                                borderRadius: "20px",
-                                backgroundColor: "#ffffff",
-                                border: "2.5px solid #38bdf8",
-                                boxShadow:
-                                    "0 10px 30px rgba(0, 0, 0, 0.3), 0 0 24px rgba(56,189,248,0.25)",
-                                marginBottom: "16px",
-                                boxSizing: "border-box",
+                                display: "inline-flex", alignItems: "center", gap: "8px",
+                                padding: "12px 28px", borderRadius: "12px",
+                                background: "linear-gradient(135deg, #10b981, #059669)",
+                                color: "#fff", fontSize: "14px", fontWeight: "800",
+                                textDecoration: "none",
+                                boxShadow: "0 4px 16px rgba(16,185,129,0.4)",
                             }}
                         >
+                            Kembali ke Halaman Login
+                            <ArrowRight size={16} />
+                        </Link>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // FORM REGISTRASI
+    // ────────────────────────────────────────────────────────────────────────
+    return (
+        <>
+            <Head title="Daftar Akun Baru — Portal HSE CSMS" />
+
+            <div style={{
+                minHeight: "100vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "linear-gradient(135deg, #001f15 0%, #003824 50%, #002417 100%)",
+                fontFamily: "'Instrument Sans', 'Plus Jakarta Sans', -apple-system, sans-serif",
+                padding: "24px 16px",
+                position: "relative",
+                overflow: "hidden",
+            }}>
+                {/* Ambient glow */}
+                <div style={{
+                    position: "absolute", top: "-200px", right: "-200px",
+                    width: "500px", height: "500px", borderRadius: "50%",
+                    background: "radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 70%)",
+                    pointerEvents: "none",
+                }} />
+                <div style={{
+                    position: "absolute", bottom: "-150px", left: "-150px",
+                    width: "400px", height: "400px", borderRadius: "50%",
+                    background: "radial-gradient(circle, rgba(56,189,248,0.07) 0%, transparent 70%)",
+                    pointerEvents: "none",
+                }} />
+
+                <div style={{ width: "100%", maxWidth: "460px", zIndex: 10, position: "relative" }}>
+
+                    {/* LOGO */}
+                    <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                        <div style={{
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            width: "100%", maxWidth: "360px", padding: "14px 24px",
+                            borderRadius: "18px", backgroundColor: "#ffffff",
+                            border: "2px solid rgba(16,185,129,0.4)",
+                            boxShadow: "0 8px 28px rgba(0,0,0,0.3), 0 0 20px rgba(16,185,129,0.15)",
+                            marginBottom: "12px", boxSizing: "border-box",
+                        }}>
                             <img
                                 src="/images/besmindo-logo.png"
                                 alt="PT BESMINDO MATERI SEWATAMA"
-                                style={{
-                                    height: "auto",
-                                    maxHeight: "85px",
-                                    width: "100%",
-                                    maxWidth: "330px",
-                                    objectFit: "contain",
-                                    display: "block",
-                                }}
+                                style={{ height: "auto", maxHeight: "72px", width: "100%", maxWidth: "300px", objectFit: "contain" }}
                             />
                         </div>
 
-                        <div>
-                            <div
-                                style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "6px",
-                                    padding: "6px 18px",
-                                    borderRadius: "20px",
-                                    backgroundColor: "rgba(14,165,233,0.85)",
-                                    border: "1px solid rgba(56,189,248,0.4)",
-                                    color: "#38bdf8",
-                                    fontSize: "12px",
-                                    fontWeight: "800",
-                                    letterSpacing: "0.06em",
-                                    textTransform: "uppercase",
-                                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.2)",
-                                }}
-                            >
-                                <Sparkles size={14} />
-                                Registrasi Akun Portal HSE
-                            </div>
+                        <div style={{
+                            display: "inline-flex", alignItems: "center", gap: "6px",
+                            padding: "5px 16px", borderRadius: "20px",
+                            background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)",
+                            color: "#10b981", fontSize: "11px", fontWeight: "800",
+                            letterSpacing: "0.06em", textTransform: "uppercase",
+                        }}>
+                            <HardHat size={13} />
+                            Pendaftaran Akun Portal HSE
                         </div>
                     </div>
 
-                    {/* REGISTER CARD */}
-                    <div
-                        style={{
-                            backgroundColor: "#ffffff",
-                            borderRadius: "20px",
-                            padding: "32px 30px",
-                            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.35)",
-                            border: "1px solid rgba(56,189,248,0.4)",
-                            position: "relative",
-                            overflow: "hidden",
-                        }}
-                    >
-                        {/* TOP ACCENT LINE */}
-                        <div
-                            style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                height: "4px",
-                                background:
-                                    "linear-gradient(90deg, #0a192f 0%, #38bdf8 50%, #0a192f 100%)",
-                            }}
-                        />
+                    {/* CARD */}
+                    <div style={{
+                        backgroundColor: "#ffffff",
+                        borderRadius: "20px",
+                        boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+                        border: "1px solid rgba(16,185,129,0.25)",
+                        overflow: "hidden",
+                        position: "relative",
+                    }}>
+                        {/* Top accent */}
+                        <div style={{
+                            height: "4px",
+                            background: "linear-gradient(90deg, #064e3b 0%, #10b981 50%, #064e3b 100%)",
+                        }} />
 
-                        <div style={{ marginBottom: "22px" }}>
-                            <h2
-                                style={{
-                                    margin: "0 0 4px",
-                                    fontSize: "20px",
-                                    fontWeight: "900",
-                                    color: "#0a192f",
-                                    letterSpacing: "-0.02em",
-                                }}
-                            >
-                                Buat Akun Baru
-                            </h2>
-                            <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
-                                Data akun akan tersimpan langsung di database MySQL.
+                        {/* K3 notice banner */}
+                        <div style={{
+                            background: "linear-gradient(90deg, #fef3c7, #fffbeb)",
+                            borderBottom: "1px solid #fde68a",
+                            padding: "10px 20px",
+                            display: "flex", alignItems: "flex-start", gap: "10px",
+                        }}>
+                            <Clock size={15} color="#d97706" style={{ marginTop: "2px", flexShrink: 0 }} />
+                            <p style={{ margin: 0, fontSize: "11.5px", color: "#92400e", fontWeight: "700", lineHeight: "1.5" }}>
+                                Akun baru memerlukan persetujuan <strong>HSE Admin</strong> sebelum dapat digunakan untuk login ke sistem.
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit}>
-                            {/* ROLE SELECTION TABS */}
+                        <div style={{ padding: "24px 28px 28px" }}>
                             <div style={{ marginBottom: "20px" }}>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "12px",
-                                        fontWeight: "800",
-                                        color: "#0a192f",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.04em",
-                                        marginBottom: "8px",
-                                    }}
-                                >
-                                    Pilih Peran Akun (Role Access) <span style={{ color: "#ef4444" }}>*</span>
-                                </label>
+                                <h2 style={{ margin: "0 0 4px", fontSize: "19px", fontWeight: "900", color: "#0f172a", letterSpacing: "-0.02em" }}>
+                                    Buat Akun Baru
+                                </h2>
+                                <p style={{ margin: 0, color: "#64748b", fontSize: "12.5px" }}>
+                                    Isi data diri Anda untuk mendaftar ke Portal HSE CSMS PT Besmindo.
+                                </p>
+                            </div>
 
-                                <div
-                                    style={{
-                                        display: "grid",
-                                        gridTemplateColumns: "1fr 1fr",
-                                        gap: "10px",
-                                    }}
-                                >
-                                    {/* USER / PIC */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setData("role", "user")}
-                                        style={{
-                                            padding: "12px 10px",
-                                            borderRadius: "12px",
-                                            border:
-                                                data.role === "user"
-                                                    ? "2px solid #0a192f"
-                                                    : "1px solid #e2e8f0",
-                                            backgroundColor:
-                                                data.role === "user"
-                                                    ? "#0a192f"
-                                                    : "#f8fafc",
-                                            color:
-                                                data.role === "user"
-                                                    ? "#38bdf8"
-                                                    : "#475569",
-                                            cursor: "pointer",
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            alignItems: "center",
-                                            gap: "4px",
-                                            boxShadow:
-                                                data.role === "user"
-                                                    ? "0 4px 14px rgba(14,165,233,0.25)"
-                                                    : "none",
-                                            transition: "all 0.2s ease",
-                                        }}
-                                    >
-                                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                            <ClipboardList size={16} />
-                                            <span style={{ fontWeight: "800", fontSize: "13px" }}>
-                                                Field User / PIC
-                                            </span>
-                                        </div>
-                                        <span
+                            <form onSubmit={handleSubmit}>
+                                {/* NAMA */}
+                                <div style={{ marginBottom: "15px" }}>
+                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "6px" }}>
+                                        Nama Lengkap <span style={{ color: "#ef4444" }}>*</span>
+                                    </label>
+                                    <div style={{ position: "relative" }}>
+                                        <User size={17} style={{ position: "absolute", left: "13px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                                        <input
+                                            type="text"
+                                            value={data.name}
+                                            onChange={(e) => setData("name", e.target.value)}
+                                            placeholder="Contoh: Ahmad Fadilah"
+                                            required
                                             style={{
-                                                fontSize: "10.5px",
-                                                opacity: 0.85,
-                                                fontWeight: "600",
+                                                width: "100%", padding: "11px 13px 11px 40px",
+                                                borderRadius: "10px",
+                                                border: errors.name ? "1.5px solid #ef4444" : "1.5px solid #e2e8f0",
+                                                fontSize: "13.5px", boxSizing: "border-box", outline: "none",
+                                                background: "#f8fafc",
+                                                transition: "border-color 0.2s",
                                             }}
-                                        >
-                                            Penginputan Data HSE
-                                        </span>
-                                    </button>
+                                            onFocus={e => e.target.style.borderColor = "#10b981"}
+                                            onBlur={e => e.target.style.borderColor = errors.name ? "#ef4444" : "#e2e8f0"}
+                                        />
+                                    </div>
+                                    {errors.name && <p style={{ color: "#dc2626", fontSize: "11.5px", marginTop: "4px", fontWeight: "600" }}>{errors.name}</p>}
+                                </div>
 
-                                    {/* ADMIN */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setData("role", "admin")}
-                                        style={{
-                                            padding: "12px 10px",
-                                            borderRadius: "12px",
-                                            border:
-                                                data.role === "admin"
-                                                    ? "2px solid #0a192f"
-                                                    : "1px solid #e2e8f0",
-                                            backgroundColor:
-                                                data.role === "admin"
-                                                    ? "#0a192f"
-                                                    : "#f8fafc",
-                                            color:
-                                                data.role === "admin"
-                                                    ? "#38bdf8"
-                                                    : "#475569",
-                                            cursor: "pointer",
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            alignItems: "center",
-                                            gap: "4px",
-                                            boxShadow:
-                                                data.role === "admin"
-                                                    ? "0 4px 14px rgba(14,165,233,0.25)"
-                                                    : "none",
-                                            transition: "all 0.2s ease",
-                                        }}
-                                    >
-                                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                            <ShieldCheck size={16} />
-                                            <span style={{ fontWeight: "800", fontSize: "13px" }}>
-                                                HSE Admin
-                                            </span>
-                                        </div>
-                                        <span
+                                {/* EMAIL */}
+                                <div style={{ marginBottom: "15px" }}>
+                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "6px" }}>
+                                        Email Resmi <span style={{ color: "#ef4444" }}>*</span>
+                                    </label>
+                                    <div style={{ position: "relative" }}>
+                                        <Mail size={17} style={{ position: "absolute", left: "13px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                                        <input
+                                            type="email"
+                                            value={data.email}
+                                            onChange={(e) => setData("email", e.target.value)}
+                                            placeholder="nama@besmindo.com"
+                                            required
                                             style={{
-                                                fontSize: "10.5px",
-                                                opacity: 0.85,
-                                                fontWeight: "600",
+                                                width: "100%", padding: "11px 13px 11px 40px",
+                                                borderRadius: "10px",
+                                                border: errors.email ? "1.5px solid #ef4444" : "1.5px solid #e2e8f0",
+                                                fontSize: "13.5px", boxSizing: "border-box", outline: "none",
+                                                background: "#f8fafc",
                                             }}
-                                        >
-                                            Dashboard & Approval
-                                        </span>
-                                    </button>
-                                </div>
-                                {errors.role && (
-                                    <div style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px" }}>
-                                        {errors.role}
+                                            onFocus={e => e.target.style.borderColor = "#10b981"}
+                                            onBlur={e => e.target.style.borderColor = errors.email ? "#ef4444" : "#e2e8f0"}
+                                        />
                                     </div>
-                                )}
-                            </div>
+                                    {errors.email && <p style={{ color: "#dc2626", fontSize: "11.5px", marginTop: "4px", fontWeight: "600" }}>{errors.email}</p>}
+                                </div>
 
-                            {/* FULL NAME */}
-                            <div style={{ marginBottom: "16px" }}>
-                                <label
+                                {/* PASSWORD */}
+                                <div style={{ marginBottom: "15px" }}>
+                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "6px" }}>
+                                        Kata Sandi <span style={{ color: "#ef4444" }}>*</span>
+                                        <span style={{ color: "#94a3b8", fontWeight: "600", textTransform: "none", letterSpacing: "normal", marginLeft: "4px" }}>(min. 6 karakter)</span>
+                                    </label>
+                                    <div style={{ position: "relative" }}>
+                                        <Lock size={17} style={{ position: "absolute", left: "13px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            value={data.password}
+                                            onChange={(e) => setData("password", e.target.value)}
+                                            placeholder="••••••••"
+                                            required
+                                            style={{
+                                                width: "100%", padding: "11px 42px 11px 40px",
+                                                borderRadius: "10px",
+                                                border: errors.password ? "1.5px solid #ef4444" : "1.5px solid #e2e8f0",
+                                                fontSize: "13.5px", boxSizing: "border-box", outline: "none",
+                                                background: "#f8fafc",
+                                            }}
+                                            onFocus={e => e.target.style.borderColor = "#10b981"}
+                                            onBlur={e => e.target.style.borderColor = errors.password ? "#ef4444" : "#e2e8f0"}
+                                        />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)}
+                                            style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
+                                            {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                                        </button>
+                                    </div>
+                                    {errors.password && <p style={{ color: "#dc2626", fontSize: "11.5px", marginTop: "4px", fontWeight: "600" }}>{errors.password}</p>}
+                                </div>
+
+                                {/* KONFIRMASI PASSWORD */}
+                                <div style={{ marginBottom: "22px" }}>
+                                    <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "6px" }}>
+                                        Konfirmasi Kata Sandi <span style={{ color: "#ef4444" }}>*</span>
+                                    </label>
+                                    <div style={{ position: "relative" }}>
+                                        <Lock size={17} style={{ position: "absolute", left: "13px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            value={data.password_confirmation}
+                                            onChange={(e) => setData("password_confirmation", e.target.value)}
+                                            placeholder="••••••••"
+                                            required
+                                            style={{
+                                                width: "100%", padding: "11px 42px 11px 40px",
+                                                borderRadius: "10px",
+                                                border: errors.password_confirmation ? "1.5px solid #ef4444" : "1.5px solid #e2e8f0",
+                                                fontSize: "13.5px", boxSizing: "border-box", outline: "none",
+                                                background: "#f8fafc",
+                                            }}
+                                            onFocus={e => e.target.style.borderColor = "#10b981"}
+                                            onBlur={e => e.target.style.borderColor = errors.password_confirmation ? "#ef4444" : "#e2e8f0"}
+                                        />
+                                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
+                                            {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                                        </button>
+                                    </div>
+                                    {errors.password_confirmation && <p style={{ color: "#dc2626", fontSize: "11.5px", marginTop: "4px", fontWeight: "600" }}>{errors.password_confirmation}</p>}
+                                </div>
+
+                                {/* SUBMIT */}
+                                <button
+                                    type="submit"
+                                    disabled={processing}
                                     style={{
-                                        display: "block",
-                                        fontSize: "12.5px",
-                                        fontWeight: "700",
-                                        color: "#1e293b",
-                                        marginBottom: "6px",
+                                        width: "100%", padding: "13px 20px",
+                                        borderRadius: "12px", border: "none",
+                                        background: processing
+                                            ? "#94a3b8"
+                                            : "linear-gradient(135deg, #065f46, #10b981)",
+                                        color: "#fff", fontSize: "14px", fontWeight: "800",
+                                        letterSpacing: "0.02em", cursor: processing ? "not-allowed" : "pointer",
+                                        display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                                        boxShadow: processing ? "none" : "0 6px 20px rgba(16,185,129,0.4)",
+                                        transition: "all 0.2s ease",
                                     }}
                                 >
-                                    Nama Lengkap <span style={{ color: "#ef4444" }}>*</span>
-                                </label>
-                                <div style={{ position: "relative" }}>
-                                    <User
-                                        size={18}
-                                        style={{
-                                            position: "absolute",
-                                            left: "14px",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: "#64748b",
-                                        }}
-                                    />
-                                    <input
-                                        type="text"
-                                        value={data.name}
-                                        onChange={(e) => setData("name", e.target.value)}
-                                        placeholder="Contoh: Ahmad Fadilah"
-                                        required
-                                        style={{
-                                            width: "100%",
-                                            padding: "11px 14px 11px 42px",
-                                            borderRadius: "10px",
-                                            border: errors.name
-                                                ? "1.5px solid #ef4444"
-                                                : "1.5px solid #cbd5e1",
-                                            fontSize: "13.5px",
-                                            boxSizing: "border-box",
-                                            outline: "none",
-                                        }}
-                                    />
-                                </div>
-                                {errors.name && (
-                                    <div style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px" }}>
-                                        {errors.name}
-                                    </div>
-                                )}
+                                    {processing ? (
+                                        <span>Mendaftar...</span>
+                                    ) : (
+                                        <>
+                                            <span>Kirim Permohonan Akun</span>
+                                            <ArrowRight size={17} />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+
+                            <div style={{
+                                marginTop: "20px", paddingTop: "18px",
+                                borderTop: "1px solid #f1f5f9", textAlign: "center",
+                            }}>
+                                <p style={{ margin: 0, fontSize: "12.5px", color: "#64748b" }}>
+                                    Sudah memiliki akun?{" "}
+                                    <Link href="/login" style={{ color: "#065f46", fontWeight: "800", textDecoration: "none" }}>
+                                        Masuk Sekarang
+                                    </Link>
+                                </p>
                             </div>
-
-                            {/* EMAIL */}
-                            <div style={{ marginBottom: "16px" }}>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "12.5px",
-                                        fontWeight: "700",
-                                        color: "#1e293b",
-                                        marginBottom: "6px",
-                                    }}
-                                >
-                                    Alamat Email Resmi <span style={{ color: "#ef4444" }}>*</span>
-                                </label>
-                                <div style={{ position: "relative" }}>
-                                    <Mail
-                                        size={18}
-                                        style={{
-                                            position: "absolute",
-                                            left: "14px",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: "#64748b",
-                                        }}
-                                    />
-                                    <input
-                                        type="email"
-                                        value={data.email}
-                                        onChange={(e) => setData("email", e.target.value)}
-                                        placeholder="nama@besmindo.com"
-                                        required
-                                        style={{
-                                            width: "100%",
-                                            padding: "11px 14px 11px 42px",
-                                            borderRadius: "10px",
-                                            border: errors.email
-                                                ? "1.5px solid #ef4444"
-                                                : "1.5px solid #cbd5e1",
-                                            fontSize: "13.5px",
-                                            boxSizing: "border-box",
-                                            outline: "none",
-                                        }}
-                                    />
-                                </div>
-                                {errors.email && (
-                                    <div style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px" }}>
-                                        {errors.email}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* PASSWORD */}
-                            <div style={{ marginBottom: "16px" }}>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "12.5px",
-                                        fontWeight: "700",
-                                        color: "#1e293b",
-                                        marginBottom: "6px",
-                                    }}
-                                >
-                                    Kata Sandi (Minimal 6 Karakter) <span style={{ color: "#ef4444" }}>*</span>
-                                </label>
-                                <div style={{ position: "relative" }}>
-                                    <Lock
-                                        size={18}
-                                        style={{
-                                            position: "absolute",
-                                            left: "14px",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: "#64748b",
-                                        }}
-                                    />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        value={data.password}
-                                        onChange={(e) => setData("password", e.target.value)}
-                                        placeholder="••••••••"
-                                        required
-                                        style={{
-                                            width: "100%",
-                                            padding: "11px 42px 11px 42px",
-                                            borderRadius: "10px",
-                                            border: errors.password
-                                                ? "1.5px solid #ef4444"
-                                                : "1.5px solid #cbd5e1",
-                                            fontSize: "13.5px",
-                                            boxSizing: "border-box",
-                                            outline: "none",
-                                        }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        style={{
-                                            position: "absolute",
-                                            right: "12px",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            background: "none",
-                                            border: "none",
-                                            color: "#64748b",
-                                            cursor: "pointer",
-                                            padding: "4px",
-                                            display: "flex",
-                                            alignItems: "center",
-                                        }}
-                                    >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                                {errors.password && (
-                                    <div style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px" }}>
-                                        {errors.password}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* PASSWORD CONFIRMATION */}
-                            <div style={{ marginBottom: "24px" }}>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "12.5px",
-                                        fontWeight: "700",
-                                        color: "#1e293b",
-                                        marginBottom: "6px",
-                                    }}
-                                >
-                                    Konfirmasi Kata Sandi <span style={{ color: "#ef4444" }}>*</span>
-                                </label>
-                                <div style={{ position: "relative" }}>
-                                    <Lock
-                                        size={18}
-                                        style={{
-                                            position: "absolute",
-                                            left: "14px",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: "#64748b",
-                                        }}
-                                    />
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        value={data.password_confirmation}
-                                        onChange={(e) => setData("password_confirmation", e.target.value)}
-                                        placeholder="••••••••"
-                                        required
-                                        style={{
-                                            width: "100%",
-                                            padding: "11px 42px 11px 42px",
-                                            borderRadius: "10px",
-                                            border: errors.password_confirmation
-                                                ? "1.5px solid #ef4444"
-                                                : "1.5px solid #cbd5e1",
-                                            fontSize: "13.5px",
-                                            boxSizing: "border-box",
-                                            outline: "none",
-                                        }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        style={{
-                                            position: "absolute",
-                                            right: "12px",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            background: "none",
-                                            border: "none",
-                                            color: "#64748b",
-                                            cursor: "pointer",
-                                            padding: "4px",
-                                            display: "flex",
-                                            alignItems: "center",
-                                        }}
-                                    >
-                                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                                {errors.password_confirmation && (
-                                    <div style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px" }}>
-                                        {errors.password_confirmation}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* SUBMIT BUTTON */}
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                style={{
-                                    width: "100%",
-                                    padding: "14px 20px",
-                                    borderRadius: "12px",
-                                    border: "1px solid #38bdf8",
-                                    backgroundColor: "#0a192f",
-                                    color: "#38bdf8",
-                                    fontSize: "14.5px",
-                                    fontWeight: "800",
-                                    letterSpacing: "0.02em",
-                                    cursor: processing ? "not-allowed" : "pointer",
-                                    opacity: processing ? 0.75 : 1,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: "8px",
-                                    boxShadow:
-                                        "0 6px 20px rgba(14,165,233,0.4), 0 0 16px rgba(56,189,248,0.2)",
-                                    transition: "all 0.2s ease",
-                                }}
-                            >
-                                {processing ? (
-                                    <span>Mendaftarkan ke MySQL...</span>
-                                ) : (
-                                    <>
-                                        <span>Daftarkan Akun Baru</span>
-                                        <ArrowRight size={18} />
-                                    </>
-                                )}
-                            </button>
-                        </form>
-
-                        {/* LINK TO LOGIN */}
-                        <div
-                            style={{
-                                marginTop: "24px",
-                                paddingTop: "20px",
-                                borderTop: "1px solid #f1f5f9",
-                                textAlign: "center",
-                            }}
-                        >
-                            <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
-                                Sudah memiliki akun terdaftar?{" "}
-                                <Link
-                                    href="/login"
-                                    style={{
-                                        color: "#0a192f",
-                                        fontWeight: "800",
-                                        textDecoration: "none",
-                                        marginLeft: "4px",
-                                    }}
-                                >
-                                    Masuk Sekarang
-                                </Link>
-                            </p>
                         </div>
                     </div>
 
-                    {/* FOOTER */}
-                    <div
-                        style={{
-                            textAlign: "center",
-                            marginTop: "20px",
-                            color: "#dbeafe",
-                            fontSize: "12px",
-                        }}
-                    >
-                        © {new Date().getFullYear()} PT Besmindo Materi Sewatama.
-                        All Rights Reserved.
+                    <div style={{ textAlign: "center", marginTop: "16px", color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>
+                        © {new Date().getFullYear()} PT Besmindo Materi Sewatama. All Rights Reserved.
                     </div>
                 </div>
             </div>
