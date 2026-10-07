@@ -4,6 +4,7 @@ import AdminLayout from "@/Layouts/AdminLayout";
 import FileDropzone from "@/Components/FileDropzone";
 import AttachmentsModal from "@/Components/AttachmentsModal";
 import DocumentViewerModal from "@/Components/DocumentViewerModal";
+import YearSelect from "@/Components/YearSelect";
 import {
     HardDrive,
     Upload,
@@ -29,14 +30,22 @@ import {
     FileUp,
     Sparkles,
     MessageSquare,
+    Pencil,
+    Plus,
 } from "lucide-react";
 
-export default function UserRigInput({ rig, allRigs = [], categories = [], records = [], matrix = {}, rigSummary = {}, filter = {}, isRestricted = false }) {
+export default function UserRigInput({ rig, allRigs = [], categories = [], records = [], matrix = {}, rigSummary = {}, filter = {}, isRestricted = false, availableYears = [] }) {
     const { auth, flash } = usePage().props;
     const isAdmin = !isRestricted && (auth?.user?.role === 'admin' || !auth?.user?.csms_rig_id);
 
     const [selectedMonth, setSelectedMonth] = useState(filter.bulan || "Januari");
-    const [selectedYear, setSelectedYear] = useState(filter.tahun || 2025);
+    const [selectedYear, setSelectedYear] = useState(filter.tahun || availableYears?.[0] || new Date().getFullYear());
+
+    useEffect(() => {
+        if (filter.tahun) {
+            setSelectedYear(filter.tahun);
+        }
+    }, [filter.tahun]);
     const [searchCategory, setSearchCategory] = useState("");
     const [uploadTarget, setUploadTarget] = useState(null); // { catId, catNo, catName, crew, currentRecord }
     const [uploadingKey, setUploadingKey] = useState(null); // `${category.id}-${crew}`
@@ -46,6 +55,20 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
     const [isUploading, setIsUploading] = useState(false);
     const [uploadStepMessage, setUploadStepMessage] = useState("");
     const globalDragCounter = useRef(0);
+
+    // ── [ADMIN ONLY] State untuk inline rename nama dokumen ───────────────────
+    const [renamingCatId, setRenamingCatId] = useState(null);
+    const [renameValue, setRenameValue] = useState("");
+    const renameInputRef = useRef(null);
+
+    // ── [ADMIN ONLY] State untuk modal tambah dokumen baru ────────────────────
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [addForm, setAddForm] = useState({ nama_dokumen: "", durasi: "", scope: "crew", keterangan_default: "" });
+    const [addSubmitting, setAddSubmitting] = useState(false);
+
+    // ── [ADMIN ONLY] State untuk modal hapus kategori dokumen ─────────────────
+    const [deleteCatModal, setDeleteCatModal] = useState(null);
+    const [isDeletingCat, setIsDeletingCat] = useState(false);
 
     // Modal Verifikasi & ACC State untuk Admin HSE
     const [verificationModal, setVerificationModal] = useState({
@@ -126,7 +149,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
-    const years = [2024, 2025, 2026, 2027];
+
 
     const { data, setData, post, processing, reset, errors } = useForm({
         csms_rig_id: rig?.id || "",
@@ -147,6 +170,62 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
             { bulan: month, tahun: year },
             { preserveState: true, replace: true }
         );
+    };
+
+    // ── [ADMIN ONLY] Handler rename inline ───────────────────────────────────
+    const startRename = (cat) => {
+        setRenamingCatId(cat.id);
+        setRenameValue(cat.nama_dokumen);
+        setTimeout(() => renameInputRef.current?.focus(), 50);
+    };
+
+    const cancelRename = () => {
+        setRenamingCatId(null);
+        setRenameValue("");
+    };
+
+    const submitRename = (catId) => {
+        if (!renameValue.trim()) return;
+        router.patch(
+            `/admin/csms/categories/${catId}`,
+            { nama_dokumen: renameValue.trim() },
+            {
+                preserveState: true,
+                onSuccess: () => { setRenamingCatId(null); setRenameValue(""); },
+            }
+        );
+    };
+
+    // ── [ADMIN ONLY] Handler tambah kategori baru ────────────────────────────
+    const handleAddCategory = (e) => {
+        e.preventDefault();
+        if (!addForm.nama_dokumen.trim() || !addForm.durasi.trim()) return;
+        setAddSubmitting(true);
+        router.post(
+            "/admin/csms/categories",
+            addForm,
+            {
+                preserveState: false,
+                onSuccess: () => {
+                    setShowAddModal(false);
+                    setAddForm({ nama_dokumen: "", durasi: "", scope: "crew", keterangan_default: "" });
+                },
+                onFinish: () => setAddSubmitting(false),
+            }
+        );
+    };
+
+    // ── [ADMIN ONLY] Handler hapus kategori dokumen ──────────────────────────
+    const confirmDeleteCategory = () => {
+        if (!deleteCatModal) return;
+        setIsDeletingCat(true);
+        router.delete(`/admin/csms/categories/${deleteCatModal.id}`, {
+            preserveState: false,
+            onSuccess: () => {
+                setDeleteCatModal(null);
+            },
+            onFinish: () => setIsDeletingCat(false),
+        });
     };
 
     const handleRigSwitch = (newRigId) => {
@@ -453,9 +532,9 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                 {/* ═══════════════════════════════════════════════════════════════
                     1. HEADER CARD (PORTAL INPUT DOKUMEN PER-RIG)
                 ═══════════════════════════════════════════════════════════════ */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative">
                     <div
-                        className="absolute top-0 left-0 right-0 h-1"
+                        className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
                         style={{
                             background: "linear-gradient(90deg, #10b981 0%, #34d399 50%, #f59e0b 100%)",
                         }}
@@ -546,15 +625,13 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                     ))}
                                 </select>
                                 <span className="text-slate-300">/</span>
-                                <select
+                                <YearSelect
                                     value={selectedYear}
-                                    onChange={(e) => handleFilterChange(selectedMonth, e.target.value)}
+                                    onChange={(year) => handleFilterChange(selectedMonth, year)}
+                                    availableYears={availableYears}
                                     className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
-                                >
-                                    {years.map((y) => (
-                                        <option key={y} value={y}>{y}</option>
-                                    ))}
-                                </select>
+                                    optionClass="bg-white text-slate-800"
+                                />
                             </div>
 
                             {/* Tombol Navigasi */}
@@ -668,15 +745,28 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                             </h3>
                         </div>
 
-                        <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Cari nama atau nomor kategori..."
-                                value={searchCategory}
-                                onChange={(e) => setSearchCategory(e.target.value)}
-                                className="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800 shadow-2xs w-64 placeholder-slate-400"
-                            />
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {/* [ADMIN ONLY] Tombol tambah dokumen baru */}
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setShowAddModal(true)}
+                                    className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-sm"
+                                >
+                                    <Plus size={13} />
+                                    Tambah Dokumen
+                                </button>
+                            )}
+
+                            <div className="relative">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Cari nama atau nomor kategori..."
+                                    value={searchCategory}
+                                    onChange={(e) => setSearchCategory(e.target.value)}
+                                    className="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800 shadow-2xs w-64 placeholder-slate-400"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -692,6 +782,9 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                     <th className="p-3.5 border-r border-slate-200 text-center w-40 bg-slate-100/50">Crew B</th>
                                     <th className="p-3.5 border-r border-slate-200 text-center w-40 bg-slate-100/50">Crew C</th>
                                     <th className="p-3.5 min-w-[200px]">Catatan / Instruksi Admin</th>
+                                    {isAdmin && (
+                                        <th className="p-3.5 border-l border-slate-200 text-center w-16">Aksi</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
@@ -703,6 +796,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
 
                                     const isCrewScope = cat.scope === 'crew';
                                     const activeFeedback = recordRig?.approval_notes || recordCrewA?.approval_notes || recordCrewB?.approval_notes || recordCrewC?.approval_notes;
+                                    const isRenaming  = isAdmin && renamingCatId === cat.id;
 
                                     return (
                                         <tr key={cat.id} className="hover:bg-slate-50/70 transition-colors">
@@ -711,9 +805,43 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                                 {cat.no}
                                             </td>
 
-                                            {/* Nama Dokumen */}
+                                            {/* Nama Dokumen — inline rename untuk Admin, read-only untuk User */}
                                             <td className="p-3.5 font-bold text-slate-800 border-r border-slate-100">
-                                                <div>{cat.nama_dokumen}</div>
+                                                {isRenaming ? (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <input
+                                                            ref={renameInputRef}
+                                                            type="text"
+                                                            value={renameValue}
+                                                            onChange={(e) => setRenameValue(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === "Enter") submitRename(cat.id);
+                                                                if (e.key === "Escape") cancelRename();
+                                                            }}
+                                                            className="flex-1 text-xs border border-emerald-400 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-300 font-bold text-slate-800"
+                                                        />
+                                                        <button onClick={() => submitRename(cat.id)} title="Simpan" className="text-emerald-600 hover:text-emerald-700 transition-colors">
+                                                            <Check size={14} />
+                                                        </button>
+                                                        <button onClick={cancelRename} title="Batal" className="text-slate-400 hover:text-slate-600 transition-colors">
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 group">
+                                                        <div>{cat.nama_dokumen}</div>
+                                                        {/* Ikon pensil hanya muncul saat hover, khusus Admin */}
+                                                        {isAdmin && (
+                                                            <button
+                                                                onClick={() => startRename(cat)}
+                                                                title="Ubah nama dokumen"
+                                                                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-emerald-600 transition-all"
+                                                            >
+                                                                <Pencil size={12} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <span className="text-[10px] font-semibold text-slate-400">
                                                     Scope: {isCrewScope ? '3 Crew (A, B, C)' : '1 Unit Per Rig'}
                                                 </span>
@@ -851,6 +979,20 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                                     </div>
                                                 )}
                                             </td>
+
+                                            {/* [ADMIN ONLY] Kolom Aksi (Hapus Kategori) */}
+                                            {isAdmin && (
+                                                <td className="p-3 text-center border-l border-slate-100 align-middle">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDeleteCatModal(cat)}
+                                                        title={`Hapus kategori "${cat.nama_dokumen}"`}
+                                                        className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 inline-flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
                                     );
                                 })}
@@ -1271,6 +1413,147 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════
+                [ADMIN ONLY] MODAL TAMBAH KATEGORI DOKUMEN BARU
+            ═══════════════════════════════════════════════════════════════ */}
+            {isAdmin && showAddModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200">
+                        {/* Header modal */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+                                    <Plus size={14} className="text-emerald-700" />
+                                </div>
+                                <h3 className="text-sm font-black text-slate-800">Tambah Kategori Dokumen Baru</h3>
+                            </div>
+                            <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Form */}
+                        <form onSubmit={handleAddCategory} className="p-5 space-y-4">
+                            {/* Nama Dokumen */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    Nama Dokumen <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={addForm.nama_dokumen}
+                                    onChange={(e) => setAddForm({ ...addForm, nama_dokumen: e.target.value })}
+                                    placeholder="cth: Laporan Inspeksi Bulanan"
+                                    required
+                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+                                />
+                            </div>
+
+                            {/* Durasi */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    Durasi / Frekuensi <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={addForm.durasi}
+                                    onChange={(e) => setAddForm({ ...addForm, durasi: e.target.value })}
+                                    placeholder="cth: 1x/Bulan atau Harian"
+                                    required
+                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+                                />
+                            </div>
+
+                            {/* Scope */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    Scope <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={addForm.scope}
+                                    onChange={(e) => setAddForm({ ...addForm, scope: e.target.value })}
+                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-white"
+                                >
+                                    <option value="crew">Per Crew (Crew A, B, C terpisah)</option>
+                                    <option value="rig">Per Rig (1 upload untuk seluruh crew)</option>
+                                </select>
+                            </div>
+
+                            {/* Keterangan Default (opsional) */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    Keterangan Default <span className="text-slate-400 font-normal">(opsional)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={addForm.keterangan_default}
+                                    onChange={(e) => setAddForm({ ...addForm, keterangan_default: e.target.value })}
+                                    placeholder="cth: Wajib diisi setiap bulan"
+                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+                                />
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={addSubmitting || !addForm.nama_dokumen.trim() || !addForm.durasi.trim()}
+                                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                                >
+                                    {addSubmitting ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                                    {addSubmitting ? "Menyimpan..." : "Tambah Dokumen"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════
+                [ADMIN ONLY] MODAL KONFIRMASI HAPUS KATEGORI DOKUMEN
+            ═══════════════════════════════════════════════════════════════ */}
+            {isAdmin && deleteCatModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 p-5 text-center">
+                        <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3.5">
+                            <Trash2 size={24} />
+                        </div>
+                        <h3 className="text-base font-black text-slate-900 mb-1.5">
+                            Hapus Kategori Dokumen?
+                        </h3>
+                        <p className="text-xs text-slate-500 leading-relaxed mb-4">
+                            Anda akan menghapus kategori <strong className="text-slate-800 font-bold">"{deleteCatModal.nama_dokumen}"</strong> (No. {deleteCatModal.no}). Semua berkas dan rekaman terkait kategori ini pada seluruh unit Rig akan ikut terhapus secara permanen.
+                        </p>
+                        <div className="flex items-center justify-center gap-2">
+                            <button
+                                type="button"
+                                disabled={isDeletingCat}
+                                onClick={() => setDeleteCatModal(null)}
+                                className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isDeletingCat}
+                                onClick={confirmDeleteCategory}
+                                className="px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                                {isDeletingCat ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                <span>{isDeletingCat ? "Menghapus..." : "Ya, Hapus Kategori"}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

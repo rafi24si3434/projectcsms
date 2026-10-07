@@ -98,15 +98,16 @@ export default function Login({ status }) {
                 <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-2 sm:py-3 w-full max-w-[480px] mx-auto">
                     
                     {/* 1. BRANDING & SAFETY BADGE */}
-                    <div className="flex flex-col items-center text-center mb-3 sm:mb-4 shrink-0">
+                    <div className="flex flex-col items-center text-center mb-2 sm:mb-3 shrink-0">
+                        {/* Logo Animasi Bersinar Transparan True HD */}
                         <img
-                            src="/images/logo-besmindo.png"
+                            src="/images/logo-animation.webp"
                             alt="PT BESMINDO MATERI SEWATAMA"
-                            className="h-10 sm:h-11 w-auto object-contain drop-shadow-2xs"
+                            className="w-72 sm:w-80 h-auto mx-auto mb-4 object-contain drop-shadow-md select-none transition-transform hover:scale-[1.02]"
                         />
 
                         {/* Safety Tagline Badge */}
-                        <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/90 text-[10.5px] font-black text-emerald-800 uppercase tracking-widest shadow-2xs">
+                        <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/90 text-[10.5px] font-black text-emerald-800 uppercase tracking-widest shadow-2xs">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                             <HardHat size={12} className="text-emerald-700" />
                             <span>Safety First &bull; Zero Accident</span>

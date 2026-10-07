@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { Head, Link, router, useForm } from "@inertiajs/react";
+import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import FileDropzone from "@/Components/FileDropzone";
 import AttachmentsModal from "@/Components/AttachmentsModal";
+import RigDownloadModal from "@/Components/RigDownloadModal";
+import YearSelect from "@/Components/YearSelect";
 import { useTheme } from "@/Contexts/ThemeContext";
 import {
     HardDrive,
@@ -24,24 +26,76 @@ import {
     HardHat,
     Calendar,
     Sparkles,
+    Download,
 } from "lucide-react";
 
-export default function CsmsDashboard({ rigs, categories, records, rigStats, filter, summary }) {
+export default function CsmsDashboard({ rigs, categories, records, rigStats, filter, summary, availableYears = [] }) {
+    const { auth } = usePage().props;
+    const isAdmin = auth?.user?.role === "admin";
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === "dark";
 
     const [selectedMonth, setSelectedMonth] = useState(filter?.bulan || "Januari");
-    const [selectedYear, setSelectedYear] = useState(filter?.tahun || 2025);
+    const [selectedYear, setSelectedYear] = useState(filter?.tahun || availableYears?.[0] || new Date().getFullYear());
+
+    useEffect(() => {
+        if (filter?.tahun) {
+            setSelectedYear(filter.tahun);
+        }
+    }, [filter?.tahun]);
     const [searchRig, setSearchRig] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [viewAttachmentsRecord, setViewAttachmentsRecord] = useState(null);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [downloadRigTarget, setDownloadRigTarget] = useState(null);
+    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+    const [showAddRigModal, setShowAddRigModal] = useState(false);
+    const [addRigForm, setAddRigForm] = useState({
+        name: "",
+        code: "",
+        status: "active",
+    });
+    const [addRigErrors, setAddRigErrors] = useState({});
+    const [isSubmittingRig, setIsSubmittingRig] = useState(false);
+
+    const handleOpenAddRigModal = () => {
+        setAddRigForm({
+            name: "",
+            code: "",
+            status: "active",
+        });
+        setAddRigErrors({});
+        setShowAddRigModal(true);
+    };
+
+    const handleAddRigSubmit = (e) => {
+        e.preventDefault();
+        setIsSubmittingRig(true);
+        setAddRigErrors({});
+
+        router.post("/admin/csms/rigs", addRigForm, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsSubmittingRig(false);
+                setShowAddRigModal(false);
+                setAddRigForm({
+                    name: "",
+                    code: "",
+                    status: "active",
+                });
+            },
+            onError: (errs) => {
+                setIsSubmittingRig(false);
+                setAddRigErrors(errs || {});
+            },
+        });
+    };
 
     const months = [
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
-    const years = [2024, 2025, 2026, 2027];
+
 
     const { data, setData, post, processing, reset, errors } = useForm({
         csms_rig_id: rigs?.[0]?.id || "",
@@ -142,10 +196,10 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                 {/* ═══════════════════════════════════════════════════════════════
                     1. PORTAL HEADER CARD - PUTIH BERSIH & BERWIBAWA
                 ═══════════════════════════════════════════════════════════════ */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative">
                     {/* Garis Aksen K3 Hijau-Amber di bagian atas card */}
                     <div
-                        className="absolute top-0 left-0 right-0 h-1"
+                        className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
                         style={{
                             background: "linear-gradient(90deg, #10b981 0%, #34d399 50%, #f59e0b 100%)",
                         }}
@@ -186,17 +240,13 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                     ))}
                                 </select>
                                 <span className="text-slate-300">/</span>
-                                <select
+                                <YearSelect
                                     value={selectedYear}
-                                    onChange={(e) => handleFilterChange(selectedMonth, e.target.value)}
+                                    onChange={(year) => handleFilterChange(selectedMonth, year)}
+                                    availableYears={availableYears}
                                     className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
-                                >
-                                    {years.map((y) => (
-                                        <option key={y} value={y} className="bg-white text-slate-800">
-                                            {y}
-                                        </option>
-                                    ))}
-                                </select>
+                                    optionClass="bg-white text-slate-800"
+                                />
                             </div>
 
                             {/* Tombol Input Per-Rig */}
@@ -216,6 +266,22 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <ShieldCheck size={16} className="text-amber-600" />
                                 <span>Pusat Verifikasi / ACC ({summary?.pending_count || 0})</span>
                             </Link>
+
+                            {/* [ADMIN ONLY] Tombol Tarik & Unduh Dokumen Rig (ZIP) */}
+                            {isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setDownloadRigTarget(null);
+                                        setIsDownloadModalOpen(true);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3.5 py-2 rounded-xl border border-emerald-300 text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+                                    title="Tarik dan Unduh Seluruh Berkas Dokumen & Data Rig (ZIP)"
+                                >
+                                    <Download size={16} className="text-emerald-700" />
+                                    <span>Unduh Paket Dokumen Rig</span>
+                                </button>
+                            )}
 
                             {/* Tombol Upload Dokumen Baru */}
                             <button
@@ -354,6 +420,18 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                     Sedang Berjalan
                                 </button>
                             </div>
+
+                            {/* Tombol Tambah Unit RIG (Khusus Admin) */}
+                            {isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={handleOpenAddRigModal}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md shrink-0"
+                                >
+                                    <Plus size={15} className="stroke-[2.5]" />
+                                    <span>Tambah Unit RIG</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -363,6 +441,16 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                             <AlertTriangle size={32} className="mx-auto text-amber-500 mb-2" />
                             <p className="font-bold text-slate-700 text-sm">Tidak ada RIG yang cocok dengan pencarian.</p>
                             <p className="text-xs text-slate-400 mt-1">Coba bersihkan kata kunci pada kotak pencarian di atas.</p>
+                            {isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={handleOpenAddRigModal}
+                                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all cursor-pointer"
+                                >
+                                    <Plus size={14} className="stroke-[2.5]" />
+                                    <span>Tambah Unit RIG Baru</span>
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -382,17 +470,35 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                                     {rig.code}
                                                 </span>
 
-                                                <span
-                                                    className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
-                                                        isComplete
-                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                            : isHalf
-                                                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                                                            : "bg-slate-50 text-slate-500 border-slate-200"
-                                                    }`}
-                                                >
-                                                    {rig.percentage}%
-                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    {isAdmin && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setDownloadRigTarget(rig);
+                                                                setIsDownloadModalOpen(true);
+                                                            }}
+                                                            title={`Unduh Paket Dokumen ${rig.name} (${rig.code})`}
+                                                            className="p-1 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition-all cursor-pointer"
+                                                        >
+                                                            <Download size={13} />
+                                                        </button>
+                                                    )}
+
+                                                    <span
+                                                        className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                                                            isComplete
+                                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                                : isHalf
+                                                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                                : "bg-slate-50 text-slate-500 border-slate-200"
+                                                        }`}
+                                                    >
+                                                        {rig.percentage}%
+                                                    </span>
+                                                </div>
                                             </div>
 
                                             <h3 className="font-black text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">
@@ -426,6 +532,25 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                     </Link>
                                 );
                             })}
+
+                            {/* Card Tambah Unit RIG (Khusus Admin) */}
+                            {isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={handleOpenAddRigModal}
+                                    className="group border-2 border-dashed border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/40 bg-white/60 rounded-2xl p-4 transition-all duration-200 flex flex-col items-center justify-center text-center min-h-[160px] cursor-pointer hover:-translate-y-0.5 shadow-2xs hover:shadow-md"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-emerald-100 text-slate-500 group-hover:text-emerald-600 flex items-center justify-center mb-2 transition-colors">
+                                        <Plus size={20} className="stroke-[2.5]" />
+                                    </div>
+                                    <span className="text-xs font-black text-slate-700 group-hover:text-emerald-700 transition-colors">
+                                        + Tambah Unit RIG
+                                    </span>
+                                    <span className="text-[11px] text-slate-400 mt-0.5 font-medium">
+                                        Khusus Hak Akses Admin
+                                    </span>
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -732,6 +857,125 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                 onClose={() => setViewAttachmentsRecord(null)}
                 record={viewAttachmentsRecord}
             />
+
+            {/* Modal Unduh Seluruh Dokumen Rig (Admin Only) */}
+            {isAdmin && (
+                <RigDownloadModal
+                    isOpen={isDownloadModalOpen}
+                    onClose={() => setIsDownloadModalOpen(false)}
+                    rigs={rigs}
+                    selectedRig={downloadRigTarget || rigs?.[0]}
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                />
+            )}
+
+            {/* Modal Tambah Unit RIG Baru (Khusus Admin) */}
+            {isAdmin && showAddRigModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-5">
+                            <div>
+                                <h3 className="font-black text-slate-800 text-base">
+                                    Tambah Unit RIG Baru
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Daftarkan unit RIG baru ke dalam matriks pemantauan CSMS.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddRigModal(false)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleAddRigSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Nama Lengkap RIG <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Contoh: RIG BMS 21"
+                                    value={addRigForm.name}
+                                    onChange={(e) => setAddRigForm({ ...addRigForm, name: e.target.value })}
+                                    className={`w-full border rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all ${
+                                        addRigErrors.name ? "border-red-400 ring-1 ring-red-300" : "border-slate-300"
+                                    }`}
+                                />
+                                {addRigErrors.name && (
+                                    <p className="text-[11px] font-semibold text-red-500 mt-1">
+                                        {addRigErrors.name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Kode Singkat RIG <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Contoh: BMS 21 atau BMS-21"
+                                    value={addRigForm.code}
+                                    onChange={(e) => setAddRigForm({ ...addRigForm, code: e.target.value.toUpperCase() })}
+                                    className={`w-full border rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all uppercase ${
+                                        addRigErrors.code ? "border-red-400 ring-1 ring-red-300" : "border-slate-300"
+                                    }`}
+                                />
+                                {addRigErrors.code && (
+                                    <p className="text-[11px] font-semibold text-red-500 mt-1">
+                                        {addRigErrors.code}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Status Operasional
+                                </label>
+                                <select
+                                    value={addRigForm.status}
+                                    onChange={(e) => setAddRigForm({ ...addRigForm, status: e.target.value })}
+                                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-700 font-semibold"
+                                >
+                                    <option value="active">Aktif (Beroperasi)</option>
+                                    <option value="inactive">Nonaktif (Standby / Pemeliharaan)</option>
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100 mt-5">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddRigModal(false)}
+                                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmittingRig}
+                                    className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
+                                >
+                                    {isSubmittingRig ? (
+                                        <span>Menyimpan...</span>
+                                    ) : (
+                                        <>
+                                            <Plus size={14} className="stroke-[2.5]" />
+                                            <span>Simpan Unit RIG</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }

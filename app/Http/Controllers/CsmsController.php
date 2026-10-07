@@ -13,6 +13,65 @@ use Inertia\Response;
 class CsmsController extends Controller
 {
     /**
+     * Dapatkan daftar tahun CSMS yang tersedia dari persistent storage & database.
+     */
+    public static function getAvailableYears(): array
+    {
+        $yearsFile = storage_path('app/csms_years.json');
+        $customYears = [];
+        $deletedYears = [];
+
+        if (file_exists($yearsFile)) {
+            $data = json_decode(file_get_contents($yearsFile), true) ?: [];
+            $customYears = array_map('intval', $data['custom'] ?? []);
+            $deletedYears = array_map('intval', $data['deleted'] ?? []);
+        }
+
+        $currentYear = (int) date('Y');
+        $baseYears = range(2024, $currentYear + 5);
+
+        // Ambil juga tahun-tahun yang sudah pernah diinput di database record
+        try {
+            $recordYears = CsmsRecord::distinct('periode_tahun')->pluck('periode_tahun')->map(fn($y) => (int)$y)->toArray();
+        } catch (\Throwable $e) {
+            $recordYears = [];
+        }
+
+        $allYears = array_unique(array_merge($baseYears, $recordYears, $customYears));
+        $allYears = array_values(array_filter($allYears, fn($y) => !in_array((int)$y, $deletedYears, true)));
+
+        sort($allYears);
+
+        if (empty($allYears)) {
+            $allYears = [$currentYear];
+        }
+
+        return $allYears;
+    }
+
+    /**
+     * Tentukan tahun aktif (selected year) yang valid.
+     * Jika request tahun tidak valid / tidak ada di daftar, fallback ke tahun berjalan atau tahun pertama/terbaru yang tersedia.
+     */
+    public static function resolveActiveYear(?int $requestedYear = null): int
+    {
+        $availableYears = self::getAvailableYears();
+        $currentYear = (int) date('Y');
+
+        if ($requestedYear && in_array($requestedYear, $availableYears, true)) {
+            return $requestedYear;
+        }
+
+        // Fallback 1: Jika tahun berjalan ada di daftar
+        if (in_array($currentYear, $availableYears, true)) {
+            return $currentYear;
+        }
+
+        // Fallback 2: Tahun terbaru yang tersedia di daftar
+        return !empty($availableYears) ? end($availableYears) : $currentYear;
+    }
+
+    /**
      * Dashboard CSMS - List of 20 RIGs and document overview.
      */
     public function index(Request $request)
@@ -24,8 +83,9 @@ class CsmsController extends Controller
         }
 
         $bulan = $request->query('bulan', 'Januari');
-        $tahun = (int) $request->query('tahun', 2025);
+        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
         $selectedRigId = $request->query('rig_id');
+        $availableYears = self::getAvailableYears();
 
         $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
         $categories = CsmsDocumentCategory::orderBy('no')->get();
@@ -73,6 +133,7 @@ class CsmsController extends Controller
             'categories' => $categories,
             'records' => $records,
             'rigStats' => $rigStats,
+            'availableYears' => $availableYears,
             'filter' => [
                 'bulan' => $bulan,
                 'tahun' => $tahun,
@@ -101,7 +162,8 @@ class CsmsController extends Controller
 
         $rig = CsmsRig::findOrFail($id);
         $bulan = $request->query('bulan', 'Januari');
-        $tahun = (int) $request->query('tahun', 2025);
+        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
+        $availableYears = self::getAvailableYears();
 
         $categories = CsmsDocumentCategory::orderBy('no')->get();
         $records = CsmsRecord::where('csms_rig_id', $rig->id)
@@ -127,6 +189,7 @@ class CsmsController extends Controller
             'categories' => $categories,
             'records' => $records,
             'matrix' => $matrix,
+            'availableYears' => $availableYears,
             'filter' => [
                 'bulan' => $bulan,
                 'tahun' => $tahun,
@@ -142,9 +205,10 @@ class CsmsController extends Controller
     public function verificationIndex(Request $request): Response
     {
         $bulan = $request->query('bulan', 'Januari');
-        $tahun = (int) $request->query('tahun', 2025);
+        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
         $rigId = $request->query('rig_id');
         $approvalStatus = $request->query('status', 'all');
+        $availableYears = self::getAvailableYears();
 
         $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
         $categories = CsmsDocumentCategory::orderBy('no')->get();
@@ -183,6 +247,7 @@ class CsmsController extends Controller
             'records' => $records,
             'rigs' => $rigs,
             'categories' => $categories,
+            'availableYears' => $availableYears,
             'filter' => [
                 'bulan' => $bulan,
                 'tahun' => $tahun,
@@ -273,7 +338,8 @@ class CsmsController extends Controller
         $rig = CsmsRig::findOrFail($activeRigId);
 
         $bulan = $request->query('bulan', 'Januari');
-        $tahun = (int) $request->query('tahun', 2025);
+        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
+        $availableYears = self::getAvailableYears();
 
         $categories = CsmsDocumentCategory::orderBy('no')->get();
         $records = CsmsRecord::where('csms_rig_id', $rig->id)
@@ -314,6 +380,7 @@ class CsmsController extends Controller
             'matrix' => $matrix,
             'rigSummary' => $rigSummary,
             'isRestricted' => $isRestricted,
+            'availableYears' => $availableYears,
             'filter' => [
                 'bulan' => $bulan,
                 'tahun' => $tahun,
@@ -462,4 +529,467 @@ class CsmsController extends Controller
 
         return redirect()->back()->with('success', 'Dokumen CSMS berhasil dihapus!');
     }
+    /**
+     * [ADMIN ONLY] Tambah kategori dokumen CSMS baru.
+     * Endpoint ini dilindungi middleware role:admin di routes,
+     * namun tetap diverifikasi di sini sebagai lapisan keamanan ganda.
+     */
+    public function storeCategory(Request $request)
+    {
+        // Lapisan keamanan ganda: pastikan hanya admin yang bisa mengeksekusi
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat menambah kategori dokumen.');
+        }
+
+        $request->validate([
+            'nama_dokumen' => 'required|string|max:255',
+            'durasi'       => 'required|string|max:100',
+            'scope'        => 'required|in:crew,rig',
+            'keterangan_default' => 'nullable|string|max:500',
+        ], [
+            'nama_dokumen.required' => 'Nama dokumen wajib diisi.',
+            'durasi.required'       => 'Durasi wajib diisi.',
+            'scope.required'        => 'Scope wajib dipilih.',
+        ]);
+
+        // Tentukan nomor urut berikutnya
+        $maxNo = CsmsDocumentCategory::max('no') ?? 0;
+
+        $category = CsmsDocumentCategory::create([
+            'dept'               => 'Dokumen dan Rekaman HSE',
+            'no'                 => $maxNo + 1,
+            'nama_dokumen'       => $request->nama_dokumen,
+            'durasi'             => $request->durasi,
+            'scope'              => $request->scope,
+            'keterangan_default' => $request->keterangan_default,
+        ]);
+
+        return redirect()->back()->with('success', "Kategori dokumen \"{$category->nama_dokumen}\" berhasil ditambahkan (No. {$category->no}).");
+    }
+
+    /**
+     * [ADMIN ONLY] Ubah (edit/rename) kategori dokumen CSMS.
+     * Endpoint ini dilindungi middleware role:admin di routes,
+     * namun tetap diverifikasi di sini sebagai lapisan keamanan ganda.
+     */
+    public function updateCategory(Request $request, $id)
+    {
+        // Lapisan keamanan ganda: pastikan hanya admin yang bisa mengeksekusi
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat mengubah kategori dokumen.');
+        }
+
+        $request->validate([
+            'nama_dokumen'       => 'required|string|max:255',
+            'durasi'             => 'nullable|string|max:100',
+            'scope'              => 'nullable|in:crew,rig',
+            'keterangan_default' => 'nullable|string|max:500',
+        ], [
+            'nama_dokumen.required' => 'Nama dokumen tidak boleh kosong.',
+        ]);
+
+        $category = CsmsDocumentCategory::findOrFail($id);
+        $oldName  = $category->nama_dokumen;
+
+        $updateData = ['nama_dokumen' => $request->nama_dokumen];
+        if ($request->has('durasi') && $request->durasi !== null) {
+            $updateData['durasi'] = $request->durasi;
+        }
+        if ($request->has('scope') && $request->scope !== null) {
+            $updateData['scope'] = $request->scope;
+        }
+        if ($request->has('keterangan_default')) {
+            $updateData['keterangan_default'] = $request->keterangan_default;
+        }
+
+        $category->update($updateData);
+
+        return redirect()->back()->with('success', "Kategori dokumen \"{$oldName}\" berhasil diperbarui.");
+    }
+
+    /**
+     * [ADMIN ONLY] Hapus kategori dokumen CSMS beserta berkas fisiknya.
+     * Endpoint ini dilindungi middleware role:admin di routes,
+     * namun tetap diverifikasi di sini sebagai lapisan keamanan ganda.
+     */
+    public function destroyCategory($id)
+    {
+        // Lapisan keamanan ganda: pastikan hanya admin yang bisa mengeksekusi
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat menghapus kategori dokumen.');
+        }
+
+        $category = CsmsDocumentCategory::findOrFail($id);
+        $catName = $category->nama_dokumen;
+
+        // Bersihkan berkas fisik yang terikat pada kategori ini dari storage
+        $records = CsmsRecord::where('csms_document_category_id', $category->id)->get();
+        foreach ($records as $record) {
+            if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
+                Storage::disk('public')->delete($record->file_path);
+            }
+            if (!empty($record->attachments) && is_array($record->attachments)) {
+                foreach ($record->attachments as $att) {
+                    if (!empty($att['path']) && Storage::disk('public')->exists($att['path'])) {
+                        Storage::disk('public')->delete($att['path']);
+                    }
+                }
+            }
+        }
+
+        // Hapus kategori (relasi csms_records akan terhapus via database cascade)
+        $category->delete();
+
+        return redirect()->back()->with('success', "Kategori dokumen \"{$catName}\" berhasil dihapus.");
+    }
+
+    /**
+     * [ADMIN ONLY] Tambah unit RIG baru.
+     */
+    public function storeRig(\Illuminate\Http\Request $request)
+    {
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat menambahkan unit RIG baru.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:csms_rigs,name',
+            'code' => 'required|string|max:50|unique:csms_rigs,code',
+            'status' => 'nullable|string|in:active,inactive',
+        ], [
+            'name.required' => 'Nama RIG wajib diisi.',
+            'name.unique' => 'Nama RIG sudah terdaftar.',
+            'code.required' => 'Kode RIG wajib diisi.',
+            'code.unique' => 'Kode RIG sudah terdaftar.',
+        ]);
+
+        $rig = CsmsRig::create([
+            'name' => trim($validated['name']),
+            'code' => strtoupper(trim($validated['code'])),
+            'status' => $validated['status'] ?? 'active',
+        ]);
+
+        return redirect()->back()->with('success', "Unit RIG \"{$rig->name}\" ({$rig->code}) berhasil ditambahkan.");
+    }
+
+    /**
+     * [ADMIN ONLY] Ubah data unit RIG.
+     */
+    public function updateRig(\Illuminate\Http\Request $request, $id)
+    {
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat mengubah data unit RIG.');
+        }
+
+        $rig = CsmsRig::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:csms_rigs,name,' . $rig->id,
+            'code' => 'required|string|max:50|unique:csms_rigs,code,' . $rig->id,
+            'status' => 'nullable|string|in:active,inactive',
+        ]);
+
+        $rig->update([
+            'name' => trim($validated['name']),
+            'code' => strtoupper(trim($validated['code'])),
+            'status' => $validated['status'] ?? $rig->status,
+        ]);
+
+        return redirect()->back()->with('success', "Data unit RIG \"{$rig->name}\" berhasil diperbarui.");
+    }
+
+    /**
+     * [ADMIN ONLY] Hapus unit RIG.
+     */
+    public function destroyRig($id)
+    {
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat menghapus unit RIG.');
+        }
+
+        $rig = CsmsRig::findOrFail($id);
+        $rigName = $rig->name;
+        $rigCode = $rig->code;
+
+        // Bersihkan berkas fisik yang terikat pada rig ini dari storage
+        $records = CsmsRecord::where('csms_rig_id', $rig->id)->get();
+        foreach ($records as $record) {
+            if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
+                Storage::disk('public')->delete($record->file_path);
+            }
+            if (!empty($record->attachments) && is_array($record->attachments)) {
+                foreach ($record->attachments as $att) {
+                    if (!empty($att['path']) && Storage::disk('public')->exists($att['path'])) {
+                        Storage::disk('public')->delete($att['path']);
+                    }
+                }
+            }
+        }
+
+        $rig->delete();
+
+        return redirect()->back()->with('success', "Unit RIG \"{$rigName}\" ({$rigCode}) berhasil dihapus.");
+    }
+
+    /**
+     * [ADMIN ONLY] Tambah opsi tahun ke pilihan dropdown CSMS.
+     */
+    public function storeYear(\Illuminate\Http\Request $request)
+    {
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat menambah pilihan tahun.');
+        }
+
+        $validated = $request->validate([
+            'year' => 'required|integer|min:1900|max:2200',
+        ]);
+
+        $year = (int) $validated['year'];
+        $yearsFile = storage_path('app/csms_years.json');
+        $data = file_exists($yearsFile) ? (json_decode(file_get_contents($yearsFile), true) ?: []) : [];
+        $custom = array_map('intval', $data['custom'] ?? []);
+        $deleted = array_map('intval', $data['deleted'] ?? []);
+
+        // Hapus dari daftar deleted jika sebelumnya pernah dihapus
+        $deleted = array_values(array_filter($deleted, fn($y) => $y !== $year));
+        // Tambahkan ke custom jika belum ada
+        if (!in_array($year, $custom, true)) {
+            $custom[] = $year;
+        }
+
+        if (!file_exists(storage_path('app'))) {
+            @mkdir(storage_path('app'), 0755, true);
+        }
+        file_put_contents($yearsFile, json_encode(['custom' => $custom, 'deleted' => $deleted], JSON_PRETTY_PRINT));
+
+        return redirect()->back()->with('success', "Opsi tahun {$year} berhasil ditambahkan.");
+    }
+
+    /**
+     * [ADMIN ONLY] Hapus opsi tahun dari pilihan dropdown CSMS.
+     * Endpoint ini dilindungi middleware role:admin di routes,
+     * dan diverifikasi ganda dengan role check di controller.
+     */
+    public function deleteYear(\Illuminate\Http\Request $request, $year)
+    {
+        // Lapisan keamanan ganda: pastikan hanya admin yang bisa mengeksekusi
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat menghapus pilihan tahun.');
+        }
+
+        $yearInt = (int) $year;
+        if ($yearInt < 1900 || $yearInt > 2200) {
+            return response()->json(['message' => 'Format tahun tidak valid.'], 422);
+        }
+
+        $yearsFile = storage_path('app/csms_years.json');
+        $data = file_exists($yearsFile) ? (json_decode(file_get_contents($yearsFile), true) ?: []) : [];
+        $custom = array_map('intval', $data['custom'] ?? []);
+        $deleted = array_map('intval', $data['deleted'] ?? []);
+
+        // Hapus dari custom
+        $custom = array_values(array_filter($custom, fn($y) => $y !== $yearInt));
+        // Tambahkan ke deleted
+        if (!in_array($yearInt, $deleted, true)) {
+            $deleted[] = $yearInt;
+        }
+
+        if (!file_exists(storage_path('app'))) {
+            @mkdir(storage_path('app'), 0755, true);
+        }
+        file_put_contents($yearsFile, json_encode(['custom' => $custom, 'deleted' => $deleted], JSON_PRETTY_PRINT));
+
+        // Dapatkan tahun fallback berikutnya yang masih tersedia
+        $fallbackYear = self::resolveActiveYear();
+
+        // Redirect dengan sinkronisasi parameter tahun baru
+        $referer = $request->headers->get('referer');
+        if ($referer) {
+            $parsedUrl = parse_url($referer);
+            $path = $parsedUrl['path'] ?? '/csms';
+            parse_str($parsedUrl['query'] ?? '', $queryParams);
+
+            // Ganti tahun jika sama dengan tahun yang dihapus atau jika tidak ada
+            if (!isset($queryParams['tahun']) || (int)$queryParams['tahun'] === $yearInt) {
+                $queryParams['tahun'] = $fallbackYear;
+            }
+
+            $newQuery = http_build_query($queryParams);
+            $redirectUrl = $path . ($newQuery ? '?' . $newQuery : '');
+            return redirect($redirectUrl)->with('success', "Opsi tahun {$yearInt} berhasil dihapus dari daftar pilihan.");
+        }
+
+        return redirect()->route('csms.dashboard', ['tahun' => $fallbackYear])
+            ->with('success', "Opsi tahun {$yearInt} berhasil dihapus dari daftar pilihan.");
+    }
+
+    /**
+     * [ADMIN ONLY] Download semua berkas dokumen dan data rekaman satu RIG dalam bentuk ZIP.
+     * Struktur folder rapi per Kategori 21 CSMS + Rekapitulasi Data (CSV & HTML report).
+     */
+    public function downloadRigZip(\Illuminate\Http\Request $request, $rig_id)
+    {
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang memiliki hak akses untuk mengunduh arsip dokumen Rig.');
+        }
+
+        $rig = CsmsRig::findOrFail($rig_id);
+
+        $year = $request->query('year');
+        $month = $request->query('month');
+
+        $query = CsmsRecord::with('category')->where('csms_rig_id', $rig->id);
+
+        if ($year && $year !== 'all') {
+            $query->where('periode_tahun', (int) $year);
+        }
+        if ($month && $month !== 'all') {
+            $query->where('periode_bulan', $month);
+        }
+
+        $records = $query->orderBy('csms_document_category_id', 'asc')
+                         ->orderBy('periode_tahun', 'desc')
+                         ->orderBy('periode_bulan', 'asc')
+                         ->get();
+
+        // Nama folder & zip
+        $cleanRigCode = preg_replace('/[^A-Za-z0-9_\-#]/', '_', $rig->code);
+        $cleanRigName = preg_replace('/[^A-Za-z0-9_\-# ]/', '_', $rig->name);
+        $periodLabel = ($year && $year !== 'all') ? (string)$year : 'Semua_Tahun';
+        if ($month && $month !== 'all') {
+            $periodLabel .= '_' . $month;
+        }
+
+        $folderPrefix = "CSMS_{$cleanRigCode}_{$periodLabel}";
+        $zipFileName = "CSMS_{$cleanRigCode}_{$periodLabel}.zip";
+        $tempZipPath = storage_path("app/temp_{$folderPrefix}_" . time() . ".zip");
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return response()->json(['message' => 'Gagal membuat arsip ZIP di server.'], 500);
+        }
+
+        // 1. Tambahkan seluruh berkas lampiran dokumen per folder kategori
+        $fileCount = 0;
+        $csvRows = [];
+        $csvRows[] = ["No", "Kategori CSMS", "Scope", "Tahun", "Bulan", "Crew", "Nama Berkas", "Status Upload", "Status ACC / Verifikasi", "Catatan Verifikasi", "Diunggah Oleh", "Tanggal Upload"];
+
+        $rowIdx = 1;
+        foreach ($records as $rec) {
+            $catNum = $rec->category ? str_pad($rec->category->nomor_kategori, 2, '0', STR_PAD_LEFT) : '00';
+            $catName = $rec->category ? preg_replace('/[\\/\\\\:\*\?"<>\|]/', '_', $rec->category->nama_dokumen) : 'Lainnya';
+            $categoryFolder = "{$folderPrefix}/{$catNum}. {$catName}";
+
+            $attachments = [];
+            if (!empty($rec->attachments) && is_array($rec->attachments)) {
+                $attachments = $rec->attachments;
+            } elseif ($rec->file_path) {
+                $attachments[] = [
+                    'name' => $rec->file_name ?: basename($rec->file_path),
+                    'path' => $rec->file_path,
+                    'size' => $rec->file_size,
+                    'type' => $rec->file_type,
+                    'uploaded_at' => $rec->created_at?->toDateTimeString(),
+                ];
+            }
+
+            $crewLabel = $rec->crew ? "Crew_{$rec->crew}" : "Rig_Level";
+            $monthLabel = $rec->periode_bulan ?: "Semua_Bulan";
+            $yearLabel = $rec->periode_tahun ?: "";
+
+            if (!empty($attachments)) {
+                foreach ($attachments as $attIdx => $att) {
+                    $relPath = $att['path'] ?? null;
+                    $origName = $att['name'] ?? basename($relPath);
+                    $cleanOrigName = preg_replace('/[\\/\\\\:\*\?"<>\|]/', '_', $origName);
+
+                    if ($relPath && Storage::disk('public')->exists($relPath)) {
+                        $fullDiskPath = Storage::disk('public')->path($relPath);
+                        $zipEntryName = "{$categoryFolder}/[{$yearLabel}_{$monthLabel}_{$crewLabel}]_{$cleanOrigName}";
+
+                        $zip->addFile($fullDiskPath, $zipEntryName);
+                        $fileCount++;
+                    }
+
+                    $csvRows[] = [
+                        $rowIdx++,
+                        $rec->category?->nama_dokumen ?? '-',
+                        $rec->category?->scope ?? 'rig',
+                        $rec->periode_tahun,
+                        $rec->periode_bulan,
+                        $rec->crew ?: '1x/Bln/Rig',
+                        $origName,
+                        'Terunggah',
+                        $rec->approval_status ?? 'pending',
+                        $rec->approval_notes ?? '-',
+                        $rec->uploaded_by ?? '-',
+                        $rec->created_at?->format('Y-m-d H:i:s') ?? '-',
+                    ];
+                }
+            } else {
+                $csvRows[] = [
+                    $rowIdx++,
+                    $rec->category?->nama_dokumen ?? '-',
+                    $rec->category?->scope ?? 'rig',
+                    $rec->periode_tahun,
+                    $rec->periode_bulan,
+                    $rec->crew ?: '1x/Bln/Rig',
+                    'Belum Diunggah',
+                    'Kosong',
+                    $rec->approval_status ?? 'pending',
+                    $rec->approval_notes ?? '-',
+                    '-',
+                    '-',
+                ];
+            }
+        }
+
+        // 2. Buat File Rekapitulasi CSV (Excel-Compatible UTF-8 BOM)
+        $csvContent = "\xEF\xBB\xBF"; // UTF-8 BOM
+        foreach ($csvRows as $r) {
+            $csvContent .= implode(';', array_map(function ($val) {
+                return '"' . str_replace('"', '""', (string)$val) . '"';
+            }, $r)) . "\r\n";
+        }
+        $zip->addFromString("{$folderPrefix}/00_REKAPITULASI_DOKUMEN_CSMS_{$cleanRigCode}.csv", $csvContent);
+
+        // 3. Buat File Rekapitulasi HTML Interaktif Offline
+        try {
+            $htmlReport = view('reports.csms_rig_export', [
+                'rig' => $rig,
+                'year' => $year,
+                'month' => $month,
+                'records' => $records,
+                'fileCount' => $fileCount,
+                'generatedAt' => now()->format('d/m/Y H:i'),
+            ])->render();
+            $zip->addFromString("{$folderPrefix}/00_LAPORAN_REKAPITULASI_CSMS_{$cleanRigCode}.html", $htmlReport);
+        } catch (\Throwable $e) {
+            // fallback gracefully jika render template gagal
+        }
+
+        // 4. Buat File Petunjuk README.txt
+        $readme = "=========================================================\r\n" .
+                  "PAKET ARSIP DOKUMEN CSMS & HSE PER-RIG (PT BESMINDO MATERI SEWATAMA)\r\n" .
+                  "=========================================================\r\n\r\n" .
+                  "Unit Rig        : {$rig->name} ({$rig->code})\r\n" .
+                  "Periode         : {$periodLabel}\r\n" .
+                  "Total Berkas    : {$fileCount} Berkas Terlampir\r\n" .
+                  "Tanggal Unduh   : " . now()->format('Y-m-d H:i:s') . "\r\n" .
+                  "Diunduh Oleh    : " . (auth()->user()?->name ?? 'Admin HSE') . " (" . (auth()->user()?->email ?? 'admin') . ")\r\n\r\n" .
+                  "STRUKTUR FOLDER:\r\n" .
+                  "- Berkas tersusun rapi sesuai 21 Kategori Dokumen CSMS Resmi.\r\n" .
+                  "- File 00_REKAPITULASI_DOKUMEN_CSMS_{$cleanRigCode}.csv dapat dibuka langsung di Microsoft Excel.\r\n" .
+                  "- File 00_LAPORAN_REKAPITULASI_CSMS_{$cleanRigCode}.html dapat dibuka di peramban web (Google Chrome / Edge) untuk melihat rekapitulasi visual.\r\n\r\n" .
+                  "PT Besmindo Materi Sewatama - Contractor Safety Management System (CSMS)\r\n";
+        $zip->addFromString("{$folderPrefix}/README_PETUNJUK_ARSIP.txt", $readme);
+
+        $zip->close();
+
+        return response()->download($tempZipPath, $zipFileName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
+    }
 }
+
+

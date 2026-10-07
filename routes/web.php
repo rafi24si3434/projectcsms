@@ -61,6 +61,23 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     Route::post('/csms/verify/{id}', [CsmsController::class, 'verifyRecord'])->name('admin.csms.verify');
     Route::post('/csms/verify-bulk', [CsmsController::class, 'verifyBulk'])->name('admin.csms.verify-bulk');
 
+    // Document Category Management (Admin Only)
+    Route::post('/csms/categories', [CsmsController::class, 'storeCategory'])->name('admin.csms.categories.store');
+    Route::patch('/csms/categories/{id}', [CsmsController::class, 'updateCategory'])->name('admin.csms.categories.update');
+    Route::delete('/csms/categories/{id}', [CsmsController::class, 'destroyCategory'])->name('admin.csms.categories.destroy');
+
+    // Year Option Management (Admin Only)
+    Route::post('/csms/years', [CsmsController::class, 'storeYear'])->name('admin.csms.years.store');
+    Route::delete('/csms/years/{year}', [CsmsController::class, 'deleteYear'])->name('admin.csms.years.delete');
+
+    // Rig Management (Admin Only)
+    Route::post('/csms/rigs', [CsmsController::class, 'storeRig'])->name('admin.csms.rigs.store');
+    Route::patch('/csms/rigs/{id}', [CsmsController::class, 'updateRig'])->name('admin.csms.rigs.update');
+    Route::delete('/csms/rigs/{id}', [CsmsController::class, 'destroyRig'])->name('admin.csms.rigs.destroy');
+
+    // Rig Document Package Download (Admin Only)
+    Route::get('/csms/rigs/{rig_id}/download-zip', [CsmsController::class, 'downloadRigZip'])->name('admin.csms.rigs.download-zip');
+
     // User Management
     Route::get('/users', [UserController::class, 'index'])->name('admin.users');
     Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');

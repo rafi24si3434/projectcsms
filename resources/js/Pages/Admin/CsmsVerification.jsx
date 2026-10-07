@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Head, Link, router, useForm } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
+import YearSelect from "@/Components/YearSelect";
+import RigDownloadModal from "@/Components/RigDownloadModal";
 import {
     CheckCircle2,
     Clock,
@@ -23,9 +25,15 @@ import {
     Download,
 } from "lucide-react";
 
-export default function CsmsVerification({ records = [], rigs = [], categories = [], filter = {}, stats = {} }) {
+export default function CsmsVerification({ records = [], rigs = [], categories = [], filter = {}, stats = {}, availableYears = [] }) {
     const [selectedMonth, setSelectedMonth] = useState(filter.bulan || "Januari");
-    const [selectedYear, setSelectedYear] = useState(filter.tahun || 2025);
+    const [selectedYear, setSelectedYear] = useState(filter.tahun || availableYears?.[0] || new Date().getFullYear());
+
+    React.useEffect(() => {
+        if (filter.tahun) {
+            setSelectedYear(filter.tahun);
+        }
+    }, [filter.tahun]);
     const [selectedRigId, setSelectedRigId] = useState(filter.rig_id || "");
     const [selectedStatus, setSelectedStatus] = useState(filter.status || "all");
     const [searchQuery, setSearchQuery] = useState("");
@@ -42,12 +50,13 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
 
     // Bulk selection state
     const [selectedIds, setSelectedIds] = useState([]);
+    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
     const months = [
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
-    const years = [2024, 2025, 2026, 2027];
+
 
     const { data, setData, post, processing, reset } = useForm({
         approval_status: "approved",
@@ -147,9 +156,9 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                 {/* ═══════════════════════════════════════════════════════════════
                     1. HEADER CARD (ADMIN VERIFIKASI CSMS)
                 ═══════════════════════════════════════════════════════════════ */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative">
                     <div
-                        className="absolute top-0 left-0 right-0 h-1"
+                        className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
                         style={{
                             background: "linear-gradient(90deg, #10b981 0%, #34d399 50%, #f59e0b 100%)",
                         }}
@@ -209,19 +218,28 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                     ))}
                                 </select>
                                 <span className="text-slate-300">/</span>
-                                <select
+                                <YearSelect
                                     value={selectedYear}
-                                    onChange={(e) => {
-                                        setSelectedYear(e.target.value);
-                                        handleFilterApply(selectedMonth, e.target.value, selectedRigId, selectedStatus);
+                                    onChange={(year) => {
+                                        setSelectedYear(year);
+                                        handleFilterApply(selectedMonth, year, selectedRigId, selectedStatus);
                                     }}
+                                    availableYears={availableYears}
                                     className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
-                                >
-                                    {years.map((y) => (
-                                        <option key={y} value={y}>{y}</option>
-                                    ))}
-                                </select>
+                                    optionClass="bg-white text-slate-800"
+                                />
                             </div>
+
+                            {/* Tombol Unduh Dokumen Rig (ZIP) */}
+                            <button
+                                type="button"
+                                onClick={() => setIsDownloadModalOpen(true)}
+                                className="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3.5 py-2.5 rounded-xl border border-emerald-300 text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+                                title="Tarik dan Unduh Seluruh Dokumen Rig (ZIP)"
+                            >
+                                <Download size={16} className="text-emerald-700" />
+                                <span>Unduh Paket Rig (ZIP)</span>
+                            </button>
 
                             {/* Tombol Input Lapangan */}
                             <Link
@@ -752,6 +770,16 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                     </div>
                 </div>
             )}
+
+            {/* [ADMIN ONLY] Modal Unduh Paket Dokumen Rig (ZIP) */}
+            <RigDownloadModal
+                isOpen={isDownloadModalOpen}
+                onClose={() => setIsDownloadModalOpen(false)}
+                rigs={rigs}
+                selectedRig={rigs.find((r) => String(r.id) === String(selectedRigId)) || rigs[0]}
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+            />
         </AdminLayout>
     );
 }
