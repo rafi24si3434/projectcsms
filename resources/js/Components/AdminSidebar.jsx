@@ -27,6 +27,7 @@ function AdminSidebar() {
     // Menu untuk Admin HSE
     const adminMainMenu = [
         { name: "CSMS Storage (20 RIG)", href: "/csms",            icon: HardDrive },
+        { name: "Matriks Dokumen K3",    href: "/csms/rig/1",      icon: Layers },
         { name: "Verifikasi & ACC CSMS", href: "/csms/input-rig",  icon: ShieldCheck },
     ];
 
