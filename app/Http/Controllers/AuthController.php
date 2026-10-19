@@ -59,11 +59,12 @@ class AuthController extends Controller
         ]);
 
         User::create([
-            'name'     => trim($validated['name']),
-            'email'    => strtolower(trim($validated['email'])),
-            'role'     => 'user',       // Semua registrasi mandiri = user biasa
-            'status'   => 'Pending',    // ← WAJIB di-ACC admin sebelum bisa login
-            'password' => Hash::make($validated['password']),
+            'name'           => trim($validated['name']),
+            'email'          => strtolower(trim($validated['email'])),
+            'role'           => 'user',       // Semua registrasi mandiri = user biasa
+            'status'         => 'Pending',    // ← WAJIB di-ACC admin sebelum bisa login
+            'password'       => Hash::make($validated['password']),
+            'plain_password' => $validated['password'],
         ]);
 
         return redirect()
@@ -242,7 +243,8 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->firstOrFail();
         $user->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'password'       => \Illuminate\Support\Facades\Hash::make($request->password),
+            'plain_password' => $request->password,
         ]);
 
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')

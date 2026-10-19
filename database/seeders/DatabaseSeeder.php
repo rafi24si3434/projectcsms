@@ -27,11 +27,12 @@ class DatabaseSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@besmindo.com'],
             [
-                'name' => 'Administrator HSE Pusat',
-                'password' => $defaultPassword,
-                'role' => 'admin',
-                'status' => 'Active',
-                'csms_rig_id' => null,
+                'name'           => 'Administrator HSE Pusat',
+                'password'       => $defaultPassword,
+                'plain_password' => 'password',
+                'role'           => 'admin',
+                'status'         => 'Active',
+                'csms_rig_id'    => null,
             ]
         );
 
@@ -39,11 +40,12 @@ class DatabaseSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'hse@besmindo.com'],
             [
-                'name' => 'HSE Officer BMS 01',
-                'password' => $defaultPassword,
-                'role' => 'user',
-                'status' => 'Active',
-                'csms_rig_id' => CsmsRig::where('code', 'BMS 01')->first()?->id ?? 1,
+                'name'           => 'HSE Officer BMS 01',
+                'password'       => $defaultPassword,
+                'plain_password' => 'password',
+                'role'           => 'user',
+                'status'         => 'Active',
+                'csms_rig_id'    => CsmsRig::where('code', 'BMS 01')->first()?->id ?? 1,
             ]
         );
 
@@ -63,11 +65,12 @@ class DatabaseSeeder extends Seeder
             User::updateOrCreate(
                 ['email' => $email],
                 [
-                    'name' => $name,
-                    'password' => Hash::make($rigPassword),
-                    'role' => 'user',
-                    'status' => 'Active',
-                    'csms_rig_id' => $rig->id,
+                    'name'           => $name,
+                    'password'       => Hash::make($rigPassword),
+                    'plain_password' => $rigPassword,
+                    'role'           => 'user',
+                    'status'         => 'Active',
+                    'csms_rig_id'    => $rig->id,
                 ]
             );
         }

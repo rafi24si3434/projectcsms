@@ -98,7 +98,8 @@ class SettingController extends Controller
         }
 
         $user->update([
-            'password' => Hash::make($validated['password']),
+            'password'       => Hash::make($validated['password']),
+            'plain_password' => $validated['password'],
         ]);
 
         return response()->json([

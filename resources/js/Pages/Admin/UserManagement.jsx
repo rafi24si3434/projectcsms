@@ -5,7 +5,7 @@ import {
     Users, UserCheck, UserX, Search, Plus, Edit2, Trash2,
     Shield, HardHat, X, Eye, EyeOff, ChevronDown,
     Clock, CheckCircle, XCircle, AlertTriangle, ShieldCheck,
-    RefreshCw, Filter, Info,
+    RefreshCw, Filter, Info, Copy, Check, Key,
 } from "lucide-react";
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
@@ -159,6 +159,15 @@ function UserModal({ user, rigs, onClose, onSave, processing, errors }) {
         csms_rig_id: user?.csms_rig_id || "",
     });
     const [showPw, setShowPw] = useState(false);
+    const [showCurrentPw, setShowCurrentPw] = useState(false);
+    const [copiedCurrentPw, setCopiedCurrentPw] = useState(false);
+
+    const handleCopyCurrentPw = () => {
+        if (!user?.plain_password) return;
+        navigator.clipboard.writeText(user.plain_password);
+        setCopiedCurrentPw(true);
+        setTimeout(() => setCopiedCurrentPw(false), 2000);
+    };
 
     const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -235,6 +244,84 @@ function UserModal({ user, rigs, onClose, onSave, processing, errors }) {
                                 </select>
                                 <ChevronDown size={15} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
                             </div>
+                        </div>
+                    )}
+
+                    {/* Kata Sandi Saat Ini (Hanya pada Modal Edit Pengguna) */}
+                    {isEdit && (
+                        <div style={{ marginBottom: "14px" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "5px" }}>
+                                <label style={labelStyle}>Kata Sandi Saat Ini</label>
+                                {copiedCurrentPw && (
+                                    <span style={{ fontSize: "11px", fontWeight: "800", color: "#059669", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                        <Check size={12} strokeWidth={3} /> Tersalin ke clipboard!
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ position: "relative" }}>
+                                <input
+                                    type={showCurrentPw ? "text" : "password"}
+                                    value={user?.plain_password || ""}
+                                    readOnly
+                                    placeholder={user?.plain_password ? "" : "(Belum pernah disetel / tersimpan)"}
+                                    style={{
+                                        ...inputStyle(false),
+                                        paddingRight: "76px",
+                                        background: "#f1f5f9",
+                                        color: user?.plain_password ? "#0f172a" : "#94a3b8",
+                                        fontWeight: "700",
+                                        letterSpacing: showCurrentPw ? "0.04em" : "0.18em",
+                                        cursor: "default",
+                                    }}
+                                />
+                                <div style={{ position: "absolute", right: "7px", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: "2px" }}>
+                                    {/* Tombol Salin */}
+                                    <button
+                                        type="button"
+                                        onClick={handleCopyCurrentPw}
+                                        disabled={!user?.plain_password}
+                                        title={copiedCurrentPw ? "Tersalin!" : "Salin kata sandi"}
+                                        style={{
+                                            background: copiedCurrentPw ? "#dcfce7" : "transparent",
+                                            border: "none",
+                                            cursor: user?.plain_password ? "pointer" : "not-allowed",
+                                            color: copiedCurrentPw ? "#15803d" : "#64748b",
+                                            padding: "5px 6px",
+                                            borderRadius: "6px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            transition: "all 0.15s ease",
+                                            opacity: user?.plain_password ? 1 : 0.4,
+                                        }}
+                                    >
+                                        {copiedCurrentPw ? <Check size={15} strokeWidth={2.5} /> : <Copy size={15} />}
+                                    </button>
+
+                                    {/* Tombol Intip / Sembunyikan */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCurrentPw(!showCurrentPw)}
+                                        disabled={!user?.plain_password}
+                                        title={showCurrentPw ? "Sembunyikan sandi" : "Lihat sandi"}
+                                        style={{
+                                            background: "transparent",
+                                            border: "none",
+                                            cursor: user?.plain_password ? "pointer" : "not-allowed",
+                                            color: "#64748b",
+                                            padding: "5px 6px",
+                                            borderRadius: "6px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            opacity: user?.plain_password ? 1 : 0.4,
+                                        }}
+                                    >
+                                        {showCurrentPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+                            <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#64748b", fontWeight: "500" }}>
+                                💡 Kata sandi aktif yang tersimpan untuk diinfokan ke crew lapangan.
+                            </p>
                         </div>
                     )}
 

@@ -57,12 +57,13 @@ class UserController extends Controller
         $statusNormalized = ucfirst(strtolower($validated['status']));
 
         $user = User::create([
-            'name'        => trim($validated['name']),
-            'email'       => strtolower(trim($validated['email'])),
-            'role'        => $validated['role'],
-            'status'      => $statusNormalized,
-            'csms_rig_id' => $rigId,
-            'password'    => Hash::make($validated['password']),
+            'name'           => trim($validated['name']),
+            'email'          => strtolower(trim($validated['email'])),
+            'role'           => $validated['role'],
+            'status'         => $statusNormalized,
+            'csms_rig_id'    => $rigId,
+            'password'       => Hash::make($validated['password']),
+            'plain_password' => $validated['password'],
         ]);
 
         // Jika admin membuat akun langsung active, tandai approved_by sebagai dirinya sendiri
@@ -134,7 +135,8 @@ class UserController extends Controller
         ];
 
         if (!empty($validated['password'])) {
-            $updateData['password'] = Hash::make($validated['password']);
+            $updateData['password']       = Hash::make($validated['password']);
+            $updateData['plain_password'] = $validated['password'];
         }
 
         // Jika admin mengubah status ke Active manual, rekam audit
