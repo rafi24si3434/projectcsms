@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Head, useForm, Link } from "@inertiajs/react";
+import React, { useState, useRef, useEffect } from "react";
+import { Head, useForm } from "@inertiajs/react";
 import {
     ShieldCheck,
     Lock,
@@ -10,30 +10,225 @@ import {
     EyeOff,
     CheckCircle2,
     HardHat,
-    ArrowRight
+    ArrowRight,
+    ChevronDown,
+    User,
+    Check,
 } from "lucide-react";
 
-export default function Login({ status }) {
+/**
+ * Standardize Rig Name format: "BMS 01" -> "BMS-01", "BMS 03A" -> "BMS-03A"
+ */
+const formatRigName = (code, name) => {
+    const raw = (code || name || "").trim();
+    let clean = raw.replace(/^RIG\s+/i, "").trim();
+    clean = clean.replace(/^(BMS)\s*[-_]?\s*(\w+)/i, (_, p1, p2) => `${p1.toUpperCase()}-${p2.toUpperCase()}`);
+    return clean;
+};
+
+/**
+ * Custom Minimalist & Modern Dropdown Component
+ */
+function CustomSelect({
+    value,
+    onChange,
+    options = [],
+    placeholder = "Pilih opsi",
+    disabled = false,
+    icon: Icon,
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("keydown", handleKeyDown);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isOpen]);
+
+    const selectedOption = options.find((opt) =>
+        typeof opt === "object" ? String(opt.value) === String(value) : String(opt) === String(value)
+    );
+
+    const selectedLabel = selectedOption
+        ? typeof selectedOption === "object"
+            ? selectedOption.label
+            : selectedOption
+        : null;
+
+    const handleSelect = (val) => {
+        onChange(val);
+        setIsOpen(false);
+    };
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => setIsOpen((prev) => !prev)}
+                className={`w-full pl-10 pr-9 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-all flex items-center justify-between border select-none ${
+                    disabled
+                        ? "bg-slate-100/70 border-slate-200 text-slate-400 cursor-not-allowed opacity-80"
+                        : isOpen
+                        ? "bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs cursor-pointer"
+                        : "bg-slate-50 border-slate-200 text-slate-900 hover:bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                }`}
+            >
+                {/* Left Icon */}
+                <div
+                    className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none transition-colors ${
+                        disabled ? "text-slate-300" : "text-emerald-600"
+                    }`}
+                >
+                    {Icon && <Icon className="h-4 w-4" />}
+                </div>
+
+                {/* Selected Text or Muted Placeholder */}
+                <span
+                    className={`truncate ${
+                        selectedLabel
+                            ? "font-semibold text-slate-800"
+                            : "font-normal text-slate-400"
+                    }`}
+                >
+                    {selectedLabel || placeholder}
+                </span>
+
+                {/* Chevron Down */}
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                    <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${
+                            isOpen ? "rotate-180 text-emerald-600" : ""
+                        }`}
+                    />
+                </div>
+            </button>
+
+            {/* Floating Dropdown Card */}
+            {isOpen && !disabled && (
+                <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden py-1 transition-all">
+                    <div className="max-h-56 overflow-y-auto divide-y divide-slate-50 focus:outline-none">
+                        {options.length === 0 ? (
+                            <div className="px-4 py-3 text-xs text-slate-400 text-center italic">
+                                Tidak ada opsi tersedia
+                            </div>
+                        ) : (
+                            options.map((option, idx) => {
+                                const val = typeof option === "object" ? option.value : option;
+                                const lbl = typeof option === "object" ? option.label : option;
+                                const isSelected = String(val) === String(value);
+
+                                return (
+                                    <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => handleSelect(val)}
+                                        className={`w-full px-4 py-2.5 text-xs sm:text-sm text-left flex items-center justify-between transition-colors cursor-pointer ${
+                                            isSelected
+                                                ? "bg-emerald-50 text-emerald-800 font-bold"
+                                                : "text-slate-700 font-medium hover:bg-emerald-50/70 hover:text-emerald-800"
+                                        }`}
+                                    >
+                                        <span className="truncate">{lbl}</span>
+                                        {isSelected && (
+                                            <Check className="h-4 w-4 text-emerald-600 shrink-0 ml-2" />
+                                        )}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default function Login({ status, activeRigs = [] }) {
     const [activeRole, setActiveRole] = useState("admin"); // "admin" | "officer"
     const [showPassword, setShowPassword] = useState(false);
+    const [selectedRigId, setSelectedRigId] = useState("");
+    const [hfoError, setHfoError] = useState("");
 
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
         remember: false,
         role: "admin",
+        hfo_name: "",
     });
 
     const handleRoleChange = (role) => {
         setActiveRole(role);
+        setSelectedRigId("");
+        setHfoError("");
         setData((prev) => ({
             ...prev,
+            email: "",
+            password: "",
             role: role === "admin" ? "admin" : "user",
+            hfo_name: "",
         }));
     };
 
+    const handleRigSelect = (rigId) => {
+        setSelectedRigId(rigId);
+        setHfoError("");
+        const rig = activeRigs.find((r) => String(r.id) === String(rigId));
+        if (rig) {
+            setData((prev) => ({
+                ...prev,
+                email: rig.email,
+                hfo_name: "",
+            }));
+        } else {
+            setData((prev) => ({
+                ...prev,
+                email: "",
+                hfo_name: "",
+            }));
+        }
+    };
+
+    const selectedRig = activeRigs.find((r) => String(r.id) === String(selectedRigId));
+    const hfoOptions = selectedRig?.hfos || [];
+
+    const rigOptions = activeRigs.map((rig) => ({
+        value: rig.id,
+        label: formatRigName(rig.code, rig.name),
+    }));
+
+    const hfoDropdownOptions = hfoOptions.map((hfo) => ({
+        value: hfo,
+        label: hfo,
+    }));
+
     const submit = (e) => {
         e.preventDefault();
+        if (activeRole !== "admin") {
+            if (selectedRigId && !data.hfo_name) {
+                setHfoError("Silakan pilih petugas HFO yang sedang bertugas.");
+                return;
+            }
+        }
         post("/login", {
             onFinish: () => reset("password"),
         });
@@ -218,40 +413,105 @@ export default function Login({ status }) {
 
                     {/* Form Input */}
                     <form onSubmit={submit} className="space-y-4" autoComplete="off">
-                        {/* Input Email / ID */}
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                {activeRole === "admin" ? "Email Admin" : "Email / ID Kru Lapangan"}
-                            </label>
-                            <div className="relative rounded-xl shadow-2xs">
-                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <Mail className="h-4 w-4" />
+                        {activeRole === "admin" ? (
+                            /* ── ADMIN LOGIN: USERNAME INPUT ── */
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    USERNAME
+                                </label>
+                                <div className="relative rounded-xl shadow-2xs">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                        <User className="h-4 w-4" />
+                                    </div>
+                                    <input
+                                        id="username"
+                                        type="text"
+                                        name="email"
+                                        value={data.email}
+                                        onChange={(e) => setData("email", e.target.value)}
+                                        placeholder="admin"
+                                        className="block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                        required
+                                        autoComplete="off"
+                                    />
                                 </div>
-                                <input
-                                    id="email"
-                                    type="text"
-                                    name="email"
-                                    value={data.email}
-                                    onChange={(e) => setData("email", e.target.value)}
-                                    placeholder={activeRole === "admin" ? "admin@besmindo.com" : "bms01@besmindo.com / ID Kru"}
-                                    className="block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                                    required
-                                    autoComplete="off"
-                                />
+                                {errors.email && (
+                                    <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                        {errors.email}
+                                    </p>
+                                )}
                             </div>
-                            {errors.email && (
-                                <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
-                                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                    {errors.email}
-                                </p>
-                            )}
-                        </div>
+                        ) : (
+                            /* ── HSE CREW LOGIN: CUSTOM FLOATING DROPDOWNS ── */
+                            <>
+                                {/* 1. Dropdown UNIT RIG */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        UNIT RIG
+                                    </label>
+                                    <CustomSelect
+                                        value={selectedRigId}
+                                        onChange={(val) => handleRigSelect(val)}
+                                        options={rigOptions}
+                                        placeholder="Pilih Unit RIG"
+                                        icon={HardHat}
+                                    />
+                                    {errors.email && (
+                                        <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            {errors.email}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* 2. Dropdown HFO (HES Field Officer) */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        HFO (HES Field Officer)
+                                    </label>
+                                    <CustomSelect
+                                        value={data.hfo_name}
+                                        onChange={(val) => {
+                                            setData("hfo_name", val);
+                                            if (hfoError) setHfoError("");
+                                        }}
+                                        options={hfoDropdownOptions}
+                                        placeholder={
+                                            !selectedRigId
+                                                ? "Pilih Unit RIG terlebih dahulu"
+                                                : hfoOptions.length === 0
+                                                ? "(Belum ada personil HFO terdaftar)"
+                                                : "Pilih Petugas HFO"
+                                        }
+                                        disabled={!selectedRigId || hfoOptions.length === 0}
+                                        icon={User}
+                                    />
+                                    {hfoError && (
+                                        <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                            {hfoError}
+                                        </p>
+                                    )}
+                                    {data.hfo_name && (
+                                        <p className="mt-1.5 text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                            <span>
+                                                Petugas bertugas:{" "}
+                                                <strong className="text-emerald-900">{data.hfo_name}</strong>{" "}
+                                                (otomatis dicatat sebagai uploader).
+                                            </span>
+                                        </p>
+                                    )}
+                                </div>
+                            </>
+                        )}
 
                         {/* Input Password */}
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                    Kata Sandi
+                                    PASSWORD
                                 </label>
                             </div>
                             <div className="relative rounded-xl shadow-2xs">
@@ -324,16 +584,12 @@ export default function Login({ status }) {
                         </button>
                     </form>
 
-                    {/* Ajukan Pendaftaran Akun */}
-                    <div className="pt-3 border-t border-slate-100 text-center">
-                        <p className="text-[11.5px] font-semibold text-slate-500">
-                            Belum memiliki hak akses akun?{" "}
-                            <Link
-                                href="/register"
-                                className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline transition-colors"
-                            >
-                                Ajukan Pendaftaran
-                            </Link>
+                    {/* Disclaimer Keamanan Akses Internal */}
+                    <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+                        <p className="text-[11px] leading-relaxed text-slate-400 font-medium">
+                            Akses Terbatas • PT Besmindo Materi Sewatama<br />
+                            Kendala akun atau akses sistem? Hubungi{" "}
+                            <span className="text-emerald-700 font-semibold">Administrator HSE Pusat</span>
                         </p>
                     </div>
                 </div>

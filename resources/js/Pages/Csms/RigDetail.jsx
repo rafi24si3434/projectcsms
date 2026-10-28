@@ -58,11 +58,33 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
 
     // ── [ADMIN ONLY] State untuk modal tambah dokumen baru ────────────────────
     const [showAddModal, setShowAddModal] = useState(false);
-    const [addForm, setAddForm] = useState({ nama_dokumen: "", durasi: "", scope: "crew", keterangan_default: "" });
+    const [addForm, setAddForm] = useState({
+        nama_dokumen: "",
+        durasi: "",
+        scope: "crew",
+        keterangan_default: "",
+        apply_mode: "current",
+        rig_ids: [rig?.id],
+    });
     const [addSubmitting, setAddSubmitting] = useState(false);
+
+    // ── [ADMIN ONLY] State untuk modal edit kategori dokumen ──────────────────
+    const [editCatModal, setEditCatModal] = useState(null);
+    const [editForm, setEditForm] = useState({
+        id: null,
+        nama_dokumen: "",
+        durasi: "",
+        scope: "crew",
+        keterangan_default: "",
+        sync_mode: "current",
+        rig_ids: [],
+    });
+    const [editSubmitting, setEditSubmitting] = useState(false);
 
     // ── [ADMIN ONLY] State untuk modal hapus kategori dokumen ─────────────────
     const [deleteCatModal, setDeleteCatModal] = useState(null);
+    const [deleteMode, setDeleteMode] = useState("current");
+    const [deleteRigIds, setDeleteRigIds] = useState([]);
     const [isDeletingCat, setIsDeletingCat] = useState(false);
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
@@ -157,54 +179,113 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
         );
     };
 
-    // ── [ADMIN ONLY] Handler rename inline ───────────────────────────────────
-    const startRename = (cat) => {
-        setRenamingCatId(cat.id);
-        setRenameValue(cat.nama_dokumen);
-        setTimeout(() => renameInputRef.current?.focus(), 50);
+    // ── [ADMIN ONLY] Handler Tambah Dokumen ──────────────────────────────────
+    const handleOpenAddModal = () => {
+        setAddForm({
+            nama_dokumen: "",
+            durasi: "",
+            scope: "crew",
+            keterangan_default: "",
+            apply_mode: "current",
+            rig_ids: [rig?.id],
+        });
+        setShowAddModal(true);
     };
 
-    const cancelRename = () => {
-        setRenamingCatId(null);
-        setRenameValue("");
-    };
-
-    const submitRename = (catId) => {
-        if (!renameValue.trim()) return;
-        router.patch(
-            `/admin/csms/categories/${catId}`,
-            { nama_dokumen: renameValue.trim() },
-            {
-                preserveState: true,
-                onSuccess: () => { setRenamingCatId(null); setRenameValue(""); },
-            }
-        );
-    };
-
-    // ── [ADMIN ONLY] Handler tambah kategori baru ────────────────────────────
     const handleAddCategory = (e) => {
         e.preventDefault();
         if (!addForm.nama_dokumen.trim() || !addForm.durasi.trim()) return;
         setAddSubmitting(true);
         router.post(
             "/admin/csms/categories",
-            addForm,
+            {
+                ...addForm,
+                current_rig_id: rig?.id,
+                rig_ids: addForm.apply_mode === "current"
+                    ? [rig?.id]
+                    : (addForm.apply_mode === "all" ? allRigs.map(r => r.id) : addForm.rig_ids),
+            },
             {
                 preserveState: false,
                 onSuccess: () => {
                     setShowAddModal(false);
-                    setAddForm({ nama_dokumen: "", durasi: "", scope: "crew", keterangan_default: "" });
+                    setAddForm({
+                        nama_dokumen: "",
+                        durasi: "",
+                        scope: "crew",
+                        keterangan_default: "",
+                        apply_mode: "current",
+                        rig_ids: [rig?.id],
+                    });
                 },
                 onFinish: () => setAddSubmitting(false),
             }
         );
     };
 
-    // ── [ADMIN ONLY] Handler hapus kategori dokumen ──────────────────────────
+    // ── [ADMIN ONLY] Handler Edit Dokumen ────────────────────────────────────
+    const handleOpenEditCat = (cat) => {
+        const assigned = Array.isArray(cat.assigned_rig_ids) && cat.assigned_rig_ids.length > 0
+            ? cat.assigned_rig_ids
+            : [rig?.id];
+        setEditForm({
+            id: cat.id,
+            nama_dokumen: cat.nama_dokumen || "",
+            durasi: cat.durasi || "",
+            scope: cat.scope || "crew",
+            keterangan_default: cat.keterangan_default || "",
+            sync_mode: "current",
+            rig_ids: assigned,
+        });
+        setEditCatModal(cat);
+    };
+
+    const handleEditCategory = (e) => {
+        e.preventDefault();
+        if (!editForm.id || !editForm.nama_dokumen.trim()) return;
+        setEditSubmitting(true);
+        router.patch(
+            `/admin/csms/categories/${editForm.id}`,
+            {
+                nama_dokumen:       editForm.nama_dokumen,
+                durasi:             editForm.durasi,
+                scope:              editForm.scope,
+                keterangan_default: editForm.keterangan_default,
+                sync_mode:          editForm.sync_mode,
+                current_rig_id:     rig?.id,
+                rig_ids:            editForm.sync_mode === "current"
+                    ? [rig?.id]
+                    : (editForm.sync_mode === "all" ? (editCatModal?.assigned_rig_ids || [rig?.id]) : editForm.rig_ids),
+            },
+            {
+                preserveState: false,
+                onSuccess: () => {
+                    setEditCatModal(null);
+                },
+                onFinish: () => setEditSubmitting(false),
+            }
+        );
+    };
+
+    // ── [ADMIN ONLY] Handler Hapus Dokumen ───────────────────────────────────
+    const handleOpenDeleteCat = (cat) => {
+        const assigned = Array.isArray(cat.assigned_rig_ids) && cat.assigned_rig_ids.length > 0
+            ? cat.assigned_rig_ids
+            : [rig?.id];
+        setDeleteCatModal(cat);
+        setDeleteMode("current");
+        setDeleteRigIds([rig?.id]);
+    };
+
     const confirmDeleteCategory = () => {
         if (!deleteCatModal) return;
         setIsDeletingCat(true);
         router.delete(`/admin/csms/categories/${deleteCatModal.id}`, {
+            data: {
+                delete_mode: deleteMode,
+                rig_id:      rig?.id,
+                rig_ids:     deleteMode === "current" ? [rig?.id] : deleteRigIds,
+            },
             preserveState: false,
             onSuccess: () => {
                 setDeleteCatModal(null);
@@ -543,7 +624,7 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                                     </button>
 
                                     <button
-                                        onClick={() => setShowAddModal(true)}
+                                        onClick={handleOpenAddModal}
                                         style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
                                         className="inline-flex items-center gap-1.5 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition-all shadow-sm cursor-pointer hover:shadow-md"
                                     >
@@ -570,7 +651,7 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                                     <th className="p-3.5 border-r border-slate-200 text-center w-36 bg-slate-100/60">Crew C</th>
                                     <th className="p-3.5 min-w-[180px]">Keterangan</th>
                                     {isAdmin && (
-                                        <th className="p-3.5 border-l border-slate-200 text-center w-16">Aksi</th>
+                                        <th className="p-3.5 border-l border-slate-200 text-center w-24">Aksi</th>
                                     )}
                                 </tr>
                             </thead>
@@ -617,12 +698,12 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                                                 ) : (
                                                     <div className="flex items-center gap-1.5 group">
                                                         <div>{cat.nama_dokumen}</div>
-                                                        {/* Ikon pensil hanya muncul saat hover, khusus Admin */}
+                                                        {/* Ikon pensil untuk Admin */}
                                                         {isAdmin && (
                                                             <button
-                                                                onClick={() => startRename(cat)}
-                                                                title="Ubah nama dokumen"
-                                                                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-emerald-600 transition-all"
+                                                                onClick={() => handleOpenEditCat(cat)}
+                                                                title="Ubah & kelola dokumen ini"
+                                                                className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-emerald-600 transition-all cursor-pointer"
                                                             >
                                                                 <Pencil size={12} />
                                                             </button>
@@ -722,17 +803,27 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                                                 )}
                                             </td>
 
-                                            {/* [ADMIN ONLY] Kolom Aksi (Hapus Kategori) */}
+                                            {/* [ADMIN ONLY] Kolom Aksi (Edit & Hapus Kategori) */}
                                             {isAdmin && (
                                                 <td className="p-3 text-center border-l border-slate-100 align-middle">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDeleteCatModal(cat)}
-                                                        title={`Hapus kategori "${cat.nama_dokumen}"`}
-                                                        className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 inline-flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
-                                                    >
-                                                        <Trash2 size={13} />
-                                                    </button>
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenEditCat(cat)}
+                                                            title={`Edit dokumen "${cat.nama_dokumen}"`}
+                                                            className="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 inline-flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
+                                                        >
+                                                            <Pencil size={12} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenDeleteCat(cat)}
+                                                            title={`Hapus dokumen "${cat.nama_dokumen}"`}
+                                                            className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 inline-flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             )}
                                         </tr>
@@ -995,99 +1086,207 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                 [ADMIN ONLY] MODAL TAMBAH KATEGORI DOKUMEN BARU
             ═══════════════════════════════════════════════════════════════ */}
             {isAdmin && showAddModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200">
-                        {/* Header modal */}
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
-                                    <Plus size={14} className="text-emerald-700" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 my-8 overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                                    <Plus size={18} strokeWidth={2.5} />
                                 </div>
-                                <h3 className="text-sm font-black text-slate-800">Tambah Kategori Dokumen Baru</h3>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900">Tambah Dokumen Matriks K3</h3>
+                                    <p className="text-[11px] text-slate-500 font-medium">Tentukan parameter dokumen & unit RIG yang ditugaskan</p>
+                                </div>
                             </div>
-                            <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
+                            <button
+                                onClick={() => setShowAddModal(false)}
+                                className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                            >
                                 <X size={18} />
                             </button>
                         </div>
 
                         {/* Form */}
-                        <form onSubmit={handleAddCategory} className="p-5 space-y-4">
-                            {/* Nama Dokumen */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">
-                                    Nama Dokumen <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={addForm.nama_dokumen}
-                                    onChange={(e) => setAddForm({ ...addForm, nama_dokumen: e.target.value })}
-                                    placeholder="cth: Laporan Inspeksi Bulanan"
-                                    required
-                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
-                                />
+                        <form onSubmit={handleAddCategory} className="p-6 space-y-4 text-xs">
+                            {/* Nama Dokumen & Durasi */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                        Nama Dokumen <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={addForm.nama_dokumen}
+                                        onChange={(e) => setAddForm({ ...addForm, nama_dokumen: e.target.value })}
+                                        placeholder="cth: Bukti Inspeksi APAR"
+                                        required
+                                        className="w-full text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-slate-50/50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                        Durasi / Frekuensi <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={addForm.durasi}
+                                        onChange={(e) => setAddForm({ ...addForm, durasi: e.target.value })}
+                                        placeholder="cth: 1x/Bulan atau Harian"
+                                        required
+                                        className="w-full text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-slate-50/50"
+                                    />
+                                </div>
                             </div>
 
-                            {/* Durasi */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">
-                                    Durasi / Frekuensi <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={addForm.durasi}
-                                    onChange={(e) => setAddForm({ ...addForm, durasi: e.target.value })}
-                                    placeholder="cth: 1x/Bulan atau Harian"
-                                    required
-                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
-                                />
+                            {/* Scope & Keterangan */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                        Scope Dokumen <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={addForm.scope}
+                                        onChange={(e) => setAddForm({ ...addForm, scope: e.target.value })}
+                                        className="w-full text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-slate-50/50"
+                                    >
+                                        <option value="crew">Per Crew (Crew A, B, C)</option>
+                                        <option value="rig">Per Rig (1 Upload Seluruh Rig)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                        Keterangan Default <span className="text-slate-400 normal-case font-normal">(opsional)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={addForm.keterangan_default}
+                                        onChange={(e) => setAddForm({ ...addForm, keterangan_default: e.target.value })}
+                                        placeholder="cth: Form checklist resmi K3"
+                                        className="w-full text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-slate-50/50"
+                                    />
+                                </div>
                             </div>
 
-                            {/* Scope */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">
-                                    Scope <span className="text-red-500">*</span>
+                            {/* Target Unit RIG (Multi-RIG / Single) */}
+                            <div className="pt-2 border-t border-slate-100">
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                    Target Penerapan Unit RIG <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    value={addForm.scope}
-                                    onChange={(e) => setAddForm({ ...addForm, scope: e.target.value })}
-                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-white"
-                                >
-                                    <option value="crew">Per Crew (Crew A, B, C terpisah)</option>
-                                    <option value="rig">Per Rig (1 upload untuk seluruh crew)</option>
-                                </select>
+
+                                <div className="grid grid-cols-3 gap-2 mb-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddForm(f => ({ ...f, apply_mode: "current", rig_ids: [rig?.id] }))}
+                                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                                            addForm.apply_mode === "current"
+                                                ? "border-emerald-500 bg-emerald-50/80 text-emerald-950 ring-1 ring-emerald-500"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                        }`}
+                                    >
+                                        <div className="font-bold text-[11px]">Hanya RIG Ini</div>
+                                        <div className="text-[10px] text-emerald-700 font-semibold">{rig?.code || "Unit Aktif"}</div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddForm(f => ({ ...f, apply_mode: "selected" }))}
+                                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                                            addForm.apply_mode === "selected"
+                                                ? "border-emerald-500 bg-emerald-50/80 text-emerald-950 ring-1 ring-emerald-500"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                        }`}
+                                    >
+                                        <div className="font-bold text-[11px]">Pilih RIG Tertentu</div>
+                                        <div className="text-[10px] text-slate-500 font-medium">{addForm.rig_ids.length} Unit Dipilih</div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddForm(f => ({ ...f, apply_mode: "all", rig_ids: allRigs.map(r => r.id) }))}
+                                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                                            addForm.apply_mode === "all"
+                                                ? "border-emerald-500 bg-emerald-50/80 text-emerald-950 ring-1 ring-emerald-500"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                        }`}
+                                    >
+                                        <div className="font-bold text-[11px]">Semua RIG</div>
+                                        <div className="text-[10px] text-slate-500 font-medium">{allRigs.length} Unit Rig</div>
+                                    </button>
+                                </div>
+
+                                {/* Jika mode "selected", tampilkan checklist RIG */}
+                                {addForm.apply_mode === "selected" && (
+                                    <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-[11px] font-bold text-slate-700">Daftar Pilihan RIG ({addForm.rig_ids.length} dipilih):</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAddForm(f => ({ ...f, rig_ids: allRigs.map(r => r.id) }))}
+                                                    className="text-[10px] font-bold text-emerald-700 hover:underline px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 cursor-pointer"
+                                                >
+                                                    Pilih Semua
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAddForm(f => ({ ...f, rig_ids: [rig?.id] }))}
+                                                    className="text-[10px] font-bold text-slate-600 hover:underline px-1.5 py-0.5 rounded bg-white border border-slate-200 cursor-pointer"
+                                                >
+                                                    Hanya {rig?.code}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto pr-1">
+                                            {allRigs.map(r => {
+                                                const isChecked = addForm.rig_ids.includes(r.id);
+                                                return (
+                                                    <label
+                                                        key={r.id}
+                                                        className={`flex items-center gap-2 p-1.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                                                            isChecked
+                                                                ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                                                                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setAddForm(f => ({ ...f, rig_ids: [...f.rig_ids, r.id] }));
+                                                                } else {
+                                                                    setAddForm(f => ({ ...f, rig_ids: f.rig_ids.filter(id => id !== r.id) }));
+                                                                }
+                                                            }}
+                                                            className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                                                        />
+                                                        <span className="truncate">{r.code || r.name}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Keterangan Default (opsional) */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">
-                                    Keterangan Default <span className="text-slate-400 font-normal">(opsional)</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={addForm.keterangan_default}
-                                    onChange={(e) => setAddForm({ ...addForm, keterangan_default: e.target.value })}
-                                    placeholder="cth: Wajib diisi setiap bulan"
-                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
-                                />
-                            </div>
-
-                            {/* Footer */}
-                            <div className="flex justify-end gap-2 pt-2">
+                            {/* Footer Buttons */}
+                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => setShowAddModal(false)}
-                                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={addSubmitting || !addForm.nama_dokumen.trim() || !addForm.durasi.trim()}
+                                    disabled={addSubmitting || !addForm.nama_dokumen.trim() || !addForm.durasi.trim() || (addForm.apply_mode === "selected" && addForm.rig_ids.length === 0)}
                                     style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
                                     className="px-5 py-2 text-xs font-bold text-white disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-md"
                                 >
-                                    {addSubmitting ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                                    {addSubmitting ? "Menyimpan..." : "Tambah Dokumen"}
+                                    {addSubmitting ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} strokeWidth={2.5} />}
+                                    <span>{addSubmitting ? "Menyimpan..." : "Simpan Dokumen"}</span>
                                 </button>
                             </div>
                         </form>
@@ -1096,21 +1295,365 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
             )}
 
             {/* ═══════════════════════════════════════════════════════════════
-                [ADMIN ONLY] MODAL KONFIRMASI HAPUS KATEGORI DOKUMEN
+                [ADMIN ONLY] MODAL EDIT DOKUMEN MATRIKS K3 (MULTI-RIG SYNC)
+            ═══════════════════════════════════════════════════════════════ */}
+            {isAdmin && editCatModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 my-8 overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                                    <Pencil size={16} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900">Edit Dokumen Matriks K3</h3>
+                                    <p className="text-[11px] text-slate-500 font-medium">Ubah nama, durasi, dan ruang lingkup sinkronisasi unit RIG</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setEditCatModal(null)}
+                                className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Form */}
+                        <form onSubmit={handleEditCategory} className="p-6 space-y-4 text-xs">
+                            {/* Nama Dokumen & Durasi */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                        Nama Dokumen <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.nama_dokumen}
+                                        onChange={(e) => setEditForm({ ...editForm, nama_dokumen: e.target.value })}
+                                        required
+                                        className="w-full text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-50/50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                        Durasi / Frekuensi <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.durasi}
+                                        onChange={(e) => setEditForm({ ...editForm, durasi: e.target.value })}
+                                        required
+                                        className="w-full text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-50/50"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Scope & Keterangan */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                        Scope Dokumen <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={editForm.scope}
+                                        onChange={(e) => setEditForm({ ...editForm, scope: e.target.value })}
+                                        className="w-full text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-50/50"
+                                    >
+                                        <option value="crew">Per Crew (Crew A, B, C)</option>
+                                        <option value="rig">Per Rig (1 Upload Seluruh Rig)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                        Keterangan Default <span className="text-slate-400 normal-case font-normal">(opsional)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.keterangan_default}
+                                        onChange={(e) => setEditForm({ ...editForm, keterangan_default: e.target.value })}
+                                        placeholder="cth: Form checklist resmi K3"
+                                        className="w-full text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-50/50"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Pilihan Sinkronisasi Multi-RIG */}
+                            <div className="pt-2 border-t border-slate-100">
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-800 mb-2">
+                                    Opsi Sinkronisasi Pembaruan <span className="text-red-500">*</span>
+                                </label>
+
+                                <div className="space-y-2 mb-3">
+                                    <label
+                                        className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                                            editForm.sync_mode === "current"
+                                                ? "border-blue-500 bg-blue-50/60 ring-1 ring-blue-500"
+                                                : "border-slate-200 bg-white hover:border-slate-300"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="sync_mode"
+                                            value="current"
+                                            checked={editForm.sync_mode === "current"}
+                                            onChange={() => setEditForm(f => ({ ...f, sync_mode: "current" }))}
+                                            className="mt-0.5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        <div>
+                                            <div className="font-bold text-xs text-slate-800">Ubah Hanya untuk RIG ini ({rig?.code})</div>
+                                            <div className="text-[11px] text-slate-500 font-medium">Perubahan dokumen hanya berlaku pada matriks unit {rig?.code}. Unit lain tidak tersentuh.</div>
+                                        </div>
+                                    </label>
+
+                                    <label
+                                        className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                                            editForm.sync_mode === "all"
+                                                ? "border-blue-500 bg-blue-50/60 ring-1 ring-blue-500"
+                                                : "border-slate-200 bg-white hover:border-slate-300"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="sync_mode"
+                                            value="all"
+                                            checked={editForm.sync_mode === "all"}
+                                            onChange={() => setEditForm(f => ({ ...f, sync_mode: "all" }))}
+                                            className="mt-0.5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        <div>
+                                            <div className="font-bold text-xs text-slate-800">Sinkronkan ke Semua RIG yang Memiliki Dokumen Ini</div>
+                                            <div className="text-[11px] text-slate-500 font-medium">
+                                                Otomatis memperbarui nama & parameter pada seluruh unit rig yang mencatat dokumen ini ({editCatModal?.assigned_rig_ids?.length || 0} unit).
+                                            </div>
+                                        </div>
+                                    </label>
+
+                                    <label
+                                        className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                                            editForm.sync_mode === "selected"
+                                                ? "border-blue-500 bg-blue-50/60 ring-1 ring-blue-500"
+                                                : "border-slate-200 bg-white hover:border-slate-300"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="sync_mode"
+                                            value="selected"
+                                            checked={editForm.sync_mode === "selected"}
+                                            onChange={() => setEditForm(f => ({ ...f, sync_mode: "selected" }))}
+                                            className="mt-0.5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        <div>
+                                            <div className="font-bold text-xs text-slate-800">Pilih RIG Tertentu...</div>
+                                            <div className="text-[11px] text-slate-500 font-medium">Pilih secara manual unit mana saja yang ingin disinkronkan.</div>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                {/* Jika mode "selected", tampilkan checklist RIG yang memiliki dokumen ini */}
+                                {editForm.sync_mode === "selected" && (
+                                    <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-[11px] font-bold text-slate-700">Daftar RIG Terkait ({editForm.rig_ids.length} dipilih):</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditForm(f => ({ ...f, rig_ids: editCatModal?.assigned_rig_ids || [rig?.id] }))}
+                                                    className="text-[10px] font-bold text-blue-700 hover:underline px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 cursor-pointer"
+                                                >
+                                                    Pilih Semua Terkait
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditForm(f => ({ ...f, rig_ids: [rig?.id] }))}
+                                                    className="text-[10px] font-bold text-slate-600 hover:underline px-1.5 py-0.5 rounded bg-white border border-slate-200 cursor-pointer"
+                                                >
+                                                    Hanya {rig?.code}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto pr-1">
+                                            {allRigs
+                                                .filter(r => (editCatModal?.assigned_rig_ids || []).includes(r.id))
+                                                .map(r => {
+                                                    const isChecked = editForm.rig_ids.includes(r.id);
+                                                    return (
+                                                        <label
+                                                            key={r.id}
+                                                            className={`flex items-center gap-2 p-1.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                                                                isChecked
+                                                                    ? "bg-blue-50 border-blue-300 text-blue-900"
+                                                                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                                                            }`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isChecked}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setEditForm(f => ({ ...f, rig_ids: [...f.rig_ids, r.id] }));
+                                                                    } else {
+                                                                        setEditForm(f => ({ ...f, rig_ids: f.rig_ids.filter(id => id !== r.id) }));
+                                                                    }
+                                                                }}
+                                                                className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                                                            />
+                                                            <span className="truncate">{r.code || r.name}</span>
+                                                        </label>
+                                                    );
+                                                })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer Buttons */}
+                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditCatModal(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editSubmitting || !editForm.nama_dokumen.trim() || (editForm.sync_mode === "selected" && editForm.rig_ids.length === 0)}
+                                    style={{ background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" }}
+                                    className="px-5 py-2 text-xs font-bold text-white disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-md"
+                                >
+                                    {editSubmitting ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} strokeWidth={2.5} />}
+                                    <span>{editSubmitting ? "Menyimpan..." : "Simpan Perubahan"}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════
+                [ADMIN ONLY] MODAL KONFIRMASI HAPUS DOKUMEN MATRIKS K3
             ═══════════════════════════════════════════════════════════════ */}
             {isAdmin && deleteCatModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 p-5 text-center">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 p-5 my-8 overflow-hidden">
                         <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3.5">
                             <Trash2 size={24} />
                         </div>
-                        <h3 className="text-base font-black text-slate-900 mb-1.5">
-                            Hapus Kategori Dokumen?
+                        <h3 className="text-base font-black text-slate-900 text-center mb-1">
+                            Hapus Dokumen Matriks K3?
                         </h3>
-                        <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                            Anda akan menghapus kategori <strong className="text-slate-800 font-bold">"{deleteCatModal.nama_dokumen}"</strong> (No. {deleteCatModal.no}). Semua berkas dan rekaman terkait kategori ini pada seluruh unit Rig akan ikut terhapus secara permanen.
+                        <p className="text-xs text-slate-500 text-center leading-relaxed mb-4">
+                            Dokumen: <strong className="text-slate-800 font-bold">"{deleteCatModal.nama_dokumen}"</strong> (No. {deleteCatModal.no})
                         </p>
-                        <div className="flex items-center justify-center gap-2">
+
+                        {/* Pilihan Ruang Lingkup Penghapusan */}
+                        <div className="space-y-2.5 text-left mb-4">
+                            <label
+                                className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                                    deleteMode === "current"
+                                        ? "bg-red-50/70 border-red-300 ring-1 ring-red-300 text-slate-800"
+                                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                                }`}
+                            >
+                                <input
+                                    type="radio"
+                                    name="delete_scope"
+                                    value="current"
+                                    checked={deleteMode === "current"}
+                                    onChange={() => setDeleteMode("current")}
+                                    className="mt-0.5 text-red-600 focus:ring-red-500 cursor-pointer"
+                                />
+                                <div>
+                                    <div className="font-bold text-slate-900">Hapus HANYA untuk RIG ini ({rig?.code})</div>
+                                    <div className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                                        Dokumen beserta berkas rekaman hanya dihapus dari unit {rig?.code}. Matriks di unit RIG lainnya tetap utuh dan aman.
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label
+                                className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                                    deleteMode === "selected"
+                                        ? "bg-red-50/70 border-red-300 ring-1 ring-red-300 text-slate-800"
+                                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                                }`}
+                            >
+                                <input
+                                    type="radio"
+                                    name="delete_scope"
+                                    value="selected"
+                                    checked={deleteMode === "selected"}
+                                    onChange={() => setDeleteMode("selected")}
+                                    className="mt-0.5 text-red-600 focus:ring-red-500 cursor-pointer"
+                                />
+                                <div>
+                                    <div className="font-bold text-slate-900">Hapus untuk Beberapa RIG Sekaligus...</div>
+                                    <div className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                                        Pilih beberapa unit RIG yang memiliki dokumen ini untuk dihapus secara bersamaan.
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* Jika mode "selected", tampilkan checklist RIG yang memiliki dokumen ini */}
+                        {deleteMode === "selected" && (
+                            <div className="text-left border border-slate-200 rounded-xl p-3 bg-slate-50/60 mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[11px] font-bold text-slate-700">Pilih RIG Target ({deleteRigIds.length} dipilih):</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeleteRigIds(deleteCatModal?.assigned_rig_ids || [rig?.id])}
+                                            className="text-[10px] font-bold text-red-700 hover:underline px-1.5 py-0.5 rounded bg-red-50 border border-red-200 cursor-pointer"
+                                        >
+                                            Pilih Semua
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeleteRigIds([rig?.id])}
+                                            className="text-[10px] font-bold text-slate-600 hover:underline px-1.5 py-0.5 rounded bg-white border border-slate-200 cursor-pointer"
+                                        >
+                                            Hanya {rig?.code}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                                    {allRigs
+                                        .filter(r => (deleteCatModal?.assigned_rig_ids || []).includes(r.id))
+                                        .map(r => {
+                                            const isChecked = deleteRigIds.includes(r.id);
+                                            return (
+                                                <label
+                                                    key={r.id}
+                                                    className={`flex items-center gap-2 p-1.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                                                        isChecked
+                                                            ? "bg-red-50 border-red-300 text-red-900"
+                                                            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setDeleteRigIds(prev => [...prev, r.id]);
+                                                            } else {
+                                                                setDeleteRigIds(prev => prev.filter(id => id !== r.id));
+                                                            }
+                                                        }}
+                                                        className="w-3.5 h-3.5 text-red-600 rounded border-slate-300 focus:ring-red-500 cursor-pointer"
+                                                    />
+                                                    <span className="truncate">{r.code || r.name}</span>
+                                                </label>
+                                            );
+                                        })}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-100">
                             <button
                                 type="button"
                                 disabled={isDeletingCat}
@@ -1121,12 +1664,12 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                             </button>
                             <button
                                 type="button"
-                                disabled={isDeletingCat}
+                                disabled={isDeletingCat || (deleteMode === "selected" && deleteRigIds.length === 0)}
                                 onClick={confirmDeleteCategory}
                                 className="px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                             >
                                 {isDeletingCat ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                                <span>{isDeletingCat ? "Menghapus..." : "Ya, Hapus Kategori"}</span>
+                                <span>{isDeletingCat ? "Menghapus..." : "Ya, Hapus Dokumen"}</span>
                             </button>
                         </div>
                     </div>
@@ -1146,6 +1689,17 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
             )}
         </AdminLayout>
     );
+}
+
+function formatUploadDate(dateStr) {
+    if (!dateStr) return "";
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    } catch {
+        return "";
+    }
 }
 
 /**
@@ -1317,7 +1871,14 @@ function UnifiedRigUploadCell({
                                     {record.file_name}
                                 </button>
                             )}
-                            <span className="text-[10px] text-slate-500">Berlaku untuk Crew A, B, C (Seluruh Rig)</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] text-slate-500">Berlaku untuk Crew A, B, C (Seluruh Rig)</span>
+                                <span className="text-[10px] text-slate-400">•</span>
+                                <span className="text-[10px] text-slate-600 font-medium">
+                                    Diunggah oleh: <strong className="text-slate-800 font-bold">{record.uploaded_by || "Kru Lapangan"}</strong>
+                                    {record.updated_at ? ` • ${formatUploadDate(record.updated_at)}` : ""}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -1554,6 +2115,20 @@ function UploadCell({
                         >
                             <Trash2 size={12} />
                         </button>
+                    </div>
+
+                    <div className="text-center w-full max-w-[130px] px-1 mt-0.5">
+                        <div className="text-[9.5px] text-slate-500 leading-tight">
+                            <span className="text-slate-400">Diunggah oleh: </span>
+                            <span className="font-bold text-slate-700 block truncate" title={record.uploaded_by || "Kru Lapangan"}>
+                                {record.uploaded_by || "Kru Lapangan"}
+                            </span>
+                            {record.updated_at && (
+                                <span className="text-[9px] text-slate-400 block mt-0.5 font-medium">
+                                    {formatUploadDate(record.updated_at)}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </>
             )}

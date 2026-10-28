@@ -26,6 +26,17 @@ import {
     Download,
 } from "lucide-react";
 
+function formatUploadDate(dateStr) {
+    if (!dateStr) return "";
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    } catch {
+        return "";
+    }
+}
+
 export default function CsmsVerification({ records = [], rigs = [], categories = [], filter = {}, stats = {}, availableYears = [] }) {
     const [selectedMonth, setSelectedMonth] = useState(filter.bulan || "Januari");
     const [selectedYear, setSelectedYear] = useState(filter.tahun || availableYears?.[0] || new Date().getFullYear());
@@ -514,6 +525,10 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                                             </button>
                                                             <div className="text-[10px] text-slate-400 font-mono">
                                                                 {rec.file_size ? `${Math.round(rec.file_size / 1024)} KB` : ''} ({rec.file_type?.toUpperCase() || 'FILE'})
+                                                            </div>
+                                                            <div className="text-[10.5px] text-slate-500 font-medium">
+                                                                Diunggah oleh: <span className="font-bold text-slate-800">{rec.uploaded_by || "Kru Lapangan"}</span>
+                                                                {rec.updated_at ? ` • ${formatUploadDate(rec.updated_at)}` : ""}
                                                             </div>
                                                         </div>
                                                     ) : (

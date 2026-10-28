@@ -12,6 +12,9 @@ import {
     Activity,
     Layers,
     Clock,
+    Archive,
+    BarChart3,
+    Award,
 } from "lucide-react";
 import { router } from "@inertiajs/react";
 
@@ -21,17 +24,21 @@ function AdminSidebar() {
     const isRigUser        = currentUser?.role === "user";
     const userRig          = currentUser?.rig;
     const pendingCount     = props.pendingUsersCount ?? 0;
+    const archivedCount    = props.archivedRigsCount ?? 0;
 
     // Menu untuk Admin HSE
     const adminMainMenu = [
-        { name: "CSMS Storage (20 RIG)", href: "/csms",            icon: HardDrive },
-        { name: "Matriks Dokumen K3",    href: "/csms/rig/1",      icon: Layers },
-        { name: "Verifikasi & ACC CSMS", href: "/csms/input-rig",  icon: ShieldCheck },
+        { name: "CSMS Storage (20 RIG)", href: "/csms",                  icon: HardDrive },
+        { name: "Matriks Dokumen K3",    href: "/csms/rig/1",            icon: Layers },
+        { name: "Rekap Kepatuhan RIG",   href: "/admin/csms/compliance", icon: BarChart3 },
+        { name: "Keaktifan Petugas HFO", href: "/admin/csms/compliance?tab=hfo", icon: Award },
+        { name: "Verifikasi & ACC CSMS", href: "/csms/input-rig",        icon: ShieldCheck },
     ];
 
     const adminManagementMenu = [
-        { name: "User Management",   href: "/admin/users",    icon: Users,    badge: pendingCount },
-        { name: "Pengaturan Sistem", href: "/admin/settings", icon: Settings, badge: 0 },
+        { name: "Arsip Rig",         href: "/admin/rigs/archived", icon: Archive,  badge: archivedCount },
+        { name: "User Management",   href: "/admin/users",         icon: Users,    badge: pendingCount },
+        { name: "Pengaturan Sistem", href: "/admin/settings",      icon: Settings, badge: 0 },
     ];
 
     // Menu khusus untuk User Rig Lapangan
@@ -48,8 +55,15 @@ function AdminSidebar() {
         },
     ];
 
-    const isActive = (href) =>
-        url === href || (href !== "/csms" && url.startsWith(href));
+    const isActive = (href) => {
+        if (href.includes("?")) {
+            return url === href;
+        }
+        if (href === "/admin/csms/compliance") {
+            return url === "/admin/csms/compliance" || (url.startsWith("/admin/csms/compliance") && !url.includes("tab=hfo"));
+        }
+        return url === href || (href !== "/csms" && url.startsWith(href));
+    };
 
     const handleLogout = () => {
         router.post("/logout");
@@ -96,12 +110,16 @@ function AdminSidebar() {
                     </div>
                     <div className="overflow-hidden flex-1">
                         <div className="text-[12px] font-black text-slate-800 truncate leading-tight">
-                            {currentUser?.name || (isRigUser ? "Operator Rig" : "HSE Officer")}
+                            {isRigUser
+                                ? (currentUser?.hfo_name || currentUser?.name || "Operator Rig")
+                                : (currentUser?.name || "HSE Officer")}
                         </div>
                         <div className="text-[10px] text-slate-500 font-semibold mt-0.5 flex items-center gap-1.5 truncate">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                             <span className="truncate">
-                                {isRigUser ? (userRig ? userRig.name : "Rig Ditugaskan") : "Admin Pusat"}
+                                {isRigUser
+                                    ? (userRig ? `${userRig.code} • ${currentUser?.hfo_name ? 'HFO Lapangan' : 'Rig Ops'}` : "Rig Ditugaskan")
+                                    : "Admin Pusat"}
                             </span>
                         </div>
                     </div>

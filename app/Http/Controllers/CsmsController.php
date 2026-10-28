@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CsmsRig;
 use App\Models\CsmsDocumentCategory;
+use App\Models\DokumenMatriks;
 use App\Models\CsmsRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -105,7 +106,8 @@ class CsmsController extends Controller
         $rigStats = $rigs->map(function ($rig) use ($records, $categories) {
             $rigRecords = $records->where('csms_rig_id', $rig->id);
             $totalRequired = $categories->reduce(function ($carry, $cat) {
-                return $carry + ($cat->scope === 'crew' ? 3 : 1);
+                $scope = is_array($cat) ? ($cat['scope'] ?? 'crew') : ($cat->scope ?? 'crew');
+                return $carry + ($scope === 'crew' ? 3 : 1);
             }, 0);
             $completed = $rigRecords->where('status', 'Lengkap')->count();
             $approvedCount = $rigRecords->where('approval_status', 'approved')->count();
@@ -165,7 +167,45 @@ class CsmsController extends Controller
         $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
         $availableYears = self::getAvailableYears();
 
-        $categories = CsmsDocumentCategory::orderBy('no')->get();
+        // Pastikan rig memiliki matriks dokumen jika belum ada (auto-seed fallback)
+        $hasMatrix = DokumenMatriks::where('rig_id', $rig->id)->exists();
+        if (!$hasMatrix) {
+            $allCats = CsmsDocumentCategory::orderBy('no')->get();
+            foreach ($allCats as $cat) {
+                DokumenMatriks::create([
+                    'rig_id'             => $rig->id,
+                    'category_id'        => $cat->id,
+                    'no'                 => $cat->no,
+                    'nama_dokumen'       => $cat->nama_dokumen,
+                    'durasi'             => $cat->durasi,
+                    'scope'              => $cat->scope,
+                    'keterangan_default' => $cat->keterangan_default,
+                ]);
+            }
+        }
+
+        // Ambil pemetaan seluruh rig yang memiliki masing-masing dokumen dalam 1 query cepat
+        $allRigAssignments = DokumenMatriks::select('category_id', 'rig_id')
+            ->get()
+            ->groupBy('category_id')
+            ->map(fn($g) => $g->pluck('rig_id')->toArray());
+
+        $categories = DokumenMatriks::where('rig_id', $rig->id)
+            ->orderBy('no')
+            ->get()
+            ->map(function ($dm) use ($allRigAssignments, $rig) {
+                return [
+                    'id'                 => $dm->category_id,
+                    'matrix_id'          => $dm->id,
+                    'no'                 => $dm->no,
+                    'nama_dokumen'       => $dm->nama_dokumen,
+                    'durasi'             => $dm->durasi,
+                    'scope'              => $dm->scope,
+                    'keterangan_default' => $dm->keterangan_default,
+                    'assigned_rig_ids'   => $allRigAssignments->get($dm->category_id, [$rig->id]),
+                ];
+            });
+
         $records = CsmsRecord::where('csms_rig_id', $rig->id)
             ->where('periode_bulan', $bulan)
             ->where('periode_tahun', $tahun)
@@ -200,8 +240,382 @@ class CsmsController extends Controller
     }
 
     /**
-     * Halaman Khusus Admin: Verifikasi & ACC Dokumen CSMS
+     * [ADMIN & HSE] Halaman Ringkasan & Matriks Statistik Kepatuhan Seluruh RIG (Compliance Heatmap / Cross-Tab)
      */
+    public function complianceOverview(Request $request): Response
+    {
+        $bulan = $request->query('bulan', 'Januari');
+        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
+        $availableYears = self::getAvailableYears();
+
+        $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
+        $categories = CsmsDocumentCategory::orderBy('no')->get();
+
+        // Ambil penugasan matriks per rig dari DokumenMatriks
+        $matrixAssignments = DokumenMatriks::select('rig_id', 'category_id')->get();
+        $assignedMap = [];
+        foreach ($matrixAssignments as $asgn) {
+            $assignedMap[$asgn->rig_id][$asgn->category_id] = true;
+        }
+
+        // Ambil semua records untuk periode ini dalam 1 query efisien tanpa N+1
+        $records = CsmsRecord::whereIn('csms_rig_id', $rigs->pluck('id'))
+            ->where('periode_bulan', $bulan)
+            ->where('periode_tahun', $tahun)
+            ->get();
+
+        // Kelompokkan records berdasarkan [csms_rig_id][csms_document_category_id]
+        $recordsGrouped = [];
+        foreach ($records as $rec) {
+            $recordsGrouped[$rec->csms_rig_id][$rec->csms_document_category_id][] = [
+                'id'              => $rec->id,
+                'csms_rig_id'     => $rec->csms_rig_id,
+                'csms_document_category_id' => $rec->csms_document_category_id,
+                'crew'            => $rec->crew ?: 'Rig',
+                'status'          => $rec->status,
+                'approval_status' => $rec->approval_status,
+                'approval_notes'  => $rec->approval_notes,
+                'file_name'       => $rec->file_name,
+                'file_path'       => $rec->file_path,
+                'file_size'       => $rec->file_size,
+                'file_type'       => $rec->file_type,
+                'attachments'     => $rec->attachments,
+                'uploaded_by'     => $rec->uploaded_by,
+                'updated_at'      => $rec->updated_at ? $rec->updated_at->format('d/m/Y H:i') : null,
+            ];
+        }
+
+        $globalTotalRequired = 0;
+        $globalTotalApproved = 0;
+        $globalTotalUploaded = 0;
+        $globalTotalPending  = 0;
+        $globalTotalRevision = 0;
+
+        $rigMatrixData = [];
+
+        foreach ($rigs as $rig) {
+            $rigId = $rig->id;
+            $rigRequired = 0;
+            $rigApproved = 0;
+            $rigUploaded = 0;
+            $rigPending  = 0;
+            $rigRevision = 0;
+
+            $cellData = [];
+
+            foreach ($categories as $cat) {
+                $catId = $cat->id;
+                // Jika belum ada di tabel DokumenMatriks, anggap assigned sebagai fallback
+                $isAssigned = empty($assignedMap) || !empty($assignedMap[$rigId][$catId]);
+                $recs = $recordsGrouped[$rigId][$catId] ?? [];
+                $isCrew = $cat->scope === 'crew';
+                $requiredForCat = $isAssigned ? ($isCrew ? 3 : 1) : 0;
+
+                $hasRevision = false;
+                $hasPending  = false;
+                $approvedCount = 0;
+                $uploadedCount = 0;
+
+                foreach ($recs as $r) {
+                    $appStatus = strtolower($r['approval_status'] ?? '');
+                    if (!empty($r['file_path']) || !empty($r['attachments'])) {
+                        $uploadedCount++;
+                    }
+                    if (in_array($appStatus, ['revision', 'revisi', 'rejected', 'ditolak'])) {
+                        $hasRevision = true;
+                    } elseif ($appStatus === 'pending') {
+                        $hasPending = true;
+                    } elseif ($appStatus === 'approved') {
+                        $approvedCount++;
+                    }
+                }
+
+                if (!$isAssigned) {
+                    $cellStatus = 'not_assigned';
+                } elseif (empty($recs) || $uploadedCount === 0) {
+                    $cellStatus = 'empty';
+                } elseif ($hasRevision) {
+                    $cellStatus = 'revision';
+                } elseif ($hasPending) {
+                    $cellStatus = 'pending';
+                } elseif ($isCrew ? ($approvedCount >= 3) : ($approvedCount >= 1)) {
+                    $cellStatus = 'approved';
+                } elseif ($approvedCount > 0) {
+                    $cellStatus = 'partial_approved';
+                } elseif ($uploadedCount > 0) {
+                    $cellStatus = 'pending';
+                } else {
+                    $cellStatus = 'empty';
+                }
+
+                $rigRequired += $requiredForCat;
+                $rigApproved += $approvedCount;
+                $rigUploaded += $uploadedCount;
+                if ($hasPending) $rigPending++;
+                if ($hasRevision) $rigRevision++;
+
+                // Ambil uploader & waktu terbaru jika ada
+                $latestRec = !empty($recs) ? $recs[count($recs) - 1] : null;
+
+                $cellData[$catId] = [
+                    'category_id'    => $catId,
+                    'status'         => $cellStatus,
+                    'is_assigned'    => $isAssigned,
+                    'records'        => $recs,
+                    'uploaded_count' => $uploadedCount,
+                    'approved_count' => $approvedCount,
+                    'required_count' => $requiredForCat,
+                    'uploader'       => $latestRec['uploaded_by'] ?? null,
+                    'date'           => $latestRec['updated_at'] ?? null,
+                    'notes'          => $latestRec['approval_notes'] ?? null,
+                    'scope'          => $cat->scope,
+                ];
+            }
+
+            $percentage = $rigRequired > 0 ? round(($rigApproved / $rigRequired) * 100, 1) : 0;
+
+            $globalTotalRequired += $rigRequired;
+            $globalTotalApproved += $rigApproved;
+            $globalTotalUploaded += $rigUploaded;
+            $globalTotalPending  += $rigPending;
+            $globalTotalRevision += $rigRevision;
+
+            $rigMatrixData[] = [
+                'rig'             => [
+                    'id'   => $rig->id,
+                    'name' => $rig->name,
+                    'code' => $rig->code,
+                ],
+                'cells'           => $cellData,
+                'stats'           => [
+                    'required'    => $rigRequired,
+                    'approved'    => $rigApproved,
+                    'uploaded'    => $rigUploaded,
+                    'pending'     => $rigPending,
+                    'revision'    => $rigRevision,
+                    'percentage'  => $percentage,
+                ],
+            ];
+        }
+
+        // Cari Top Performer & Needs Attention
+        $sortedRigs = collect($rigMatrixData)->sortByDesc(fn($item) => $item['stats']['percentage'])->values();
+        $topRig = $sortedRigs->first();
+        $attentionRig = $sortedRigs->last();
+
+        $globalPercentage = $globalTotalRequired > 0 
+            ? round(($globalTotalApproved / $globalTotalRequired) * 100, 1) 
+            : 0;
+
+        $summaryStats = [
+            'global_compliance_rate' => $globalPercentage,
+            'total_approved'         => $globalTotalApproved,
+            'total_required'         => $globalTotalRequired,
+            'total_uploaded'         => $globalTotalUploaded,
+            'total_pending'          => $globalTotalPending,
+            'total_revision'         => $globalTotalRevision,
+            'total_rigs'             => $rigs->count(),
+            'top_rig'                => $topRig ? [
+                'id'         => $topRig['rig']['id'],
+                'name'       => $topRig['rig']['name'],
+                'code'       => $topRig['rig']['code'],
+                'percentage' => $topRig['stats']['percentage'],
+                'approved'   => $topRig['stats']['approved'],
+                'required'   => $topRig['stats']['required'],
+            ] : null,
+            'attention_rig'          => $attentionRig ? [
+                'id'         => $attentionRig['rig']['id'],
+                'name'       => $attentionRig['rig']['name'],
+                'code'       => $attentionRig['rig']['code'],
+                'percentage' => $attentionRig['stats']['percentage'],
+                'approved'   => $attentionRig['stats']['approved'],
+                'required'   => $attentionRig['stats']['required'],
+                'pending'    => $attentionRig['stats']['pending'],
+            ] : null,
+        ];
+
+        // Format kategori dengan nama pendek untuk header tabel
+        $formattedCategories = $categories->map(function ($cat) {
+            $short = preg_replace('/^(Bukti\s+Inspeksi\s+|Bukti\s+|Form\s+)/i', '', $cat->nama_dokumen);
+            return [
+                'id'           => $cat->id,
+                'no'           => $cat->no,
+                'nama_dokumen' => $cat->nama_dokumen,
+                'short_name'   => trim($short),
+                'durasi'       => $cat->durasi,
+                'scope'        => $cat->scope,
+            ];
+        });
+
+        // ── AGREGASI STATISTIK KEAKTIFAN PETUGAS HFO ──────────────────────────
+        $hfoStats = self::buildHfoActivityStats($bulan, $tahun);
+
+        return Inertia::render('Csms/ComplianceOverview', [
+            'summaryStats'   => $summaryStats,
+            'rigMatrix'      => $rigMatrixData,
+            'categories'     => $formattedCategories,
+            'availableYears' => $availableYears,
+            'filter'         => [
+                'bulan' => $bulan,
+                'tahun' => $tahun,
+            ],
+            'hfoStats'       => $hfoStats,
+            'activeTab'      => $request->query('tab', 'matrix'),
+        ]);
+    }
+
+    /**
+     * Hitung statistik dan agregasi keaktifan personil HFO pengunggah berkas K3.
+     */
+    public static function buildHfoActivityStats(?string $bulan = null, ?int $tahun = null): array
+    {
+        $activeRigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
+
+        // 1. Kumpulkan seluruh master HFO dari rig aktif
+        $hfoMaster = [];
+        foreach ($activeRigs as $rig) {
+            $officers = array_filter([$rig->hfo_1, $rig->hfo_2, $rig->hfo_3]);
+            foreach ($officers as $officer) {
+                $name = trim($officer);
+                if (!empty($name)) {
+                    $hfoMaster[$name] = [
+                        'name'     => $name,
+                        'rig_id'   => $rig->id,
+                        'rig_code' => $rig->code,
+                        'rig_name' => $rig->name,
+                    ];
+                }
+            }
+        }
+
+        // 2. Query data csms_records yang memiliki uploaded_by
+        $records = CsmsRecord::with(['category', 'rig'])
+            ->whereNotNull('uploaded_by')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $hfoAgg = [];
+        foreach ($hfoMaster as $name => $meta) {
+            $hfoAgg[$name] = [
+                'name'               => $name,
+                'rig_id'             => $meta['rig_id'],
+                'rig_code'           => $meta['rig_code'],
+                'rig_name'           => $meta['rig_name'],
+                'total_uploaded'     => 0,
+                'period_uploaded'    => 0,
+                'approved_count'     => 0,
+                'revision_count'     => 0,
+                'rejected_count'     => 0,
+                'pending_count'      => 0,
+                'last_activity_date' => null,
+                'last_activity_raw'  => null,
+                'last_activity_doc'  => null,
+                'activity_status'    => 'Belum Aktif',
+            ];
+        }
+
+        $monthsIndo = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        foreach ($records as $r) {
+            $uploader = trim($r->uploaded_by);
+            if (empty($uploader)) continue;
+
+            if (!isset($hfoAgg[$uploader])) {
+                $hfoAgg[$uploader] = [
+                    'name'               => $uploader,
+                    'rig_id'             => $r->csms_rig_id,
+                    'rig_code'           => $r->rig ? $r->rig->code : 'RIG',
+                    'rig_name'           => $r->rig ? $r->rig->name : 'Unit Rig',
+                    'total_uploaded'     => 0,
+                    'period_uploaded'    => 0,
+                    'approved_count'     => 0,
+                    'revision_count'     => 0,
+                    'rejected_count'     => 0,
+                    'pending_count'      => 0,
+                    'last_activity_date' => null,
+                    'last_activity_raw'  => null,
+                    'last_activity_doc'  => null,
+                    'activity_status'    => 'Belum Aktif',
+                ];
+            }
+
+            $hfoAgg[$uploader]['total_uploaded']++;
+            
+            if ($bulan && $tahun && $r->periode_bulan === $bulan && (int)$r->periode_tahun === (int)$tahun) {
+                $hfoAgg[$uploader]['period_uploaded']++;
+            }
+
+            $appStatus = strtolower($r->approval_status ?? 'pending');
+            if (in_array($appStatus, ['approved', 'acc', 'sah'])) {
+                $hfoAgg[$uploader]['approved_count']++;
+            } elseif (in_array($appStatus, ['revision', 'revisi'])) {
+                $hfoAgg[$uploader]['revision_count']++;
+            } elseif (in_array($appStatus, ['rejected', 'ditolak'])) {
+                $hfoAgg[$uploader]['rejected_count']++;
+            } else {
+                $hfoAgg[$uploader]['pending_count']++;
+            }
+
+            if (!$hfoAgg[$uploader]['last_activity_raw'] && $r->updated_at) {
+                $hfoAgg[$uploader]['last_activity_raw'] = $r->updated_at->toISOString();
+                $m = (int)$r->updated_at->format('n');
+                $hfoAgg[$uploader]['last_activity_date'] = $r->updated_at->format('d') . ' ' . ($monthsIndo[$m] ?? '') . ' ' . $r->updated_at->format('Y, H:i');
+                $hfoAgg[$uploader]['last_activity_doc'] = $r->category ? $r->category->nama_dokumen : $r->file_name;
+            }
+        }
+
+        // Tentukan status keaktifan
+        $sangatAktifCount = 0;
+        $cukupAktifCount = 0;
+        $belumAktifCount = 0;
+        $totalUploads = 0;
+
+        foreach ($hfoAgg as &$item) {
+            $totalUploads += $item['total_uploaded'];
+            if ($item['total_uploaded'] >= 5) {
+                $item['activity_status'] = 'Sangat Aktif';
+                $sangatAktifCount++;
+            } elseif ($item['total_uploaded'] >= 1) {
+                $item['activity_status'] = 'Cukup Aktif';
+                $cukupAktifCount++;
+            } else {
+                $item['activity_status'] = 'Belum Aktif';
+                $belumAktifCount++;
+            }
+        }
+        unset($item);
+
+        // Sorting
+        $sortedDesc = collect($hfoAgg)->sortByDesc('total_uploaded')->values();
+
+        // 3. Top 5 Aktif
+        $top5 = $sortedDesc->filter(fn($x) => $x['total_uploaded'] > 0)->take(5)->map(function ($item, $idx) {
+            $item['rank'] = $idx + 1;
+            return $item;
+        })->values()->all();
+
+        // 4. Low Activity (unggah 0 atau terendah)
+        $lowActivity = $sortedDesc->filter(fn($x) => $x['total_uploaded'] === 0)->take(5)->values()->all();
+        if (count($lowActivity) < 5) {
+            $lowActivity = collect($hfoAgg)->sortBy('total_uploaded')->take(5)->values()->all();
+        }
+
+        $fullList = $sortedDesc->all();
+
+        return [
+            'top_active'     => $top5,
+            'low_activity'   => $lowActivity,
+            'full_list'      => $fullList,
+            'total_hfos'     => count($hfoAgg),
+            'active_count'   => $sangatAktifCount,
+            'moderate_count' => $cukupAktifCount,
+            'inactive_count' => $belumAktifCount,
+            'total_uploads'  => $totalUploads,
+        ];
+    }
     public function verificationIndex(Request $request): Response
     {
         $bulan = $request->query('bulan', 'Januari');
@@ -351,7 +765,45 @@ class CsmsController extends Controller
         $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
         $availableYears = self::getAvailableYears();
 
-        $categories = CsmsDocumentCategory::orderBy('no')->get();
+        // Pastikan rig memiliki matriks dokumen jika belum ada (auto-seed fallback)
+        $hasMatrix = DokumenMatriks::where('rig_id', $rig->id)->exists();
+        if (!$hasMatrix) {
+            $allCats = CsmsDocumentCategory::orderBy('no')->get();
+            foreach ($allCats as $cat) {
+                DokumenMatriks::create([
+                    'rig_id'             => $rig->id,
+                    'category_id'        => $cat->id,
+                    'no'                 => $cat->no,
+                    'nama_dokumen'       => $cat->nama_dokumen,
+                    'durasi'             => $cat->durasi,
+                    'scope'              => $cat->scope,
+                    'keterangan_default' => $cat->keterangan_default,
+                ]);
+            }
+        }
+
+        // Ambil pemetaan seluruh rig yang memiliki masing-masing dokumen dalam 1 query cepat
+        $allRigAssignments = DokumenMatriks::select('category_id', 'rig_id')
+            ->get()
+            ->groupBy('category_id')
+            ->map(fn($g) => $g->pluck('rig_id')->toArray());
+
+        $categories = DokumenMatriks::where('rig_id', $rig->id)
+            ->orderBy('no')
+            ->get()
+            ->map(function ($dm) use ($allRigAssignments, $rig) {
+                return [
+                    'id'                 => $dm->category_id,
+                    'matrix_id'          => $dm->id,
+                    'no'                 => $dm->no,
+                    'nama_dokumen'       => $dm->nama_dokumen,
+                    'durasi'             => $dm->durasi,
+                    'scope'              => $dm->scope,
+                    'keterangan_default' => $dm->keterangan_default,
+                    'assigned_rig_ids'   => $allRigAssignments->get($dm->category_id, [$rig->id]),
+                ];
+            });
+
         $records = CsmsRecord::where('csms_rig_id', $rig->id)
             ->where('periode_bulan', $bulan)
             ->where('periode_tahun', $tahun)
@@ -366,7 +818,8 @@ class CsmsController extends Controller
 
         // Kalkulasi Statistik Kesiapan Rig Terpilih
         $totalRequired = $categories->reduce(function ($carry, $cat) {
-            return $carry + ($cat->scope === 'crew' ? 3 : 1);
+            $scope = is_array($cat) ? ($cat['scope'] ?? 'crew') : ($cat->scope ?? 'crew');
+            return $carry + ($scope === 'crew' ? 3 : 1);
         }, 0);
         $totalUploaded = $records->whereNotNull('file_path')->count();
         $approvedCount = $records->where('approval_status', 'approved')->count();
@@ -499,7 +952,13 @@ class CsmsController extends Controller
 
         $record->status = $request->status;
         $record->keterangan = $request->keterangan;
-        $record->uploaded_by = $user->name ?? 'Operator Lapangan';
+
+        // Catat nama personil HFO aktif dari sesi login kru ke audit trail
+        $hfoName = session('logged_hfo_name') ?: (session('hfo_name') ?: ($user->hfo_name ?? null));
+        if (!$hfoName) {
+            $hfoName = ($user && $user->role === 'user') ? ($user->name ?? 'Kru Lapangan') : ($user->name ?? 'Kru Lapangan');
+        }
+        $record->uploaded_by = $hfoName;
         
         // Saat diunggah ulang / baru, set approval_status menjadi 'pending' agar Admin memeriksa kembali
         $record->approval_status = 'pending';
@@ -543,26 +1002,45 @@ class CsmsController extends Controller
     }
     /**
      * [ADMIN ONLY] Tambah kategori dokumen CSMS baru.
-     * Endpoint ini dilindungi middleware role:admin di routes,
-     * namun tetap diverifikasi di sini sebagai lapisan keamanan ganda.
+     * Mendukung opsi simpan spesifik per-rig atau multi-rig.
      */
     public function storeCategory(Request $request)
     {
-        // Lapisan keamanan ganda: pastikan hanya admin yang bisa mengeksekusi
         if (auth()->user()?->role !== 'admin') {
             abort(403, 'Hanya Admin yang dapat menambah kategori dokumen.');
         }
 
         $request->validate([
-            'nama_dokumen' => 'required|string|max:255',
-            'durasi'       => 'required|string|max:100',
-            'scope'        => 'required|in:crew,rig',
+            'nama_dokumen'       => 'required|string|max:255',
+            'durasi'             => 'required|string|max:100',
+            'scope'              => 'required|in:crew,rig',
             'keterangan_default' => 'nullable|string|max:500',
+            'rig_ids'            => 'nullable|array',
+            'apply_mode'         => 'nullable|string|in:current,selected,all',
+            'current_rig_id'     => 'nullable|integer',
         ], [
             'nama_dokumen.required' => 'Nama dokumen wajib diisi.',
             'durasi.required'       => 'Durasi wajib diisi.',
             'scope.required'        => 'Scope wajib dipilih.',
         ]);
+
+        $applyMode = $request->input('apply_mode', 'selected');
+        $currentRigId = $request->input('current_rig_id') ?: $request->input('rig_id');
+        $selectedRigIds = $request->input('rig_ids', []);
+
+        if ($applyMode === 'current' && $currentRigId) {
+            $targetRigIds = [(int)$currentRigId];
+        } elseif ($applyMode === 'all') {
+            $targetRigIds = CsmsRig::where('status', 'active')->pluck('id')->toArray();
+        } else {
+            $targetRigIds = !empty($selectedRigIds) 
+                ? array_map('intval', (array)$selectedRigIds) 
+                : ($currentRigId ? [(int)$currentRigId] : CsmsRig::where('status', 'active')->pluck('id')->toArray());
+        }
+
+        if (empty($targetRigIds)) {
+            $targetRigIds = CsmsRig::where('status', 'active')->pluck('id')->toArray();
+        }
 
         // Tentukan nomor urut berikutnya
         $maxNo = CsmsDocumentCategory::max('no') ?? 0;
@@ -570,23 +1048,40 @@ class CsmsController extends Controller
         $category = CsmsDocumentCategory::create([
             'dept'               => 'Dokumen dan Rekaman HSE',
             'no'                 => $maxNo + 1,
-            'nama_dokumen'       => $request->nama_dokumen,
-            'durasi'             => $request->durasi,
+            'nama_dokumen'       => trim($request->nama_dokumen),
+            'durasi'             => trim($request->durasi),
             'scope'              => $request->scope,
             'keterangan_default' => $request->keterangan_default,
         ]);
 
-        return redirect()->back()->with('success', "Kategori dokumen \"{$category->nama_dokumen}\" berhasil ditambahkan (No. {$category->no}).");
+        // Terapkan ke DokumenMatriks setiap rig yang dipilih
+        foreach ($targetRigIds as $rigId) {
+            $rigMaxNo = DokumenMatriks::where('rig_id', $rigId)->max('no') ?? 0;
+            DokumenMatriks::updateOrCreate(
+                [
+                    'rig_id'      => $rigId,
+                    'category_id' => $category->id,
+                ],
+                [
+                    'no'                 => $rigMaxNo + 1,
+                    'nama_dokumen'       => $category->nama_dokumen,
+                    'durasi'             => $category->durasi,
+                    'scope'              => $category->scope,
+                    'keterangan_default' => $category->keterangan_default,
+                ]
+            );
+        }
+
+        $rigNames = CsmsRig::whereIn('id', $targetRigIds)->pluck('code')->implode(', ');
+        return redirect()->back()->with('success', "Dokumen \"{$category->nama_dokumen}\" berhasil ditambahkan untuk: {$rigNames}.");
     }
 
     /**
      * [ADMIN ONLY] Ubah (edit/rename) kategori dokumen CSMS.
-     * Endpoint ini dilindungi middleware role:admin di routes,
-     * namun tetap diverifikasi di sini sebagai lapisan keamanan ganda.
+     * Mendukung opsi edit hanya rig aktif atau sinkronisasi multi-rig.
      */
     public function updateCategory(Request $request, $id)
     {
-        // Lapisan keamanan ganda: pastikan hanya admin yang bisa mengeksekusi
         if (auth()->user()?->role !== 'admin') {
             abort(403, 'Hanya Admin yang dapat mengubah kategori dokumen.');
         }
@@ -596,46 +1091,108 @@ class CsmsController extends Controller
             'durasi'             => 'nullable|string|max:100',
             'scope'              => 'nullable|in:crew,rig',
             'keterangan_default' => 'nullable|string|max:500',
+            'sync_mode'          => 'nullable|string|in:current,selected,all',
+            'current_rig_id'     => 'nullable|integer',
+            'rig_ids'            => 'nullable|array',
         ], [
             'nama_dokumen.required' => 'Nama dokumen tidak boleh kosong.',
         ]);
 
-        $category = CsmsDocumentCategory::findOrFail($id);
-        $oldName  = $category->nama_dokumen;
+        $category = CsmsDocumentCategory::find($id);
+        $catId = $category ? $category->id : $id;
+        $oldName = $category ? $category->nama_dokumen : 'Dokumen';
 
-        $updateData = ['nama_dokumen' => $request->nama_dokumen];
-        if ($request->has('durasi') && $request->durasi !== null) {
-            $updateData['durasi'] = $request->durasi;
+        $syncMode = $request->input('sync_mode', 'current');
+        $currentRigId = $request->input('current_rig_id') ?: $request->input('rig_id');
+        $selectedRigIds = $request->input('rig_ids', []);
+
+        if ($syncMode === 'current' && $currentRigId) {
+            $targetRigIds = [(int)$currentRigId];
+        } elseif ($syncMode === 'all') {
+            $targetRigIds = DokumenMatriks::where('category_id', $catId)->pluck('rig_id')->toArray();
+        } else {
+            $targetRigIds = !empty($selectedRigIds) 
+                ? array_map('intval', (array)$selectedRigIds) 
+                : ($currentRigId ? [(int)$currentRigId] : []);
         }
-        if ($request->has('scope') && $request->scope !== null) {
+
+        if (empty($targetRigIds)) {
+            $targetRigIds = DokumenMatriks::where('category_id', $catId)->pluck('rig_id')->toArray();
+        }
+
+        $updateData = ['nama_dokumen' => trim($request->nama_dokumen)];
+        if ($request->filled('durasi')) {
+            $updateData['durasi'] = trim($request->durasi);
+        }
+        if ($request->filled('scope')) {
             $updateData['scope'] = $request->scope;
         }
         if ($request->has('keterangan_default')) {
             $updateData['keterangan_default'] = $request->keterangan_default;
         }
 
-        $category->update($updateData);
+        // Update DokumenMatriks untuk rig yang dipilih
+        DokumenMatriks::whereIn('rig_id', $targetRigIds)
+            ->where(function ($q) use ($catId) {
+                $q->where('category_id', $catId)
+                  ->orWhere('id', $catId);
+            })
+            ->update($updateData);
 
-        return redirect()->back()->with('success', "Kategori dokumen \"{$oldName}\" berhasil diperbarui.");
+        // Jika update global / sync all, update juga master
+        if ($syncMode === 'all' && $category) {
+            $category->update($updateData);
+        }
+
+        $rigNames = CsmsRig::whereIn('id', $targetRigIds)->pluck('code')->implode(', ');
+        return redirect()->back()->with('success', "Dokumen \"{$oldName}\" berhasil diperbarui pada: {$rigNames}.");
     }
 
     /**
      * [ADMIN ONLY] Hapus kategori dokumen CSMS beserta berkas fisiknya.
-     * Endpoint ini dilindungi middleware role:admin di routes,
-     * namun tetap diverifikasi di sini sebagai lapisan keamanan ganda.
+     * Mendukung opsi hapus tunggal untuk RIG ini saja atau multi-RIG.
      */
-    public function destroyCategory($id)
+    public function destroyCategory(Request $request, $id)
     {
-        // Lapisan keamanan ganda: pastikan hanya admin yang bisa mengeksekusi
         if (auth()->user()?->role !== 'admin') {
             abort(403, 'Hanya Admin yang dapat menghapus kategori dokumen.');
         }
 
-        $category = CsmsDocumentCategory::findOrFail($id);
-        $catName = $category->nama_dokumen;
+        $deleteMode     = $request->input('delete_mode', 'current');
+        $currentRigId   = $request->input('rig_id');
+        $selectedRigIds = $request->input('rig_ids', []);
 
-        // Bersihkan berkas fisik yang terikat pada kategori ini dari storage
-        $records = CsmsRecord::where('csms_document_category_id', $category->id)->get();
+        if ($deleteMode === 'current' && $currentRigId) {
+            $rigIds = [(int)$currentRigId];
+        } elseif ($deleteMode === 'all') {
+            $rigIds = CsmsRig::pluck('id')->toArray();
+        } else {
+            $rigIds = !empty($selectedRigIds) 
+                ? array_map('intval', (array)$selectedRigIds) 
+                : ($currentRigId ? [(int)$currentRigId] : []);
+        }
+
+        if (empty($rigIds)) {
+            return redirect()->back()->with('error', 'Tidak ada unit Rig yang dipilih untuk penghapusan dokumen.');
+        }
+
+        $category = CsmsDocumentCategory::find($id);
+        $catId = $category ? $category->id : $id;
+        $catName = $category ? $category->nama_dokumen : 'Dokumen';
+
+        // 1. Hapus dari DokumenMatriks HANYA untuk rig yang dipilih!
+        DokumenMatriks::whereIn('rig_id', $rigIds)
+            ->where(function ($q) use ($catId) {
+                $q->where('category_id', $catId)
+                  ->orWhere('id', $catId);
+            })
+            ->delete();
+
+        // 2. Hapus berkas rekaman K3 fisik dan data di csms_records HANYA untuk rig yang dipilih!
+        $records = CsmsRecord::whereIn('csms_rig_id', $rigIds)
+            ->where('csms_document_category_id', $catId)
+            ->get();
+
         foreach ($records as $record) {
             if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
                 Storage::disk('public')->delete($record->file_path);
@@ -647,16 +1204,21 @@ class CsmsController extends Controller
                     }
                 }
             }
+            $record->delete();
         }
 
-        // Hapus kategori (relasi csms_records akan terhapus via database cascade)
-        $category->delete();
+        // Cek apakah dokumen ini masih ada di rig lain
+        $remainingInRigs = DokumenMatriks::where('category_id', $catId)->count();
+        if ($remainingInRigs === 0 && $category) {
+            $category->delete();
+        }
 
-        return redirect()->back()->with('success', "Kategori dokumen \"{$catName}\" berhasil dihapus.");
+        $rigNames = CsmsRig::whereIn('id', $rigIds)->pluck('code')->implode(', ');
+        return redirect()->back()->with('success', "Dokumen \"{$catName}\" berhasil dihapus dari: {$rigNames}.");
     }
 
     /**
-     * [ADMIN ONLY] Tambah unit RIG baru.
+     * [ADMIN ONLY] Tambah unit RIG baru beserta personil HFO.
      */
     public function storeRig(\Illuminate\Http\Request $request)
     {
@@ -665,27 +1227,51 @@ class CsmsController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:csms_rigs,name',
-            'code' => 'required|string|max:50|unique:csms_rigs,code',
-            'status' => 'nullable|string|in:active,inactive',
+            'name'   => 'required|string|max:100|unique:csms_rigs,name',
+            'code'   => 'required|string|max:50|unique:csms_rigs,code',
+            'status' => 'nullable|string|in:active,inactive,archived',
+            'hfo_1'  => 'nullable|string|max:255',
+            'hfo_2'  => 'nullable|string|max:255',
+            'hfo_3'  => 'nullable|string|max:255',
         ], [
             'name.required' => 'Nama RIG wajib diisi.',
-            'name.unique' => 'Nama RIG sudah terdaftar.',
+            'name.unique'   => 'Nama RIG sudah terdaftar.',
             'code.required' => 'Kode RIG wajib diisi.',
-            'code.unique' => 'Kode RIG sudah terdaftar.',
+            'code.unique'   => 'Kode RIG sudah terdaftar.',
         ]);
 
         $rig = CsmsRig::create([
-            'name' => trim($validated['name']),
-            'code' => strtoupper(trim($validated['code'])),
+            'name'   => trim($validated['name']),
+            'code'   => strtoupper(trim($validated['code'])),
             'status' => $validated['status'] ?? 'active',
+            'hfo_1'  => !empty($validated['hfo_1']) ? trim($validated['hfo_1']) : null,
+            'hfo_2'  => !empty($validated['hfo_2']) ? trim($validated['hfo_2']) : null,
+            'hfo_3'  => !empty($validated['hfo_3']) ? trim($validated['hfo_3']) : null,
         ]);
 
-        return redirect()->back()->with('success', "Unit RIG \"{$rig->name}\" ({$rig->code}) berhasil ditambahkan.");
+        // Buat akun kru default untuk RIG baru jika belum ada
+        $cleanCode = strtolower(str_replace([' ', '-'], '', $rig->code));
+        $bmsNum = substr($cleanCode, 3) ?: '00';
+        $rigPassword = str_repeat($bmsNum, 4) ?: '12345678';
+        $email = "{$cleanCode}@besmindo.com";
+
+        \App\Models\User::firstOrCreate(
+            ['email' => $email],
+            [
+                'name'           => "Crew {$rig->name}",
+                'role'           => 'user',
+                'status'         => 'Active',
+                'csms_rig_id'    => $rig->id,
+                'password'       => \Illuminate\Support\Facades\Hash::make($rigPassword),
+                'plain_password' => $rigPassword,
+            ]
+        );
+
+        return redirect()->back()->with('success', "Unit RIG \"{$rig->name}\" ({$rig->code}) dan 3 personil HFO berhasil didaftarkan.");
     }
 
     /**
-     * [ADMIN ONLY] Ubah data unit RIG.
+     * [ADMIN ONLY] Ubah data unit RIG & Personil HFO.
      */
     public function updateRig(\Illuminate\Http\Request $request, $id)
     {
@@ -696,51 +1282,102 @@ class CsmsController extends Controller
         $rig = CsmsRig::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:csms_rigs,name,' . $rig->id,
-            'code' => 'required|string|max:50|unique:csms_rigs,code,' . $rig->id,
-            'status' => 'nullable|string|in:active,inactive',
+            'name'   => 'required|string|max:100|unique:csms_rigs,name,' . $rig->id,
+            'code'   => 'required|string|max:50|unique:csms_rigs,code,' . $rig->id,
+            'status' => 'nullable|string|in:active,inactive,archived',
+            'hfo_1'  => 'nullable|string|max:255',
+            'hfo_2'  => 'nullable|string|max:255',
+            'hfo_3'  => 'nullable|string|max:255',
         ]);
 
         $rig->update([
-            'name' => trim($validated['name']),
-            'code' => strtoupper(trim($validated['code'])),
+            'name'   => trim($validated['name']),
+            'code'   => strtoupper(trim($validated['code'])),
             'status' => $validated['status'] ?? $rig->status,
+            'hfo_1'  => !empty($validated['hfo_1']) ? trim($validated['hfo_1']) : null,
+            'hfo_2'  => !empty($validated['hfo_2']) ? trim($validated['hfo_2']) : null,
+            'hfo_3'  => !empty($validated['hfo_3']) ? trim($validated['hfo_3']) : null,
         ]);
 
-        return redirect()->back()->with('success', "Data unit RIG \"{$rig->name}\" berhasil diperbarui.");
+        // Perbarui juga nama display user kru jika ada
+        $user = \App\Models\User::where('csms_rig_id', $rig->id)->first();
+        if ($user) {
+            $user->update([
+                'name' => "Crew {$rig->name}",
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Data unit RIG \"{$rig->name}\" dan data personil HFO berhasil diperbarui.");
     }
 
     /**
-     * [ADMIN ONLY] Hapus unit RIG.
+     * [ADMIN ONLY] Arsipkan unit RIG (Berkas dokumen K3 tetap utuh & aman tersimpan).
+     */
+    public function archiveRig($id)
+    {
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat mengarsipkan unit RIG.');
+        }
+
+        $rig = CsmsRig::findOrFail($id);
+        $rig->update(['status' => 'archived']);
+
+        // Nonaktifkan user kru terkait agar tidak dapat login
+        \App\Models\User::where('csms_rig_id', $rig->id)->update(['status' => 'Inactive']);
+
+        return redirect()->back()->with('success', "Unit RIG \"{$rig->name}\" ({$rig->code}) berhasil diarsipkan. Seluruh riwayat dan berkas dokumen K3 tetap tersimpan utuh di sistem.");
+    }
+
+    /**
+     * [ADMIN ONLY] Pulihkan unit RIG dari arsip ke status aktif.
+     */
+    public function unarchiveRig($id)
+    {
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Hanya Admin yang dapat memulihkan unit RIG.');
+        }
+
+        $rig = CsmsRig::findOrFail($id);
+        $rig->update(['status' => 'active']);
+
+        // Aktifkan kembali user kru terkait
+        \App\Models\User::where('csms_rig_id', $rig->id)->update(['status' => 'Active']);
+
+        return redirect()->back()->with('success', "Unit RIG \"{$rig->name}\" ({$rig->code}) berhasil dipulihkan ke daftar aktif operasional.");
+    }
+
+    /**
+     * [ADMIN ONLY] Halaman Pusat Arsip Unit RIG.
+     */
+    public function archivedRigs(\Illuminate\Http\Request $request)
+    {
+        if (auth()->user()?->role !== 'admin') {
+            abort(403, 'Akses terbatas untuk Admin.');
+        }
+
+        $archivedRigs = CsmsRig::where('status', 'archived')
+            ->withCount('records')
+            ->orderBy('id')
+            ->get();
+
+        $totalArchivedRecords = CsmsRecord::whereIn('csms_rig_id', $archivedRigs->pluck('id'))->count();
+
+        return \Inertia\Inertia::render('Admin/ArchivedRigs', [
+            'archivedRigs'         => $archivedRigs,
+            'totalArchivedRecords' => $totalArchivedRecords,
+        ]);
+    }
+
+    /**
+     * [ADMIN ONLY] Hapus unit RIG dialihkan menjadi Arsipkan sesuai kebijakan K3 perusahaan.
      */
     public function destroyRig($id)
     {
         if (auth()->user()?->role !== 'admin') {
-            abort(403, 'Hanya Admin yang dapat menghapus unit RIG.');
+            abort(403, 'Hanya Admin yang dapat mengelola unit RIG.');
         }
 
-        $rig = CsmsRig::findOrFail($id);
-        $rigName = $rig->name;
-        $rigCode = $rig->code;
-
-        // Bersihkan berkas fisik yang terikat pada rig ini dari storage
-        $records = CsmsRecord::where('csms_rig_id', $rig->id)->get();
-        foreach ($records as $record) {
-            if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
-                Storage::disk('public')->delete($record->file_path);
-            }
-            if (!empty($record->attachments) && is_array($record->attachments)) {
-                foreach ($record->attachments as $att) {
-                    if (!empty($att['path']) && Storage::disk('public')->exists($att['path'])) {
-                        Storage::disk('public')->delete($att['path']);
-                    }
-                }
-            }
-        }
-
-        $rig->delete();
-
-        return redirect()->back()->with('success', "Unit RIG \"{$rigName}\" ({$rigCode}) berhasil dihapus.");
+        return $this->archiveRig($id);
     }
 
     /**

@@ -15,6 +15,8 @@ import {
     X,
     Eye,
     Trash2,
+    Archive,
+    Edit2,
     ShieldCheck,
     Sun,
     Moon,
@@ -50,31 +52,48 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
     const [downloadRigTarget, setDownloadRigTarget] = useState(null);
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
     const [showAddRigModal, setShowAddRigModal] = useState(false);
-    const [rigToDelete, setRigToDelete] = useState(null);
-    const [isDeletingRig, setIsDeletingRig] = useState(false);
+    const [showEditRigModal, setShowEditRigModal] = useState(false);
+    const [rigToArchive, setRigToArchive] = useState(null);
+    const [isArchivingRig, setIsArchivingRig] = useState(false);
+
     const [addRigForm, setAddRigForm] = useState({
         name: "",
         code: "",
         status: "active",
+        hfo_1: "",
+        hfo_2: "",
+        hfo_3: "",
     });
     const [addRigErrors, setAddRigErrors] = useState({});
     const [isSubmittingRig, setIsSubmittingRig] = useState(false);
 
-    const handleConfirmDeleteRig = () => {
-        if (!rigToDelete) return;
-        setIsDeletingRig(true);
+    const [editRigForm, setEditRigForm] = useState({
+        id: null,
+        name: "",
+        code: "",
+        status: "active",
+        hfo_1: "",
+        hfo_2: "",
+        hfo_3: "",
+    });
+    const [editRigErrors, setEditRigErrors] = useState({});
+    const [isUpdatingRig, setIsUpdatingRig] = useState(false);
 
-        router.delete(`/admin/csms/rigs/${rigToDelete.id}`, {
+    const handleConfirmArchiveRig = () => {
+        if (!rigToArchive) return;
+        setIsArchivingRig(true);
+
+        router.post(`/admin/csms/rigs/${rigToArchive.id}/archive`, {}, {
             preserveScroll: true,
             onSuccess: () => {
-                setIsDeletingRig(false);
-                setRigToDelete(null);
+                setIsArchivingRig(false);
+                setRigToArchive(null);
             },
             onError: () => {
-                setIsDeletingRig(false);
+                setIsArchivingRig(false);
             },
             onFinish: () => {
-                setIsDeletingRig(false);
+                setIsArchivingRig(false);
             },
         });
     };
@@ -84,9 +103,48 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
             name: "",
             code: "",
             status: "active",
+            hfo_1: "",
+            hfo_2: "",
+            hfo_3: "",
         });
         setAddRigErrors({});
         setShowAddRigModal(true);
+    };
+
+    const handleOpenEditRigModal = (rig) => {
+        setEditRigForm({
+            id: rig.id,
+            name: rig.name || "",
+            code: rig.code || "",
+            status: rig.status || "active",
+            hfo_1: rig.hfo_1 || "",
+            hfo_2: rig.hfo_2 || "",
+            hfo_3: rig.hfo_3 || "",
+        });
+        setEditRigErrors({});
+        setShowEditRigModal(true);
+    };
+
+    const handleEditRigSubmit = (e) => {
+        e.preventDefault();
+        if (!editRigForm.id) return;
+        setIsUpdatingRig(true);
+        setEditRigErrors({});
+
+        router.patch(`/admin/csms/rigs/${editRigForm.id}`, editRigForm, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsUpdatingRig(false);
+                setShowEditRigModal(false);
+            },
+            onError: (errs) => {
+                setIsUpdatingRig(false);
+                setEditRigErrors(errs || {});
+            },
+            onFinish: () => {
+                setIsUpdatingRig(false);
+            },
+        });
     };
 
     const handleAddRigSubmit = (e) => {
@@ -103,6 +161,9 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                     name: "",
                     code: "",
                     status: "active",
+                    hfo_1: "",
+                    hfo_2: "",
+                    hfo_3: "",
                 });
             },
             onError: (errs) => {
@@ -510,12 +571,25 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    setRigToDelete(rig);
+                                                                    handleOpenEditRigModal(rig);
                                                                 }}
-                                                                title={`Hapus Unit ${rig.name} (${rig.code})`}
-                                                                className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all cursor-pointer"
+                                                                title={`Ubah Data ${rig.name} & Personil HFO`}
+                                                                className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all cursor-pointer"
                                                             >
-                                                                <Trash2 size={13} />
+                                                                <Edit2 size={13} />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setRigToArchive(rig);
+                                                                }}
+                                                                title={`Arsipkan Unit ${rig.name} (${rig.code})`}
+                                                                className="p-1 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-all cursor-pointer"
+                                                            >
+                                                                <Archive size={13} />
                                                             </button>
                                                         </div>
                                                     )}
@@ -541,6 +615,13 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                             <p className="text-[11px] font-medium text-slate-500 mt-1">
                                                 {rig.completed_count} dari {rig.total_required} dokumen
                                             </p>
+
+                                            {rig.hfo_list && rig.hfo_list.length > 0 && (
+                                                <div className="mt-2 text-[10px] text-slate-500 font-semibold truncate flex items-center gap-1.5" title={`Petugas HFO: ${rig.hfo_list.join(', ')}`}>
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                                    <span className="truncate"><strong>HFO:</strong> {rig.hfo_list.join(', ')}</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5">
@@ -983,6 +1064,52 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 </select>
                             </div>
 
+                            {/* Input 3 Personil HFO */}
+                            <div className="pt-2 border-t border-slate-100 space-y-2.5">
+                                <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
+                                    Daftar Personil HFO (Health & Safety Field Officer)
+                                </label>
+                                
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                        Petugas HFO 1
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Nama Lengkap Personil HFO 1"
+                                        value={addRigForm.hfo_1}
+                                        onChange={(e) => setAddRigForm({ ...addRigForm, hfo_1: e.target.value })}
+                                        className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                        Petugas HFO 2
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Nama Lengkap Personil HFO 2"
+                                        value={addRigForm.hfo_2}
+                                        onChange={(e) => setAddRigForm({ ...addRigForm, hfo_2: e.target.value })}
+                                        className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                        Petugas HFO 3
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Nama Lengkap Personil HFO 3"
+                                        value={addRigForm.hfo_3}
+                                        onChange={(e) => setAddRigForm({ ...addRigForm, hfo_3: e.target.value })}
+                                        className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
                             <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100 mt-5">
                                 <button
                                     type="button"
@@ -1012,25 +1139,167 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                 </div>
             )}
 
-            {/* Modal Konfirmasi Hapus Unit RIG (Khusus Admin) */}
-            {isAdmin && rigToDelete && (
+            {/* Modal Ubah Data Unit RIG & Personil HFO (Khusus Admin) */}
+            {isAdmin && showEditRigModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-5">
+                            <div>
+                                <h3 className="font-black text-slate-800 text-base">
+                                    Ubah Data RIG & Personil HFO
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Perbarui informasi RIG dan daftar 3 personil HFO bertugas.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowEditRigModal(false)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleEditRigSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Nama Lengkap RIG <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editRigForm.name}
+                                    onChange={(e) => setEditRigForm({ ...editRigForm, name: e.target.value })}
+                                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                />
+                                {editRigErrors.name && (
+                                    <p className="text-[11px] font-semibold text-red-500 mt-1">
+                                        {editRigErrors.name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Kode Singkat RIG <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editRigForm.code}
+                                    onChange={(e) => setEditRigForm({ ...editRigForm, code: e.target.value.toUpperCase() })}
+                                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all uppercase"
+                                />
+                                {editRigErrors.code && (
+                                    <p className="text-[11px] font-semibold text-red-500 mt-1">
+                                        {editRigErrors.code}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                    Status Operasional
+                                </label>
+                                <select
+                                    value={editRigForm.status}
+                                    onChange={(e) => setEditRigForm({ ...editRigForm, status: e.target.value })}
+                                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-700 font-semibold"
+                                >
+                                    <option value="active">Aktif (Beroperasi)</option>
+                                    <option value="inactive">Nonaktif (Standby / Pemeliharaan)</option>
+                                    <option value="archived">Diarsipkan (Pusat Arsip)</option>
+                                </select>
+                            </div>
+
+                            {/* Input Personil HFO 1, 2, 3 */}
+                            <div className="pt-2 border-t border-slate-100 space-y-2.5">
+                                <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
+                                    Daftar Personil HFO (Health & Safety Field Officer)
+                                </label>
+                                
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                        Petugas HFO 1
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Nama Lengkap Personil HFO 1"
+                                        value={editRigForm.hfo_1}
+                                        onChange={(e) => setEditRigForm({ ...editRigForm, hfo_1: e.target.value })}
+                                        className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                        Petugas HFO 2
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Nama Lengkap Personil HFO 2"
+                                        value={editRigForm.hfo_2}
+                                        onChange={(e) => setEditRigForm({ ...editRigForm, hfo_2: e.target.value })}
+                                        className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                                        Petugas HFO 3
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Nama Lengkap Personil HFO 3"
+                                        value={editRigForm.hfo_3}
+                                        onChange={(e) => setEditRigForm({ ...editRigForm, hfo_3: e.target.value })}
+                                        className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100 mt-5">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditRigModal(false)}
+                                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isUpdatingRig}
+                                    style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                    className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
+                                >
+                                    {isUpdatingRig ? <span>Menyimpan...</span> : <span>Simpan Perubahan RIG</span>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Konfirmasi Arsipkan Unit RIG (Khusus Admin) */}
+            {isAdmin && rigToArchive && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 text-center animate-in zoom-in-95 duration-200">
-                        <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-3.5 border border-red-100 shadow-2xs">
-                            <Trash2 size={24} />
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3.5 border border-amber-200 shadow-2xs">
+                            <Archive size={24} />
                         </div>
                         <h3 className="text-base font-black text-slate-800 mb-1">
-                            Hapus Unit RIG?
+                            Arsipkan Unit RIG?
                         </h3>
                         <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                            Apakah Anda yakin ingin menghapus unit <strong className="text-slate-800 font-bold">"{rigToDelete.name}" ({rigToDelete.code})</strong>?
+                            Apakah Anda yakin ingin mengarsipkan unit <strong className="text-slate-800 font-bold">"{rigToArchive.name}" ({rigToArchive.code})</strong>?
                         </p>
 
-                        <div className="p-3 bg-red-50/60 rounded-xl border border-red-100 text-left text-[11.5px] text-red-700 leading-relaxed mb-5">
+                        <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 text-left text-[11.5px] text-emerald-800 leading-relaxed mb-5">
                             <div className="flex items-start gap-2">
-                                <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
+                                <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
                                 <span>
-                                    <strong>Peringatan:</strong> Seluruh data rekaman dokumen CSMS, matriks, dan berkas lampiran yang terhubung dengan unit RIG ini akan ikut dihapus secara permanen dari sistem.
+                                    <strong>Kebijakan CSMS:</strong> Seluruh berkas rekaman dokumen K3 unit RIG ini <strong>tetap utuh tersimpan aman</strong> di database dan storage. Unit ini dapat ditinjau kapan saja melalui menu <strong>Arsip Rig</strong> di sidebar admin.
                                 </span>
                             </div>
                         </div>
@@ -1038,24 +1307,24 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                         <div className="flex items-center justify-center gap-2.5">
                             <button
                                 type="button"
-                                disabled={isDeletingRig}
-                                onClick={() => setRigToDelete(null)}
+                                disabled={isArchivingRig}
+                                onClick={() => setRigToArchive(null)}
                                 className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
                             >
                                 Batal
                             </button>
                             <button
                                 type="button"
-                                disabled={isDeletingRig}
-                                onClick={handleConfirmDeleteRig}
-                                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
+                                disabled={isArchivingRig}
+                                onClick={handleConfirmArchiveRig}
+                                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
                             >
-                                {isDeletingRig ? (
-                                    <span>Menghapus...</span>
+                                {isArchivingRig ? (
+                                    <span>Mengarsipkan...</span>
                                 ) : (
                                     <>
-                                        <Trash2 size={14} />
-                                        <span>Ya, Hapus RIG</span>
+                                        <Archive size={14} />
+                                        <span>Ya, Arsipkan RIG</span>
                                     </>
                                 )}
                             </button>

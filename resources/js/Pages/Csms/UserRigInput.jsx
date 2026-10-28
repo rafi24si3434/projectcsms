@@ -1587,6 +1587,17 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
     );
 }
 
+function formatUploadDate(dateStr) {
+    if (!dateStr) return "";
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    } catch {
+        return "";
+    }
+}
+
 function UserUploadCell({
     category,
     crew,
@@ -1806,6 +1817,20 @@ function UserUploadCell({
                             <Trash2 size={12} />
                         </button>
                     </div>
+
+                    <div className="text-center w-full max-w-[130px] px-1 mt-0.5">
+                        <div className="text-[9.5px] text-slate-500 leading-tight">
+                            <span className="text-slate-400">Diunggah oleh: </span>
+                            <span className="font-bold text-slate-700 block truncate" title={record.uploaded_by || "Kru Lapangan"}>
+                                {record.uploaded_by || "Kru Lapangan"}
+                            </span>
+                            {record.updated_at && (
+                                <span className="text-[9px] text-slate-400 block mt-0.5 font-medium">
+                                    {formatUploadDate(record.updated_at)}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </>
             )}
         </div>
@@ -1984,7 +2009,14 @@ function UnifiedRigUploadCell({
                                     {record.file_name}
                                 </button>
                             )}
-                            <span className="text-[10px] text-slate-500">Berlaku untuk Crew A, B, C (Seluruh Rig)</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] text-slate-500">Berlaku untuk Crew A, B, C (Seluruh Rig)</span>
+                                <span className="text-[10px] text-slate-400">•</span>
+                                <span className="text-[10px] text-slate-600 font-medium">
+                                    Diunggah oleh: <strong className="text-slate-800 font-bold">{record.uploaded_by || "Kru Lapangan"}</strong>
+                                    {record.updated_at ? ` • ${formatUploadDate(record.updated_at)}` : ""}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

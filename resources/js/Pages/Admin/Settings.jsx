@@ -4,18 +4,11 @@ import {
     Settings,
     User,
     Lock,
-    Shield,
     Server,
     Save,
     CheckCircle2,
     AlertCircle,
-    Building2,
-    Mail,
-    Bell,
-    Database,
-    Cpu,
     KeyRound,
-    RefreshCw,
 } from "lucide-react";
 
 export default function SettingsPage({
@@ -40,10 +33,9 @@ export default function SettingsPage({
     const [activeTab, setActiveTab] = useState("profile"); // 'profile' | 'password' | 'system'
     const [hoveredTab, setHoveredTab] = useState(null);
 
-    // Form Profile
+    // Form Profile (Nama Lengkap)
     const [profileForm, setProfileForm] = useState({
         name: currentUser.name || "",
-        email: currentUser.email || "",
     });
 
     // Form Password
@@ -51,14 +43,6 @@ export default function SettingsPage({
         current_password: "",
         password: "",
         password_confirmation: "",
-    });
-
-    // System Toggle Settings
-    const [systemSettings, setSystemSettings] = useState({
-        emailNotification: true,
-        autoBackup: true,
-        strictValidation: true,
-        twoFactorAuth: false,
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -75,11 +59,11 @@ export default function SettingsPage({
         );
     };
 
-    // Handle Profile Update
+    // Handle Profile Update (hanya nama lengkap)
     const handleSaveProfile = async (e) => {
         e.preventDefault();
-        if (!profileForm.name.trim() || !profileForm.email.trim()) {
-            showNotif("error", "Nama dan email wajib diisi.");
+        if (!profileForm.name.trim()) {
+            showNotif("error", "Nama lengkap wajib diisi.");
             return;
         }
 
@@ -94,7 +78,7 @@ export default function SettingsPage({
                     "X-Requested-With": "XMLHttpRequest",
                 },
                 credentials: "same-origin",
-                body: JSON.stringify(profileForm),
+                body: JSON.stringify({ name: profileForm.name }),
             });
 
             const result = await response.json();
@@ -162,14 +146,6 @@ export default function SettingsPage({
         } finally {
             setIsSaving(false);
         }
-    };
-
-    const handleToggleSystemSetting = (key) => {
-        setSystemSettings((prev) => {
-            const updated = { ...prev, [key]: !prev[key] };
-            showNotif("success", `Pengaturan "${key}" berhasil diperbarui.`);
-            return updated;
-        });
     };
 
     return (
@@ -372,8 +348,8 @@ export default function SettingsPage({
                                 <div style={{ fontSize: "13px", fontWeight: "800", color: "#ffffff" }}>
                                     {currentUser.name}
                                 </div>
-                                <div style={{ fontSize: "11.5px", color: "#a7f3d0" }}>
-                                    {currentUser.email} • Role: {currentUser.role?.toUpperCase()}
+                                <div style={{ fontSize: "11.5px", color: "#a7f3d0", fontWeight: "700" }}>
+                                    Role: {currentUser.role ? currentUser.role.toUpperCase() : "ADMIN"}
                                 </div>
                             </div>
                         </div>
@@ -454,31 +430,19 @@ export default function SettingsPage({
                                     Informasi Profil Pengguna
                                 </h3>
                                 <p style={{ margin: 0, color: "#64748b", fontSize: "12.5px" }}>
-                                    Perbarui nama lengkap dan alamat email resmi Anda yang terdaftar pada database MySQL.
+                                    Perbarui nama lengkap akun resmi Anda yang terdaftar pada sistem portal HSE Besmindo.
                                 </p>
                             </div>
 
                             <form onSubmit={handleSaveProfile}>
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px", marginBottom: "20px" }}>
-                                    <div>
+                                    <div style={{ gridColumn: "1 / -1" }}>
                                         <label style={labelStyle}>Nama Lengkap</label>
                                         <input
                                             type="text"
                                             value={profileForm.name}
                                             onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                                             placeholder="Nama lengkap"
-                                            required
-                                            style={inputStyle}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label style={labelStyle}>Alamat Email</label>
-                                        <input
-                                            type="email"
-                                            value={profileForm.email}
-                                            onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                                            placeholder="email@besmindo.com"
                                             required
                                             style={inputStyle}
                                         />
@@ -592,7 +556,7 @@ export default function SettingsPage({
                         </div>
                     )}
 
-                    {/* TAB CONTENT 3: SYSTEM INFO & TOGGLES */}
+                    {/* TAB CONTENT 3: SYSTEM INFO */}
                     {activeTab === "system" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                             {/* SYSTEM SPECS */}
@@ -638,77 +602,6 @@ export default function SettingsPage({
                                     <div style={infoBoxStyle}>
                                         <div style={infoLabel}>Database Driver</div>
                                         <div style={infoVal}>{systemInfo.database}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* SYSTEM SWITCHES */}
-                            <div
-                                style={{
-                                    backgroundColor: "#ffffff",
-                                    borderRadius: "14px",
-                                    border: "1px solid #e2e8f0",
-                                    padding: "24px 28px",
-                                    boxShadow: "0 4px 18px rgba(0,0,0,0.03)",
-                                }}
-                            >
-                                <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>
-                                    Konfigurasi Operasional Portal
-                                </h3>
-
-                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                    <div style={switchRowStyle}>
-                                        <div>
-                                            <div style={{ fontWeight: "800", fontSize: "13.5px", color: "#1e293b" }}>
-                                                Notifikasi Email Otomatis untuk Approval
-                                            </div>
-                                            <div style={{ fontSize: "12px", color: "#64748b" }}>
-                                                Kirim email persetujuan instan kepada penanggung jawab saat kru lapangan mengirimkan laporan HSE.
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleToggleSystemSetting("emailNotification")}
-                                            style={switchBtnStyle(systemSettings.emailNotification)}
-                                        >
-                                            {systemSettings.emailNotification ? "Aktif" : "Non-Aktif"}
-                                        </button>
-                                    </div>
-
-                                    <div style={switchRowStyle}>
-                                        <div>
-                                            <div style={{ fontWeight: "800", fontSize: "13.5px", color: "#1e293b" }}>
-                                                Validasi Ketat Matriks KPI per Rig
-                                            </div>
-                                            <div style={{ fontSize: "12px", color: "#64748b" }}>
-                                                Memastikan seluruh angka 15 lagging dan 19 leading indikator terisi lengkap sebelum dikirim ke database.
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleToggleSystemSetting("strictValidation")}
-                                            style={switchBtnStyle(systemSettings.strictValidation)}
-                                        >
-                                            {systemSettings.strictValidation ? "Aktif" : "Non-Aktif"}
-                                        </button>
-                                    </div>
-
-                                    <div style={switchRowStyle}>
-                                        <div>
-                                            <div style={{ fontWeight: "800", fontSize: "13.5px", color: "#1e293b" }}>
-                                                Auto Database Backup Sync (MySQL)
-                                            </div>
-                                            <div style={{ fontSize: "12px", color: "#64748b" }}>
-                                                Mencadangkan data penginputan dan histori audit approval secara berkala ke penyimpanan server.
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleToggleSystemSetting("autoBackup")}
-                                            style={switchBtnStyle(systemSettings.autoBackup)}
-                                        >
-                                            {systemSettings.autoBackup ? "Aktif" : "Non-Aktif"}
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -776,25 +669,3 @@ const infoVal = {
     fontWeight: "800",
     color: "#1e293b",
 };
-
-const switchRowStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 16px",
-    backgroundColor: "#f8fafc",
-    borderRadius: "10px",
-    border: "1px solid #e2e8f0",
-};
-
-const switchBtnStyle = (isActive) => ({
-    padding: "6px 14px",
-    borderRadius: "20px",
-    border: isActive ? "1px solid #34d399" : "1px solid #cbd5e1",
-    backgroundColor: isActive ? "#064e3b" : "#f1f5f9",
-    color: isActive ? "#6ee7b7" : "#64748b",
-    fontSize: "12px",
-    fontWeight: "800",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-});

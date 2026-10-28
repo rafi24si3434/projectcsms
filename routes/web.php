@@ -39,8 +39,8 @@ Route::get('/', function () {
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
-Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register'])->name('register.attempt');
+// Pendaftaran akun publik dinonaktifkan: dialihkan ke halaman login
+Route::redirect('/register', '/login')->name('register');
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 // FORGOT & RESET PASSWORD
@@ -59,6 +59,7 @@ Route::middleware(['role:user,admin'])->group(function () {
     Route::get('/csms/input-rig/{rig_id?}', [CsmsController::class, 'userRigInput'])->name('csms.user-rig-input');
     Route::get('/user/input-data', [CsmsController::class, 'userRigInput'])->name('user.input-data');
     Route::get('/csms/rig/{id}', [CsmsController::class, 'showRig'])->name('csms.rig-detail');
+    Route::get('/csms/compliance', [CsmsController::class, 'complianceOverview'])->name('csms.compliance');
     Route::post('/csms/upload', [CsmsController::class, 'uploadRecord'])->name('csms.upload');
     Route::delete('/csms/record/{id}', [CsmsController::class, 'deleteRecord'])->name('csms.delete');
 });
@@ -93,7 +94,18 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     // Rig Management (Admin Only)
     Route::post('/csms/rigs', [CsmsController::class, 'storeRig'])->name('admin.csms.rigs.store');
     Route::patch('/csms/rigs/{id}', [CsmsController::class, 'updateRig'])->name('admin.csms.rigs.update');
+    Route::post('/csms/rigs/{id}/archive', [CsmsController::class, 'archiveRig'])->name('admin.csms.rigs.archive');
+    Route::post('/csms/rigs/{id}/unarchive', [CsmsController::class, 'unarchiveRig'])->name('admin.csms.rigs.unarchive');
     Route::delete('/csms/rigs/{id}', [CsmsController::class, 'destroyRig'])->name('admin.csms.rigs.destroy');
+
+    // Halaman Arsip Rig
+    Route::get('/rigs/archived', [CsmsController::class, 'archivedRigs'])->name('admin.rigs.archived');
+
+    // Halaman Ringkasan & Matriks Statistik Kepatuhan Seluruh RIG (Heatmap / Cross-Tab)
+    Route::get('/csms/compliance', [CsmsController::class, 'complianceOverview'])->name('admin.csms.compliance');
+    Route::get('/csms/hfo-stats', function (\Illuminate\Http\Request $request) {
+        return redirect()->route('admin.csms.compliance', array_merge($request->query(), ['tab' => 'hfo']));
+    })->name('admin.csms.hfo-stats');
 
     // Rig Document Package Download (Admin Only)
     Route::get('/csms/rigs/{rig_id}/download-zip', [CsmsController::class, 'downloadRigZip'])->name('admin.csms.rigs.download-zip');

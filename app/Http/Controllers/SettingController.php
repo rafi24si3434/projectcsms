@@ -47,27 +47,31 @@ class SettingController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'name'  => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
         ], [
             'name.required' => 'Nama lengkap wajib diisi.',
-            'email.required' => 'Email wajib diisi.',
-            'email.unique' => 'Email ini sudah digunakan oleh akun lain.',
+            'email.unique'  => 'Email ini sudah digunakan oleh akun lain.',
         ]);
 
-        $user->update([
+        $updateData = [
             'name' => trim($validated['name']),
-            'email' => strtolower(trim($validated['email'])),
-        ]);
+        ];
+
+        if (!empty($validated['email'])) {
+            $updateData['email'] = strtolower(trim($validated['email']));
+        }
+
+        $user->update($updateData);
 
         return response()->json([
             'success' => true,
             'message' => 'Profil akun Anda berhasil diperbarui di database MySQL.',
             'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
+                'id'     => $user->id,
+                'name'   => $user->name,
+                'email'  => $user->email,
+                'role'   => $user->role,
                 'status' => $user->status,
             ],
         ]);

@@ -33,57 +33,40 @@ class AuthController extends Controller
             return redirect()->route('csms.dashboard');
         }
 
-        return Inertia::render('Login');
+        $activeRigs = \App\Models\CsmsRig::where('status', 'active')
+            ->orderBy('id')
+            ->get()
+            ->map(function ($rig) {
+                $user = User::where('csms_rig_id', $rig->id)->first();
+                return [
+                    'id'    => $rig->id,
+                    'name'  => $rig->name,
+                    'code'  => $rig->code,
+                    'email' => $user?->email ?? ('bms' . strtolower(str_replace(['BMS ', 'BMS-'], '', $rig->code)) . '@besmindo.com'),
+                    'hfos'  => $rig->hfo_list,
+                ];
+            });
+
+        return Inertia::render('Login', [
+            'status'     => session('status'),
+            'activeRigs' => $activeRigs,
+        ]);
     }
 
     /**
-     * Menampilkan halaman registrasi akun baru.
+     * Pendaftaran mandiri publik dinonaktifkan demi keamanan akses internal.
      */
     public function showRegister()
     {
-        if (Auth::check()) {
-            $user = Auth::user();
-            if ($user->role === 'admin') {
-                return redirect()->route('admin.dashboard');
-            }
-            return redirect()->route('csms.dashboard');
-        }
-
-        return Inertia::render('Auth/Register');
+        return redirect()->route('login');
     }
 
     /**
-     * Menyimpan data pendaftaran akun baru.
-     * Status default: PENDING — harus di-ACC oleh HSE Admin sebelum bisa login.
+     * Pendaftaran mandiri publik dinonaktifkan demi keamanan akses internal.
      */
     public function register(Request $request)
     {
-        $validated = $request->validate([
-            'name'                  => ['required', 'string', 'max:255'],
-            'email'                 => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password'              => ['required', 'string', 'min:6', 'confirmed'],
-        ], [
-            'name.required'              => 'Nama lengkap wajib diisi.',
-            'email.required'             => 'Alamat email wajib diisi.',
-            'email.email'                => 'Format alamat email tidak valid.',
-            'email.unique'               => 'Alamat email ini sudah terdaftar di sistem.',
-            'password.required'          => 'Kata sandi wajib diisi.',
-            'password.min'               => 'Kata sandi minimal harus 6 karakter.',
-            'password.confirmed'         => 'Konfirmasi kata sandi tidak sesuai.',
-        ]);
-
-        User::create([
-            'name'           => trim($validated['name']),
-            'email'          => strtolower(trim($validated['email'])),
-            'role'           => 'user',       // Semua registrasi mandiri = user biasa
-            'status'         => 'Pending',    // ← WAJIB di-ACC admin sebelum bisa login
-            'password'       => Hash::make($validated['password']),
-            'plain_password' => $validated['password'],
-        ]);
-
-        return redirect()
-            ->route('login')
-            ->with('status', 'Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan HSE Admin. Silakan hubungi Admin untuk proses aktivasi.');
+        return redirect()->route('login');
     }
 
     /**
@@ -96,37 +79,44 @@ class AuthController extends Controller
             'email'    => ['required', 'string'],
             'password' => ['required', 'string'],
             'role'     => ['nullable', 'string', 'in:admin,user,officer,crew'],
+            'hfo_name' => ['nullable', 'string', 'max:255'],
+        ], [
+            'email.required'    => 'Username atau email wajib diisi.',
+            'password.required' => 'Password wajib diisi.',
         ]);
 
-        $credentials = [
-            'email'    => $validated['email'],
-            'password' => $validated['password'],
-        ];
+        $inputLogin = trim($validated['email']);
+        $password = $validated['password'];
 
-        // Shortcut username → email resolusi
-        if (!str_contains($credentials['email'], '@')) {
-            $inputUser = strtolower(trim($credentials['email']));
-            if ($inputUser === 'admin') {
-                $credentials['email'] = 'admin@besmindo.com';
-            } elseif ($inputUser === 'user') {
-                $credentials['email'] = 'user@besmindo.com';
-            } elseif (str_starts_with($inputUser, 'bms')) {
-                $suffix = substr($inputUser, 3);
+        // 1. Cek user berdasarkan username (misal 'admin') ATAU email (misal 'admin@besmindo.com')
+        $user = User::where(function ($query) use ($inputLogin) {
+            $query->where('username', strtolower($inputLogin))
+                  ->orWhere('email', strtolower($inputLogin));
+        })->first();
+
+        // 2. Fallback khusus jika input adalah 'admin'
+        if (!$user && strtolower($inputLogin) === 'admin') {
+            $user = User::where('role', 'admin')->first()
+                 ?? User::where('email', 'admin@besmindo.com')->first();
+        }
+
+        // 3. Fallback shortcut format kru (misal 'bms1' -> 'bms01@besmindo.com')
+        if (!$user && !str_contains($inputLogin, '@')) {
+            $lower = strtolower($inputLogin);
+            if (str_starts_with($lower, 'bms')) {
+                $suffix = substr($lower, 3);
                 if (is_numeric($suffix) && strlen($suffix) === 1) {
                     $suffix = '0' . $suffix;
                 }
-                $credentials['email'] = "bms{$suffix}@besmindo.com";
+                $user = User::where('email', "bms{$suffix}@besmindo.com")->first();
             }
         }
 
-        // Cek user dulu sebelum Auth::attempt agar bisa berikan pesan status yang tepat
-        $user = User::where('email', strtolower(trim($credentials['email'])))->first();
-
         if ($user) {
             // Verifikasi password terlebih dahulu
-            if (!Hash::check($credentials['password'], $user->password)) {
+            if (!Hash::check($password, $user->password)) {
                 return back()->withErrors([
-                    'email' => 'Email atau kata sandi yang Anda masukkan tidak sesuai.',
+                    'email' => 'Username atau password yang Anda masukkan tidak sesuai.',
                 ])->onlyInput('email');
             }
 
@@ -156,16 +146,37 @@ class AuthController extends Controller
                 ])->onlyInput('email');
             }
 
+            // ── CEK STATUS RIG: ARSIP ────────────────────────────────────────
+            if ($user->rig && strtolower($user->rig->status) === 'archived') {
+                return back()->withErrors([
+                    'email' => '📦 Unit RIG ini (' . $user->rig->name . ') telah diarsipkan dan tidak aktif. Hubungi HSE Admin untuk informasi lebih lanjut.',
+                ])->onlyInput('email');
+            }
+
             // ── STATUS: ACTIVE → Proses login ────────────────────────────────
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
-            return redirect()->route('csms.dashboard');
+            // ── SIMPAN PETUGAS HFO KE SESSION JIKA ADA ───────────────────────
+            if (!empty($validated['hfo_name'])) {
+                $hfo = trim($validated['hfo_name']);
+                $request->session()->put('hfo_name', $hfo);
+                $request->session()->put('logged_hfo_name', $hfo);
+            }
+
+            if ($user->role === 'admin') {
+                return redirect()->intended(route('admin.dashboard'));
+            }
+            if ($user->role === 'user' && $user->csms_rig_id) {
+                return redirect()->intended(route('csms.user-rig-input', ['rig_id' => $user->csms_rig_id]));
+            }
+
+            return redirect()->intended(route('csms.dashboard'));
         }
 
         // Akun tidak ditemukan
         return back()->withErrors([
-            'email' => 'Email yang Anda masukkan tidak terdaftar di sistem.',
+            'email' => 'Username atau email tidak terdaftar di sistem.',
         ])->onlyInput('email');
     }
 
@@ -273,6 +284,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $request->session()->forget(['hfo_name', 'logged_hfo_name']);
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

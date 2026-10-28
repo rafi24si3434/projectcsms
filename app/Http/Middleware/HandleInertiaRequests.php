@@ -36,10 +36,12 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        // Jumlah akun Pending — hanya dihitung jika ada user login sebagai admin
+        // Jumlah akun Pending & Rig Diarsipkan — hanya dihitung jika ada user login sebagai admin
         $pendingUsersCount = 0;
+        $archivedRigsCount = 0;
         if ($request->user() && $request->user()->role === 'admin') {
             $pendingUsersCount = User::where('status', 'Pending')->count();
+            $archivedRigsCount = \App\Models\CsmsRig::where('status', 'archived')->count();
         }
 
         return [
@@ -51,6 +53,7 @@ class HandleInertiaRequests extends Middleware
                     'email'       => $request->user()->email,
                     'role'        => $request->user()->role,
                     'status'      => $request->user()->status,
+                    'hfo_name'    => session('hfo_name') ?: session('logged_hfo_name'),
                     'csms_rig_id' => $request->user()->csms_rig_id,
                     'rig'         => $request->user()->rig ? [
                         'id'   => $request->user()->rig->id,
@@ -59,8 +62,9 @@ class HandleInertiaRequests extends Middleware
                     ] : null,
                 ] : null,
             ],
-            // Badge notifikasi akun pending untuk admin sidebar
+            // Badge notifikasi untuk admin sidebar
             'pendingUsersCount' => $pendingUsersCount,
+            'archivedRigsCount' => $archivedRigsCount,
         ];
     }
 }

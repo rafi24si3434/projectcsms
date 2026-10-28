@@ -74,6 +74,15 @@ class UserController extends Controller
             ]);
         }
 
+        // Simpan / update data 3 personil HFO jika disertakan
+        if ($rigId && ($request->has('hfo_1') || $request->has('hfo_2') || $request->has('hfo_3'))) {
+            CsmsRig::where('id', $rigId)->update([
+                'hfo_1' => $request->filled('hfo_1') ? trim($request->hfo_1) : null,
+                'hfo_2' => $request->filled('hfo_2') ? trim($request->hfo_2) : null,
+                'hfo_3' => $request->filled('hfo_3') ? trim($request->hfo_3) : null,
+            ]);
+        }
+
         $user->load('rig');
 
         if ($request->wantsJson()) {
@@ -146,6 +155,16 @@ class UserController extends Controller
         }
 
         $user->update($updateData);
+
+        // Perbarui data 3 personil HFO untuk Rig ini jika disertakan
+        if ($rigId && ($request->has('hfo_1') || $request->has('hfo_2') || $request->has('hfo_3'))) {
+            CsmsRig::where('id', $rigId)->update([
+                'hfo_1' => $request->filled('hfo_1') ? trim($request->hfo_1) : null,
+                'hfo_2' => $request->filled('hfo_2') ? trim($request->hfo_2) : null,
+                'hfo_3' => $request->filled('hfo_3') ? trim($request->hfo_3) : null,
+            ]);
+        }
+
         $user->load('rig');
 
         if ($request->wantsJson()) {
@@ -258,6 +277,16 @@ class UserController extends Controller
         }
 
         $user->update($updateData);
+
+        // Perbarui data 3 personil HFO untuk Rig ini jika disertakan
+        if ($rigId && ($request->has('hfo_1') || $request->has('hfo_2') || $request->has('hfo_3'))) {
+            CsmsRig::where('id', $rigId)->update([
+                'hfo_1' => $request->filled('hfo_1') ? trim($request->hfo_1) : null,
+                'hfo_2' => $request->filled('hfo_2') ? trim($request->hfo_2) : null,
+                'hfo_3' => $request->filled('hfo_3') ? trim($request->hfo_3) : null,
+            ]);
+        }
+
         $user->load('rig');
 
         $statusLabel = $newStatus === 'Active' ? 'diaktifkan' : 'dinonaktifkan';

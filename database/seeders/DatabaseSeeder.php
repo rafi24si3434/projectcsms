@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             CsmsSeeder::class,
+            CsmsHfoSeeder::class,
         ]);
 
         $defaultPassword = Hash::make('password');

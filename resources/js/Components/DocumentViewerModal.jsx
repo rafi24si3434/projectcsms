@@ -258,6 +258,10 @@ export default function DocumentViewerModal({
                                 <span>•</span>
                                 <span>{formatBytes(currentFile.size)}</span>
                                 <span className="hidden md:inline">• Format: {fileExt.toUpperCase()}</span>
+                                <span className="text-slate-400">•</span>
+                                <span className="text-slate-600 font-medium">
+                                    Diunggah oleh: <strong className="text-slate-800 font-bold">{record.uploaded_by || "Kru Lapangan"}</strong>
+                                </span>
                             </div>
                         </div>
                     </div>

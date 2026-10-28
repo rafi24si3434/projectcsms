@@ -148,8 +148,9 @@ function DeleteModal({ user, onClose, onConfirm, processing }) {
 }
 
 // ─── ADD/EDIT MODAL ───────────────────────────────────────────────────────────
-function UserModal({ user, rigs, onClose, onSave, processing, errors }) {
+function UserModal({ user, rigs = [], onClose, onSave, processing, errors }) {
     const isEdit = !!user?.id;
+    const selectedRigObj = rigs.find(r => String(r.id) === String(user?.csms_rig_id));
     const [form, setForm] = useState({
         name:        user?.name || "",
         email:       user?.email || "",
@@ -157,6 +158,9 @@ function UserModal({ user, rigs, onClose, onSave, processing, errors }) {
         status:      user?.status || "Active",
         password:    "",
         csms_rig_id: user?.csms_rig_id || "",
+        hfo_1:       selectedRigObj?.hfo_1 || "",
+        hfo_2:       selectedRigObj?.hfo_2 || "",
+        hfo_3:       selectedRigObj?.hfo_3 || "",
     });
     const [showPw, setShowPw] = useState(false);
     const [showCurrentPw, setShowCurrentPw] = useState(false);
@@ -233,17 +237,62 @@ function UserModal({ user, rigs, onClose, onSave, processing, errors }) {
                         </div>
                     </div>
 
-                    {/* Rig Assignment */}
+                    {/* Rig Assignment & HFO Personnel */}
                     {form.role === "user" && (
-                        <div style={{ marginBottom: "12px" }}>
-                            <label style={labelStyle}>Unit Rig Ditugaskan</label>
-                            <div style={{ position: "relative" }}>
-                                <select value={form.csms_rig_id} onChange={e => set("csms_rig_id", e.target.value)} style={{ ...inputStyle(errors?.csms_rig_id), paddingRight: "32px", appearance: "none" }}>
-                                    <option value="">— Belum Ditugaskan —</option>
-                                    {rigs.map(r => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
-                                </select>
-                                <ChevronDown size={15} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
+                        <div style={{ marginBottom: "12px", background: "#f8fafc", padding: "12px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                            <div style={{ marginBottom: form.csms_rig_id ? "10px" : "0" }}>
+                                <label style={labelStyle}>Unit Rig Ditugaskan</label>
+                                <div style={{ position: "relative" }}>
+                                    <select
+                                        value={form.csms_rig_id}
+                                        onChange={e => {
+                                            const rId = e.target.value;
+                                            const rig = rigs.find(r => String(r.id) === String(rId));
+                                            setForm(prev => ({
+                                                ...prev,
+                                                csms_rig_id: rId,
+                                                hfo_1: rig?.hfo_1 || "",
+                                                hfo_2: rig?.hfo_2 || "",
+                                                hfo_3: rig?.hfo_3 || "",
+                                            }));
+                                        }}
+                                        style={{ ...inputStyle(errors?.csms_rig_id), paddingRight: "32px", appearance: "none", background: "#fff" }}
+                                    >
+                                        <option value="">— Belum Ditugaskan —</option>
+                                        {rigs.map(r => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
+                                    </select>
+                                    <ChevronDown size={15} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
+                                </div>
                             </div>
+
+                            {form.csms_rig_id && (
+                                <div style={{ borderTop: "1px dashed #cbd5e1", paddingTop: "10px", marginTop: "10px" }}>
+                                    <label style={{ ...labelStyle, color: "#065f46" }}>Petugas HFO Lapangan (Otomatis Terdaftar)</label>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Nama HFO 1"
+                                            value={form.hfo_1 || ""}
+                                            onChange={e => set("hfo_1", e.target.value)}
+                                            style={{ ...inputStyle(), padding: "7px 10px", fontSize: "12px", background: "#fff" }}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Nama HFO 2"
+                                            value={form.hfo_2 || ""}
+                                            onChange={e => set("hfo_2", e.target.value)}
+                                            style={{ ...inputStyle(), padding: "7px 10px", fontSize: "12px", background: "#fff" }}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Nama HFO 3"
+                                            value={form.hfo_3 || ""}
+                                            onChange={e => set("hfo_3", e.target.value)}
+                                            style={{ ...inputStyle(), padding: "7px 10px", fontSize: "12px", background: "#fff" }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
