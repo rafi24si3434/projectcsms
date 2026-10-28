@@ -442,7 +442,8 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <button
                                     type="button"
                                     onClick={handleOpenAddRigModal}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md shrink-0"
+                                    style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md shrink-0"
                                 >
                                     <Plus size={15} className="stroke-[2.5]" />
                                     <span>Tambah Unit RIG</span>
@@ -461,7 +462,8 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <button
                                     type="button"
                                     onClick={handleOpenAddRigModal}
-                                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all cursor-pointer"
+                                    style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
                                 >
                                     <Plus size={14} className="stroke-[2.5]" />
                                     <span>Tambah Unit RIG Baru</span>
@@ -872,7 +874,8 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg shadow-sm transition-all cursor-pointer"
+                                    style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                    className="px-5 py-2 text-xs font-bold text-white disabled:opacity-50 rounded-lg shadow-sm transition-all cursor-pointer hover:shadow-md"
                                 >
                                     {processing ? "Menyimpan..." : "Simpan Dokumen"}
                                 </button>
@@ -991,7 +994,8 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <button
                                     type="submit"
                                     disabled={isSubmittingRig}
-                                    className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
+                                    style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                    className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
                                 >
                                     {isSubmittingRig ? (
                                         <span>Menyimpan...</span>

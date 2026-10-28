@@ -5,7 +5,7 @@ import {
     Users, UserCheck, UserX, Search, Plus, Edit2, Trash2,
     Shield, HardHat, X, Eye, EyeOff, ChevronDown,
     Clock, CheckCircle, XCircle, AlertTriangle, ShieldCheck,
-    RefreshCw, Filter, Info, Copy, Check, Key,
+    Power, Filter, Info, Copy, Check, Key,
 } from "lucide-react";
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
@@ -349,8 +349,10 @@ function UserModal({ user, rigs, onClose, onSave, processing, errors }) {
                         <button onClick={onClose} style={{ flex: 1, padding: "11px", borderRadius: "10px", border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>Batal</button>
                         <button onClick={() => onSave(form)} disabled={processing} style={{
                             flex: 2, padding: "11px", borderRadius: "10px", border: "none",
-                            background: processing ? "#94a3b8" : "linear-gradient(135deg,#065f46,#10b981)",
+                            background: processing ? "#94a3b8" : "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)",
                             color: "#fff", fontSize: "13px", fontWeight: "800", cursor: processing ? "not-allowed" : "pointer",
+                            boxShadow: processing ? "none" : "0 4px 14px rgba(5,150,105,0.35)",
+                            transition: "all 0.2s ease",
                         }}>
                             {processing ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Tambah Pengguna"}
                         </button>
@@ -522,8 +524,9 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
         padding: "8px 16px", borderRadius: "10px", fontSize: "12px", fontWeight: "800",
         border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px",
         transition: "all 0.18s ease",
-        background: activeTab === tab ? "#0f172a" : "transparent",
+        background: activeTab === tab ? "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" : "transparent",
         color: activeTab === tab ? "#fff" : "#64748b",
+        boxShadow: activeTab === tab ? "0 2px 8px rgba(5,150,105,0.25)" : "none",
     });
 
     // ── RENDER ─────────────────────────────────────────────────────────────────
@@ -578,9 +581,10 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
                         style={{
                             display: "flex", alignItems: "center", gap: "8px",
                             padding: "11px 20px", borderRadius: "12px", border: "none",
-                            background: "linear-gradient(135deg,#065f46,#10b981)",
+                            background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)",
                             color: "#fff", fontSize: "13px", fontWeight: "800", cursor: "pointer",
-                            boxShadow: "0 4px 14px rgba(16,185,129,0.4)",
+                            boxShadow: "0 4px 14px rgba(5,150,105,0.35)",
+                            transition: "all 0.2s ease",
                         }}
                     >
                         <Plus size={17} />
@@ -801,10 +805,11 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
                                                             style={{
                                                                 display: "inline-flex", alignItems: "center", gap: "5px",
                                                                 padding: "6px 12px", borderRadius: "8px", border: "none",
-                                                                background: "linear-gradient(135deg,#059669,#10b981)",
+                                                                background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)",
                                                                 color: "#fff", fontSize: "11.5px", fontWeight: "800",
                                                                 cursor: processing ? "not-allowed" : "pointer",
-                                                                boxShadow: "0 2px 8px rgba(16,185,129,0.35)",
+                                                                boxShadow: "0 2px 8px rgba(5,150,105,0.3)",
+                                                                transition: "all 0.2s ease",
                                                             }}
                                                         >
                                                             <ShieldCheck size={13} />
@@ -831,15 +836,16 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
                                                     !isMe && !isRejected && (
                                                         <button
                                                             onClick={() => handleToggle(u)}
-                                                            title={(u.status || "").toLowerCase() === "active" ? "Nonaktifkan" : "Aktifkan"}
+                                                            title={(u.status || "").toLowerCase() === "active" ? "Nonaktifkan Pengguna" : "Aktifkan Pengguna"}
                                                             style={{
                                                                 width: "28px", height: "28px", borderRadius: "7px",
                                                                 border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                                                                background: (u.status || "").toLowerCase() === "active" ? "#fef3c7" : "#dcfce7",
-                                                                color: (u.status || "").toLowerCase() === "active" ? "#b45309" : "#15803d",
+                                                                background: (u.status || "").toLowerCase() === "active" ? "#dcfce7" : "#fee2e2",
+                                                                color: (u.status || "").toLowerCase() === "active" ? "#15803d" : "#dc2626",
+                                                                transition: "all 0.15s ease",
                                                             }}
                                                         >
-                                                            <RefreshCw size={13} />
+                                                            <Power size={13} strokeWidth={2.2} />
                                                         </button>
                                                     )
                                                 )}

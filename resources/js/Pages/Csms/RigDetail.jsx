@@ -17,6 +17,7 @@ import {
     HardDrive,
     Shield,
     RotateCcw,
+    XCircle,
     Clock,
     AlertCircle,
     Calendar,
@@ -543,7 +544,8 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
 
                                     <button
                                         onClick={() => setShowAddModal(true)}
-                                        className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-sm cursor-pointer"
+                                        style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                        className="inline-flex items-center gap-1.5 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition-all shadow-sm cursor-pointer hover:shadow-md"
                                     >
                                         <Plus size={13} />
                                         Tambah Dokumen
@@ -1081,7 +1083,8 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                                 <button
                                     type="submit"
                                     disabled={addSubmitting || !addForm.nama_dokumen.trim() || !addForm.durasi.trim()}
-                                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                                    style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                    className="px-5 py-2 text-xs font-bold text-white disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-md"
                                 >
                                     {addSubmitting ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                                     {addSubmitting ? "Menyimpan..." : "Tambah Dokumen"}
@@ -1243,8 +1246,10 @@ function UnifiedRigUploadCell({
         );
     }
 
-    const isApproved = record.approval_status === "approved";
-    const isRevision = record.approval_status === "revision" || record.approval_status === "rejected";
+    const isApproved = record.approval_status === "approved" || record.approval_status === "acc" || record.approval_status === "sah";
+    const isRevision = record.approval_status === "revision" || record.approval_status === "revisi";
+    const isRejected = record.approval_status === "ditolak" || record.approval_status === "tolak" || record.approval_status === "rejected";
+    const isPending = !isApproved && !isRevision && !isRejected;
     const hasMultiple = record.attachments && Array.isArray(record.attachments) && record.attachments.length > 1;
 
     return (
@@ -1258,9 +1263,11 @@ function UnifiedRigUploadCell({
                     ? "bg-blue-100 border-2 border-blue-500 ring-4 ring-blue-300 scale-[1.01] shadow-md"
                     : isApproved
                     ? "bg-emerald-50/80 border-emerald-300"
+                    : isRejected
+                    ? "bg-rose-50/90 border-red-400"
                     : isRevision
-                    ? "bg-red-50/80 border-red-300"
-                    : "bg-amber-50/80 border-amber-300"
+                    ? "bg-amber-50/80 border-amber-300"
+                    : "bg-amber-50/60 border-amber-300"
             }`}
         >
             {isHoveringDrag ? (
@@ -1272,13 +1279,22 @@ function UnifiedRigUploadCell({
                 <>
                     {/* Status & Nama File */}
                     <div className="flex items-center gap-2.5 truncate text-left">
-                        <span className={`inline-flex items-center gap-1 font-black text-[10px] tracking-wide uppercase px-2 py-0.5 rounded-md ${
-                            isApproved ? "bg-emerald-100 text-emerald-800" : isRevision ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
+                        <span className={`inline-flex items-center gap-1 font-black text-[10px] tracking-wide uppercase px-2 py-0.5 rounded-md border ${
+                            isApproved
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                : isRejected
+                                ? "bg-red-100 text-red-800 border-red-300 shadow-2xs font-extrabold"
+                                : isRevision
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : "bg-amber-100 text-amber-800 border-amber-300"
                         }`}>
                             {isApproved && <CheckCircle2 size={11} />}
-                            {isRevision && <RotateCcw size={11} />}
-                            {!isApproved && !isRevision && <Clock size={11} />}
-                            <span>{isApproved ? "DI-ACC SAH" : isRevision ? "REVISI" : "MENUNGGU ACC"}</span>
+                            {isRejected && <XCircle size={11} className="text-red-600" />}
+                            {isRevision && <RotateCcw size={11} className="text-amber-600" />}
+                            {isPending && <Clock size={11} className="text-amber-600" />}
+                            <span>
+                                {isApproved ? "DI-ACC SAH" : isRejected ? "DITOLAK" : isRevision ? "REVISI" : "MENUNGGU ACC"}
+                            </span>
                         </span>
 
                         <div className="truncate max-w-[260px]">
@@ -1330,7 +1346,7 @@ function UnifiedRigUploadCell({
                         <button
                             onClick={onUpload}
                             className="p-1.5 bg-white text-blue-700 border border-slate-200 rounded-lg hover:bg-blue-50 transition-colors shadow-2xs cursor-pointer"
-                            title={isRevision ? "Unggah Dokumen Revisi" : "Ganti Dokumen"}
+                            title={isRejected ? "Unggah Ulang Dokumen (Ditolak)" : isRevision ? "Unggah Dokumen Revisi" : "Ganti Dokumen"}
                         >
                             <Upload size={13} />
                         </button>
@@ -1443,8 +1459,10 @@ function UploadCell({
         );
     }
 
-    const isApproved = record.approval_status === "approved";
-    const isRevision = record.approval_status === "revision" || record.approval_status === "rejected";
+    const isApproved = record.approval_status === "approved" || record.approval_status === "acc" || record.approval_status === "sah";
+    const isRevision = record.approval_status === "revision" || record.approval_status === "revisi";
+    const isRejected = record.approval_status === "ditolak" || record.approval_status === "tolak" || record.approval_status === "rejected";
+    const isPending = !isApproved && !isRevision && !isRejected;
     const hasMultiple = record.attachments && Array.isArray(record.attachments) && record.attachments.length > 1;
 
     return (
@@ -1458,9 +1476,11 @@ function UploadCell({
                     ? "bg-blue-100 border-2 border-blue-500 ring-2 ring-blue-300 scale-105 shadow-md"
                     : isApproved
                     ? "bg-emerald-50/80 border-emerald-300"
+                    : isRejected
+                    ? "bg-rose-50/90 border-red-400"
                     : isRevision
-                    ? "bg-red-50/80 border-red-300"
-                    : "bg-amber-50/80 border-amber-300"
+                    ? "bg-amber-50/80 border-amber-300"
+                    : "bg-amber-50/60 border-amber-300"
             }`}
         >
             {isHoveringDrag ? (
@@ -1469,13 +1489,20 @@ function UploadCell({
                 <>
                     <div className="flex items-center gap-1">
                         {isApproved && <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />}
-                        {isRevision && <RotateCcw size={12} className="text-red-600 shrink-0" />}
-                        {!isApproved && !isRevision && <Clock size={12} className="text-amber-600 shrink-0" />}
+                        {isRejected && <XCircle size={12} className="text-red-600 shrink-0" />}
+                        {isRevision && <RotateCcw size={12} className="text-amber-600 shrink-0" />}
+                        {isPending && <Clock size={12} className="text-amber-600 shrink-0" />}
 
                         <span className={`font-black text-[10px] tracking-wide uppercase ${
-                            isApproved ? "text-emerald-700" : isRevision ? "text-red-700" : "text-amber-700"
+                            isApproved
+                                ? "text-emerald-700"
+                                : isRejected
+                                ? "text-red-700 font-extrabold"
+                                : isRevision
+                                ? "text-amber-700"
+                                : "text-amber-700"
                         }`}>
-                            {isApproved ? "DI-ACC" : isRevision ? "REVISI" : "PENDING"}
+                            {isApproved ? "DI-ACC SAH" : isRejected ? "DITOLAK" : isRevision ? "REVISI" : "MENUNGGU ACC"}
                         </span>
                     </div>
 
@@ -1515,7 +1542,7 @@ function UploadCell({
                         <button
                             onClick={onUpload}
                             className="p-1 bg-white text-blue-700 border border-slate-200 rounded hover:bg-blue-50 transition-colors shadow-2xs cursor-pointer"
-                            title={isRevision ? "Unggah Dokumen Revisi" : "Ganti Berkas"}
+                            title={isRejected ? "Unggah Ulang Dokumen (Ditolak)" : isRevision ? "Unggah Dokumen Revisi" : "Ganti Berkas"}
                         >
                             <Upload size={12} />
                         </button>

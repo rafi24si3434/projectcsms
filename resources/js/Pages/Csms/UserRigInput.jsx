@@ -19,6 +19,7 @@ import {
     Calendar,
     ChevronDown,
     RotateCcw,
+    XCircle,
     ShieldCheck,
     AlertTriangle,
     Download,
@@ -458,11 +459,15 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
             category,
             crew,
         });
-        setVerifyStatus(
-            record.approval_status === "revision" || record.approval_status === "rejected"
-                ? record.approval_status
-                : defaultStatus
-        );
+        let initialStatus = defaultStatus;
+        if (record.approval_status === "ditolak" || record.approval_status === "rejected") {
+            initialStatus = "ditolak";
+        } else if (record.approval_status === "revision" || record.approval_status === "revisi") {
+            initialStatus = "revision";
+        } else if (record.approval_status === "approved") {
+            initialStatus = "approved";
+        }
+        setVerifyStatus(initialStatus);
         setVerifyNotes(record.approval_notes || "");
     };
 
@@ -705,24 +710,47 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
 
                     {/* Perlu Revisi */}
                     <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
+                        <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
                             <RotateCcw size={22} />
                         </div>
                         <div>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-red-600">Perlu Perbaikan / Revisi</span>
-                            <h3 className="text-2xl font-black text-red-700">
-                                {rigSummary.revision_count || 0} <span className="text-xs font-semibold text-slate-500">Perlu Dicek</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600">Perlu Perbaikan / Revisi</span>
+                            <h3 className="text-2xl font-black text-amber-700">
+                                {rigSummary.revision_count || 0} <span className="text-xs font-semibold text-slate-500">Revisi</span>
                             </h3>
                         </div>
                     </div>
+
+                    {/* Dokumen Ditolak */}
+                    {(rigSummary.rejected_count || 0) > 0 && (
+                        <div className="bg-white border border-red-200 p-5 rounded-2xl shadow-xs flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
+                                <XCircle size={22} />
+                            </div>
+                            <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-red-600">Dokumen Ditolak</span>
+                                <h3 className="text-2xl font-black text-red-700">
+                                    {rigSummary.rejected_count || 0} <span className="text-xs font-semibold text-slate-500">Ditolak</span>
+                                </h3>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Banner Peringatan Jika Ada Dokumen Perlu Revisi */}
-                {(rigSummary.revision_count || 0) > 0 && (
+                {/* Banner Peringatan Jika Ada Dokumen Perlu Revisi atau Ditolak */}
+                {((rigSummary.revision_count || 0) > 0 || (rigSummary.rejected_count || 0) > 0) && (
                     <div className="p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3 text-red-800">
                         <AlertTriangle size={24} className="shrink-0 text-red-600" />
                         <div className="text-xs sm:text-sm">
-                            <strong className="font-bold">Perhatian:</strong> Terdapat <strong>{rigSummary.revision_count} dokumen</strong> yang memerlukan revisi dari tim lapangan. Silakan periksa catatan dari Admin HSE pada tabel di bawah dan unggah dokumen perbaikan.
+                            <strong className="font-bold">Perhatian:</strong> Terdapat{" "}
+                            {(rigSummary.rejected_count || 0) > 0 && (
+                                <strong className="text-red-700">{rigSummary.rejected_count} dokumen ditolak</strong>
+                            )}
+                            {(rigSummary.rejected_count || 0) > 0 && (rigSummary.revision_count || 0) > 0 && " dan "}
+                            {(rigSummary.revision_count || 0) > 0 && (
+                                <strong className="text-amber-700">{rigSummary.revision_count} dokumen perlu revisi</strong>
+                            )}{" "}
+                            dari tim lapangan. Silakan periksa catatan dari Admin HSE pada tabel di bawah dan unggah dokumen perbaikan.
                         </div>
                     </div>
                 )}
@@ -746,7 +774,8 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                             {isAdmin && (
                                 <button
                                     onClick={() => setShowAddModal(true)}
-                                    className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-sm"
+                                    style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                    className="inline-flex items-center gap-1.5 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition-all shadow-sm cursor-pointer hover:shadow-md"
                                 >
                                     <Plus size={13} />
                                     Tambah Dokumen
@@ -1343,14 +1372,14 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
 
                                     <button
                                         type="button"
-                                        onClick={() => setVerifyStatus("rejected")}
+                                        onClick={() => setVerifyStatus("ditolak")}
                                         className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                                            verifyStatus === "rejected"
+                                            verifyStatus === "ditolak" || verifyStatus === "rejected"
                                                 ? "bg-red-50 border-red-500 text-red-800 ring-2 ring-red-200 shadow-xs"
                                                 : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                                         }`}
                                     >
-                                        <AlertCircle size={18} className={verifyStatus === "rejected" ? "text-red-600" : "text-slate-400"} />
+                                        <AlertCircle size={18} className={verifyStatus === "ditolak" || verifyStatus === "rejected" ? "text-red-600" : "text-slate-400"} />
                                         <span className="text-[11px] font-extrabold uppercase">Tolak</span>
                                     </button>
                                 </div>
@@ -1505,7 +1534,8 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                 <button
                                     type="submit"
                                     disabled={addSubmitting || !addForm.nama_dokumen.trim() || !addForm.durasi.trim()}
-                                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                                    style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                                    className="px-5 py-2 text-xs font-bold text-white disabled:opacity-50 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-md"
                                 >
                                     {addSubmitting ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                                     {addSubmitting ? "Menyimpan..." : "Tambah Dokumen"}
@@ -1650,8 +1680,10 @@ function UserUploadCell({
         );
     }
 
-    const isApproved = record.approval_status === "approved";
-    const isRevision = record.approval_status === "revision" || record.approval_status === "rejected";
+    const isApproved = record.approval_status === "approved" || record.approval_status === "acc" || record.approval_status === "sah";
+    const isRevision = record.approval_status === "revision" || record.approval_status === "revisi";
+    const isRejected = record.approval_status === "ditolak" || record.approval_status === "tolak" || record.approval_status === "rejected";
+    const isPending = !isApproved && !isRevision && !isRejected;
     const hasMultiple = record.attachments && Array.isArray(record.attachments) && record.attachments.length > 1;
 
     return (
@@ -1665,9 +1697,11 @@ function UserUploadCell({
                     ? "bg-blue-100 border-2 border-blue-500 ring-2 ring-blue-300 scale-105 shadow-md"
                     : isApproved
                     ? "bg-emerald-50/80 border-emerald-300"
+                    : isRejected
+                    ? "bg-rose-50/90 border-red-400"
                     : isRevision
-                    ? "bg-red-50/80 border-red-300"
-                    : "bg-amber-50/80 border-amber-300"
+                    ? "bg-amber-50/80 border-amber-300"
+                    : "bg-slate-50/80 border-slate-300"
             }`}
         >
             {isHoveringDrag ? (
@@ -1677,13 +1711,20 @@ function UserUploadCell({
                     {/* Status Header Badge */}
                     <div className="flex items-center gap-1">
                         {isApproved && <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />}
-                        {isRevision && <RotateCcw size={12} className="text-red-600 shrink-0" />}
-                        {!isApproved && !isRevision && <Clock size={12} className="text-amber-600 shrink-0" />}
+                        {isRevision && <RotateCcw size={12} className="text-amber-600 shrink-0" />}
+                        {isRejected && <XCircle size={12} className="text-red-600 shrink-0" />}
+                        {isPending && <Clock size={12} className="text-slate-500 shrink-0" />}
 
                         <span className={`font-black text-[10px] tracking-wide uppercase ${
-                            isApproved ? "text-emerald-700" : isRevision ? "text-red-700" : "text-amber-700"
+                            isApproved
+                                ? "text-emerald-700"
+                                : isRejected
+                                ? "text-red-700 font-extrabold"
+                                : isRevision
+                                ? "text-amber-700"
+                                : "text-slate-600"
                         }`}>
-                            {isApproved ? "DI-ACC" : isRevision ? "REVISI" : "PENDING"}
+                            {isApproved ? "DI-ACC SAH" : isRejected ? "DITOLAK" : isRevision ? "REVISI" : "MENUNGGU ACC"}
                         </span>
                     </div>
 
@@ -1718,9 +1759,9 @@ function UserUploadCell({
                         {isAdmin && (
                             <button
                                 type="button"
-                                onClick={() => onReview(isApproved ? "approved" : "revision")}
+                                onClick={() => onReview(isApproved ? "approved" : isRejected ? "ditolak" : "revision")}
                                 className="p-1 bg-amber-50 text-amber-800 border border-amber-300 rounded hover:bg-amber-100 transition-colors shadow-2xs cursor-pointer"
-                                title="Evaluasi Dokumen / Berikan Catatan Revisi"
+                                title="Evaluasi Dokumen / Berikan Catatan Evaluasi"
                             >
                                 <MessageSquare size={11} />
                             </button>
@@ -1872,8 +1913,10 @@ function UnifiedRigUploadCell({
         );
     }
 
-    const isApproved = record.approval_status === "approved";
-    const isRevision = record.approval_status === "revision" || record.approval_status === "rejected";
+    const isApproved = record.approval_status === "approved" || record.approval_status === "acc" || record.approval_status === "sah";
+    const isRevision = record.approval_status === "revision" || record.approval_status === "revisi";
+    const isRejected = record.approval_status === "ditolak" || record.approval_status === "tolak" || record.approval_status === "rejected";
+    const isPending = !isApproved && !isRevision && !isRejected;
     const hasMultiple = record.attachments && Array.isArray(record.attachments) && record.attachments.length > 1;
 
     return (
@@ -1887,9 +1930,11 @@ function UnifiedRigUploadCell({
                     ? "bg-blue-100 border-2 border-blue-500 ring-4 ring-blue-300 scale-[1.01] shadow-md"
                     : isApproved
                     ? "bg-emerald-50/80 border-emerald-300"
+                    : isRejected
+                    ? "bg-rose-50/90 border-red-400"
                     : isRevision
-                    ? "bg-red-50/80 border-red-300"
-                    : "bg-amber-50/80 border-amber-300"
+                    ? "bg-amber-50/80 border-amber-300"
+                    : "bg-slate-50/80 border-slate-300"
             }`}
         >
             {isHoveringDrag ? (
@@ -1901,13 +1946,22 @@ function UnifiedRigUploadCell({
                 <>
                     {/* Status & Nama File */}
                     <div className="flex items-center gap-2.5 truncate text-left">
-                        <span className={`inline-flex items-center gap-1 font-black text-[10px] tracking-wide uppercase px-2 py-0.5 rounded-md ${
-                            isApproved ? "bg-emerald-100 text-emerald-800" : isRevision ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
+                        <span className={`inline-flex items-center gap-1 font-black text-[10px] tracking-wide uppercase px-2 py-0.5 rounded-md border ${
+                            isApproved
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                : isRejected
+                                ? "bg-red-100 text-red-800 border-red-300 shadow-2xs font-extrabold"
+                                : isRevision
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : "bg-slate-100 text-slate-700 border-slate-300"
                         }`}>
                             {isApproved && <CheckCircle2 size={11} />}
-                            {isRevision && <RotateCcw size={11} />}
-                            {!isApproved && !isRevision && <Clock size={11} />}
-                            <span>{isApproved ? "DI-ACC SAH" : isRevision ? "REVISI" : "MENUNGGU ACC"}</span>
+                            {isRejected && <XCircle size={11} className="text-red-600" />}
+                            {isRevision && <RotateCcw size={11} className="text-amber-600" />}
+                            {isPending && <Clock size={11} className="text-slate-500" />}
+                            <span>
+                                {isApproved ? "DI-ACC SAH" : isRejected ? "DITOLAK" : isRevision ? "REVISI" : "MENUNGGU ACC"}
+                            </span>
                         </span>
 
                         <div className="truncate max-w-[260px]">
@@ -1953,9 +2007,9 @@ function UnifiedRigUploadCell({
                         {isAdmin && (
                             <button
                                 type="button"
-                                onClick={() => onReview(isApproved ? "approved" : "revision")}
+                                onClick={() => onReview(isApproved ? "approved" : isRejected ? "ditolak" : "revision")}
                                 className="px-2 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition shadow-2xs flex items-center gap-1 cursor-pointer"
-                                title="Evaluasi Dokumen / Berikan Catatan Revisi"
+                                title="Evaluasi Dokumen / Berikan Catatan Evaluasi"
                             >
                                 <MessageSquare size={13} />
                                 <span className="hidden sm:inline">Evaluasi</span>

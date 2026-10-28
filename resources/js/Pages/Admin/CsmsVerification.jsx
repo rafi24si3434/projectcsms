@@ -21,6 +21,7 @@ import {
     ExternalLink,
     Check,
     RotateCcw,
+    XCircle,
     FileSpreadsheet,
     Download,
 } from "lucide-react";
@@ -77,13 +78,19 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
     };
 
     const openReviewModal = (record, targetStatus) => {
+        let initialStatus = targetStatus;
+        if (record.approval_status === "ditolak" || record.approval_status === "rejected") {
+            initialStatus = "ditolak";
+        } else if (record.approval_status === "revision" || record.approval_status === "revisi") {
+            initialStatus = "revision";
+        }
         setActionModal({
             isOpen: true,
             record: record,
-            targetStatus: targetStatus,
+            targetStatus: initialStatus,
         });
         setData({
-            approval_status: targetStatus,
+            approval_status: initialStatus,
             approval_notes: record.approval_notes || "",
         });
     };
@@ -292,15 +299,28 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                         </div>
                     </div>
 
-                    {/* Perlu Revisi / Ditolak */}
+                    {/* Perlu Revisi */}
                     <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
-                            <AlertCircle size={22} />
+                        <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
+                            <RotateCcw size={22} />
                         </div>
                         <div>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-red-600">Perlu Revisi / Ditolak</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600">Perlu Revisi</span>
                             <h3 className="text-2xl font-black text-slate-800">
-                                {(stats.revision || 0) + (stats.rejected || 0)} <span className="text-xs font-semibold text-red-600">Dikembalikan</span>
+                                {stats.revision || 0} <span className="text-xs font-semibold text-amber-600">Revisi</span>
+                            </h3>
+                        </div>
+                    </div>
+
+                    {/* Dokumen Ditolak */}
+                    <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
+                            <XCircle size={22} />
+                        </div>
+                        <div>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-red-600">Dokumen Ditolak</span>
+                            <h3 className="text-2xl font-black text-slate-800">
+                                {stats.rejected || 0} <span className="text-xs font-semibold text-red-600">Ditolak</span>
                             </h3>
                         </div>
                     </div>
@@ -314,7 +334,7 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                     {/* Table Control Header */}
                     <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         {/* Status Tabs */}
-                        <div className="inline-flex p-1 rounded-xl bg-white border border-slate-200 text-xs font-semibold shadow-2xs">
+                        <div className="inline-flex p-1 rounded-xl bg-white border border-slate-200 text-xs font-semibold shadow-2xs flex-wrap gap-1">
                             <button
                                 onClick={() => {
                                     setSelectedStatus("all");
@@ -361,11 +381,24 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                 }}
                                 className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                                     selectedStatus === "revision"
-                                        ? "bg-red-600 text-white font-bold"
+                                        ? "bg-amber-600 text-white font-bold"
                                         : "text-slate-600 hover:text-slate-900"
                                 }`}
                             >
                                 Perlu Revisi ({stats.revision || 0})
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setSelectedStatus("ditolak");
+                                    handleFilterApply(selectedMonth, selectedYear, selectedRigId, "ditolak");
+                                }}
+                                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                                    selectedStatus === "ditolak" || selectedStatus === "rejected"
+                                        ? "bg-red-600 text-white font-bold"
+                                        : "text-slate-600 hover:text-slate-900"
+                                }`}
+                            >
+                                Ditolak ({stats.rejected || 0})
                             </button>
                         </div>
 
@@ -426,9 +459,10 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                     </tr>
                                 ) : (
                                     filteredRecords.map((rec) => {
-                                        const isApproved = rec.approval_status === "approved";
-                                        const isRevision = rec.approval_status === "revision" || rec.approval_status === "rejected";
-                                        const isPending = !isApproved && !isRevision;
+                                        const isApproved = rec.approval_status === "approved" || rec.approval_status === "acc" || rec.approval_status === "sah";
+                                        const isRevision = rec.approval_status === "revision" || rec.approval_status === "revisi";
+                                        const isRejected = rec.approval_status === "ditolak" || rec.approval_status === "tolak" || rec.approval_status === "rejected";
+                                        const isPending = !isApproved && !isRevision && !isRejected;
 
                                         return (
                                             <tr key={rec.id} className="hover:bg-slate-50/80 transition-colors">
@@ -496,13 +530,19 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                                         </span>
                                                     )}
                                                     {isRevision && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                                                             <RotateCcw size={12} />
                                                             <span>PERLU REVISI</span>
                                                         </span>
                                                     )}
+                                                    {isRejected && (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-red-100 text-red-800 border border-red-300 shadow-2xs">
+                                                            <XCircle size={12} className="text-red-600" />
+                                                            <span>DITOLAK</span>
+                                                        </span>
+                                                    )}
                                                     {isPending && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                                                             <Clock size={12} />
                                                             <span>MENUNGGU ACC</span>
                                                         </span>
@@ -719,7 +759,7 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                 >
                                     <option value="approved">Disetujui (ACC Sah)</option>
                                     <option value="revision">Perlu Revisi (Minta Perbaikan)</option>
-                                    <option value="rejected">Ditolak Tidak Sesuai</option>
+                                    <option value="ditolak">Ditolak Tidak Sesuai</option>
                                     <option value="pending">Kembalikan ke Status Pending</option>
                                 </select>
                             </div>
@@ -753,13 +793,22 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                 <button
                                     type="submit"
                                     disabled={processing}
+                                    style={data.approval_status === 'approved' ? { background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" } : {}}
                                     className={`px-5 py-2 text-xs font-bold text-white rounded-lg shadow-sm transition-all ${
                                         data.approval_status === 'approved'
-                                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                                            ? 'hover:brightness-105'
+                                            : data.approval_status === 'ditolak' || data.approval_status === 'rejected'
+                                            ? 'bg-red-600 hover:bg-red-700'
                                             : 'bg-amber-600 hover:bg-amber-700'
                                     }`}
                                 >
-                                    {processing ? "Menyimpan Keputusan..." : "Simpan Keputusan"}
+                                    {processing
+                                        ? "Menyimpan Keputusan..."
+                                        : data.approval_status === 'approved'
+                                        ? "ACC Dokumen"
+                                        : data.approval_status === 'ditolak' || data.approval_status === 'rejected'
+                                        ? "Tolak Dokumen"
+                                        : "Kirim Instruksi Revisi"}
                                 </button>
                             </div>
                         </form>

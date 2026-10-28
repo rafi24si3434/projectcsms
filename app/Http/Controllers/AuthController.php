@@ -16,6 +16,20 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::check()) {
+            $user = Auth::user();
+            if (strtolower($user->status ?? 'active') !== 'active') {
+                Auth::logout();
+                request()->session()->invalidate();
+                request()->session()->regenerateToken();
+                return Inertia::render('Login');
+            }
+
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.dashboard');
+            }
+            if ($user->role === 'user' && $user->csms_rig_id) {
+                return redirect()->route('csms.user-rig-input', ['rig_id' => $user->csms_rig_id]);
+            }
             return redirect()->route('csms.dashboard');
         }
 

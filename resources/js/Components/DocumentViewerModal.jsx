@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
     X,
     CheckCircle2,
+    XCircle,
     RotateCcw,
     Clock,
     Download,
@@ -74,7 +75,9 @@ export default function DocumentViewerModal({
 
     // 3. State Aksi Admin (ACC & Minta Revisi)
     const [showRevisionForm, setShowRevisionForm] = useState(false);
-    const [revisionStatus, setRevisionStatus] = useState("revision"); // "revision" | "rejected"
+    const [revisionStatus, setRevisionStatus] = useState(
+        record.approval_status === "ditolak" || record.approval_status === "rejected" ? "ditolak" : "revision"
+    ); // "revision" | "ditolak"
     const [revisionNotes, setRevisionNotes] = useState(record.approval_notes || "");
     const [isSubmittingAction, setIsSubmittingAction] = useState(false);
     const [actionSuccessMsg, setActionSuccessMsg] = useState("");
@@ -212,8 +215,10 @@ export default function DocumentViewerModal({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onClose, handlePrev, handleNext]);
 
-    const isApproved = record.approval_status === "approved";
-    const isRevision = record.approval_status === "revision" || record.approval_status === "rejected";
+    const isApproved = record.approval_status === "approved" || record.approval_status === "acc" || record.approval_status === "sah";
+    const isRevision = record.approval_status === "revision" || record.approval_status === "revisi";
+    const isRejected = record.approval_status === "ditolak" || record.approval_status === "tolak" || record.approval_status === "rejected";
+    const isPending = !isApproved && !isRevision && !isRejected;
 
     return (
         /* Latar Belakang Bersih & Transparan (Bukan Layar Hitam Pekat) */
@@ -263,14 +268,17 @@ export default function DocumentViewerModal({
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border ${
                             isApproved
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : isRejected
+                                ? "bg-red-100 text-red-800 border-red-300 font-extrabold"
                                 : isRevision
-                                ? "bg-red-50 text-red-700 border-red-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
+                                ? "bg-amber-50 text-amber-800 border-amber-200"
+                                : "bg-slate-50 text-slate-700 border-slate-200"
                         }`}>
                             {isApproved && <CheckCircle2 size={12} className="text-emerald-600" />}
-                            {isRevision && <RotateCcw size={12} className="text-red-600" />}
-                            {!isApproved && !isRevision && <Clock size={12} className="text-amber-600" />}
-                            <span>{isApproved ? "DI-ACC SAH" : isRevision ? "PERLU REVISI" : "PENDING ACC"}</span>
+                            {isRejected && <XCircle size={12} className="text-red-600" />}
+                            {isRevision && <RotateCcw size={12} className="text-amber-600" />}
+                            {isPending && <Clock size={12} className="text-slate-500" />}
+                            <span>{isApproved ? "DI-ACC SAH" : isRejected ? "DITOLAK" : isRevision ? "PERLU REVISI" : "PENDING ACC"}</span>
                         </span>
 
                         {/* Buka PDF di Tab Baru (Akses Cepat) */}
@@ -552,9 +560,9 @@ export default function DocumentViewerModal({
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setRevisionStatus("rejected")}
+                                        onClick={() => setRevisionStatus("ditolak")}
                                         className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition ${
-                                            revisionStatus === "rejected"
+                                            revisionStatus === "ditolak" || revisionStatus === "rejected"
                                                 ? "bg-red-600 text-white shadow-2xs"
                                                 : "text-slate-600 hover:text-slate-900"
                                         }`}
@@ -599,7 +607,7 @@ export default function DocumentViewerModal({
                                     ) : (
                                         <Send size={13} />
                                     )}
-                                    <span>Simpan & Tandai {revisionStatus === "revision" ? "Revisi" : "Tolak"}</span>
+                                    <span>Simpan & Tandai {revisionStatus === "revision" ? "Revisi" : "Ditolak"}</span>
                                 </button>
 
                                 <button
@@ -640,7 +648,7 @@ export default function DocumentViewerModal({
                                     }`}
                                 >
                                     <MessageSquare size={13} />
-                                    <span>{showRevisionForm ? "Tutup Form Catatan" : isRevision ? "Ubah Catatan" : "Minta Revisi"}</span>
+                                    <span>{showRevisionForm ? "Tutup Form Catatan" : isRejected ? "Ubah Status Tolak" : isRevision ? "Ubah Catatan" : "Minta Revisi"}</span>
                                 </button>
 
                                 {/* Tombol ACC Sah */}

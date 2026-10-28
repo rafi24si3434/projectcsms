@@ -25,6 +25,17 @@ class RoleMiddleware
 
         $user = Auth::user();
 
+        // Verifikasi status akun aktif: Jika akun Pending, Inactive, atau Rejected, batalkan sesi
+        if (strtolower($user->status ?? 'active') !== 'active') {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Status akun Anda tidak aktif atau telah dinonaktifkan. Silakan hubungi Administrator.',
+            ]);
+        }
+
         // Normalisasi dan split roles jika didefinisikan sebagai string terpisah koma atau pipe (misal 'role:user,admin')
         $allowedRoles = [];
         foreach ($roles as $role) {

@@ -9,10 +9,8 @@ import {
     ChevronRight,
     HardHat,
     FileSpreadsheet,
-    PhoneCall,
     Activity,
     Layers,
-    UserCheck,
     Clock,
 } from "lucide-react";
 import { router } from "@inertiajs/react";
@@ -229,9 +227,12 @@ function AdminSidebar() {
                         </div>
                     </>
                 )}
+            </div>
 
+            {/* ── FOOTER ACTIONS & K3 SAFETY MOTTO ── */}
+            <div className="p-3 border-t border-slate-100 shrink-0 space-y-2.5">
                 {/* ── K3 SAFETY MOTTO ── */}
-                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/70 space-y-1.5">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/70 space-y-1.5 shadow-2xs">
                     <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold text-[11px]">
                         <Activity size={14} className="text-emerald-600" />
                         <span>K3 & Safety Culture</span>
@@ -246,18 +247,8 @@ function AdminSidebar() {
                         <span>0852-6393-9902</span>
                     </div>
                 </div>
-            </div>
 
-            {/* ── FOOTER ACTIONS ── */}
-            <div className="p-3 border-t border-slate-100 shrink-0 space-y-1">
-                <a
-                    href="tel:085263939902"
-                    className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                >
-                    <PhoneCall size={15} className="text-slate-400" />
-                    <span>Kontak HSE Coord</span>
-                </a>
-
+                {/* ── LOGOUT BUTTON ── */}
                 <button
                     type="button"
                     onClick={handleLogout}

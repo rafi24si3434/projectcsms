@@ -18,29 +18,18 @@ export default function Login({ status }) {
     const [showPassword, setShowPassword] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        email: "admin@besmindo.com",
-        password: "password",
-        remember: true,
+        email: "",
+        password: "",
+        remember: false,
         role: "admin",
     });
 
     const handleRoleChange = (role) => {
         setActiveRole(role);
-        if (role === "admin") {
-            setData({
-                email: "admin@besmindo.com",
-                password: "password",
-                role: "admin",
-                remember: data.remember,
-            });
-        } else {
-            setData({
-                email: "bms01@besmindo.com",
-                password: "01010101",
-                role: "user",
-                remember: data.remember,
-            });
-        }
+        setData((prev) => ({
+            ...prev,
+            role: role === "admin" ? "admin" : "user",
+        }));
     };
 
     const submit = (e) => {
@@ -228,7 +217,7 @@ export default function Login({ status }) {
                     )}
 
                     {/* Form Input */}
-                    <form onSubmit={submit} className="space-y-4">
+                    <form onSubmit={submit} className="space-y-4" autoComplete="off">
                         {/* Input Email / ID */}
                         <div>
                             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -240,14 +229,14 @@ export default function Login({ status }) {
                                 </div>
                                 <input
                                     id="email"
-                                    type="email"
+                                    type="text"
                                     name="email"
                                     value={data.email}
                                     onChange={(e) => setData("email", e.target.value)}
-                                    placeholder={activeRole === "admin" ? "admin@besmindo.com" : "bms01@besmindo.com"}
+                                    placeholder={activeRole === "admin" ? "admin@besmindo.com" : "bms01@besmindo.com / ID Kru"}
                                     className="block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                     required
-                                    autoComplete="username"
+                                    autoComplete="off"
                                 />
                             </div>
                             {errors.email && (
@@ -278,7 +267,7 @@ export default function Login({ status }) {
                                     placeholder="••••••••"
                                     className="block w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                     required
-                                    autoComplete="current-password"
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"

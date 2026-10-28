@@ -222,7 +222,13 @@ class CsmsController extends Controller
         }
 
         if ($approvalStatus && $approvalStatus !== 'all') {
-            $query->where('approval_status', $approvalStatus);
+            if ($approvalStatus === 'ditolak' || $approvalStatus === 'rejected') {
+                $query->whereIn('approval_status', ['ditolak', 'rejected']);
+            } elseif ($approvalStatus === 'revision' || $approvalStatus === 'revisi') {
+                $query->whereIn('approval_status', ['revision', 'revisi']);
+            } else {
+                $query->where('approval_status', $approvalStatus);
+            }
         }
 
         $records = $query->latest('updated_at')->get();
@@ -239,8 +245,8 @@ class CsmsController extends Controller
             'total' => $allPeriodRecords->count(),
             'pending' => $allPeriodRecords->where('approval_status', 'pending')->count(),
             'approved' => $allPeriodRecords->where('approval_status', 'approved')->count(),
-            'revision' => $allPeriodRecords->where('approval_status', 'revision')->count(),
-            'rejected' => $allPeriodRecords->where('approval_status', 'rejected')->count(),
+            'revision' => $allPeriodRecords->whereIn('approval_status', ['revision', 'revisi'])->count(),
+            'rejected' => $allPeriodRecords->whereIn('approval_status', ['rejected', 'ditolak'])->count(),
         ];
 
         return Inertia::render('Admin/CsmsVerification', [
@@ -264,7 +270,7 @@ class CsmsController extends Controller
     public function verifyRecord(Request $request, $id)
     {
         $request->validate([
-            'approval_status' => 'required|in:approved,revision,rejected,pending',
+            'approval_status' => 'required|in:approved,revision,rejected,ditolak,revisi,pending',
             'approval_notes' => 'nullable|string|max:1000',
         ]);
 
@@ -276,15 +282,19 @@ class CsmsController extends Controller
 
         if ($request->approval_status === 'approved') {
             $record->status = 'Lengkap';
-        } elseif ($request->approval_status === 'revision' || $request->approval_status === 'rejected') {
+        } elseif (in_array($request->approval_status, ['revision', 'revisi', 'rejected', 'ditolak'])) {
             $record->status = 'Pending';
         }
 
         $record->save();
 
-        $pesan = $request->approval_status === 'approved' 
-            ? 'Dokumen CSMS berhasil di-ACC (Disetujui)!' 
-            : 'Status dokumen diperbarui (Catatan revisi telah disimpan).';
+        if ($request->approval_status === 'approved') {
+            $pesan = 'Dokumen CSMS berhasil di-ACC (Disetujui)!';
+        } elseif (in_array($request->approval_status, ['rejected', 'ditolak'])) {
+            $pesan = 'Dokumen CSMS ditolak (Instruksi penolakan telah disimpan).';
+        } else {
+            $pesan = 'Status dokumen diperbarui (Catatan revisi telah disimpan).';
+        }
 
         return redirect()->back()->with('success', $pesan);
     }
@@ -297,7 +307,7 @@ class CsmsController extends Controller
         $request->validate([
             'record_ids' => 'required|array',
             'record_ids.*' => 'exists:csms_records,id',
-            'approval_status' => 'required|in:approved,revision,rejected',
+            'approval_status' => 'required|in:approved,revision,rejected,ditolak,revisi',
         ]);
 
         $adminName = auth()->user()->name ?? 'Admin HSE';
@@ -360,7 +370,8 @@ class CsmsController extends Controller
         }, 0);
         $totalUploaded = $records->whereNotNull('file_path')->count();
         $approvedCount = $records->where('approval_status', 'approved')->count();
-        $revisionCount = $records->where('approval_status', 'revision')->count();
+        $revisionCount = $records->whereIn('approval_status', ['revision', 'revisi'])->count();
+        $rejectedCount = $records->whereIn('approval_status', ['rejected', 'ditolak'])->count();
         $pendingCount = $records->where('approval_status', 'pending')->count();
 
         $rigSummary = [
@@ -368,6 +379,7 @@ class CsmsController extends Controller
             'total_uploaded' => $totalUploaded,
             'approved_count' => $approvedCount,
             'revision_count' => $revisionCount,
+            'rejected_count' => $rejectedCount,
             'pending_count' => $pendingCount,
             'compliance_percentage' => $totalRequired > 0 ? round(($approvedCount / $totalRequired) * 100, 1) : 0,
         ];

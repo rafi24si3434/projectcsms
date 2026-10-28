@@ -14,6 +14,26 @@ use App\Http\Controllers\CsmsController;
 */
 
 Route::get('/', function () {
+    if (!Auth::check()) {
+        return redirect()->route('login');
+    }
+
+    $user = Auth::user();
+    if (strtolower($user->status ?? 'active') !== 'active') {
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect()->route('login');
+    }
+
+    if ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if ($user->role === 'user' && $user->csms_rig_id) {
+        return redirect()->route('csms.user-rig-input', ['rig_id' => $user->csms_rig_id]);
+    }
+
     return redirect()->route('csms.dashboard');
 });
 
