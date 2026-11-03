@@ -73,7 +73,7 @@ class CsmsController extends Controller
     }
 
     /**
-     * Dashboard CSMS - List of 20 RIGs and document overview.
+     * Dashboard CSMS - List of 20 RIGs and document overview with integrated cross-tab matrix.
      */
     public function index(Request $request)
     {
@@ -91,37 +91,13 @@ class CsmsController extends Controller
         $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
         $categories = CsmsDocumentCategory::orderBy('no')->get();
 
-        // Get records for selected month & year
-        $query = CsmsRecord::with(['rig', 'category'])
-            ->where('periode_bulan', $bulan)
-            ->where('periode_tahun', $tahun);
-
-        if ($selectedRigId) {
-            $query->where('csms_rig_id', $selectedRigId);
-        }
-
-        $records = $query->latest('updated_at')->get();
-
-        // Calculate stats per RIG
-        $rigStats = $rigs->map(function ($rig) use ($records, $categories) {
-            $rigRecords = $records->where('csms_rig_id', $rig->id);
-            $totalRequired = $categories->reduce(function ($carry, $cat) {
-                $scope = is_array($cat) ? ($cat['scope'] ?? 'crew') : ($cat->scope ?? 'crew');
-                return $carry + ($scope === 'crew' ? 3 : 1);
-            }, 0);
-            $completed = $rigRecords->where('status', 'Lengkap')->count();
-            $approvedCount = $rigRecords->where('approval_status', 'approved')->count();
-
-            return [
-                'id' => $rig->id,
-                'name' => $rig->name,
-                'code' => $rig->code,
-                'completed_count' => $completed,
-                'approved_count' => $approvedCount,
-                'total_required' => $totalRequired,
-                'percentage' => $totalRequired > 0 ? round(($completed / $totalRequired) * 100, 1) : 0,
-            ];
-        });
+        // Bangun data matriks cross-tabulation & statistik kepatuhan secara efisien
+        $matrixBundle = self::buildRigMatrixData($rigs, $categories, $bulan, $tahun);
+        $records = $matrixBundle['records'];
+        $rigMatrix = $matrixBundle['rigMatrix'];
+        $matrixCategories = $matrixBundle['formattedCategories'];
+        $summaryStats = $matrixBundle['summaryStats'];
+        $rigStats = $matrixBundle['rigStats'];
 
         // Overall statistics
         $totalRigCount = $rigs->count();
@@ -133,13 +109,18 @@ class CsmsController extends Controller
         return Inertia::render('Csms/Dashboard', [
             'rigs' => $rigs,
             'categories' => $categories,
+            'matrixCategories' => $matrixCategories,
+            'rigMatrix' => $rigMatrix,
+            'summaryStats' => $summaryStats,
             'records' => $records,
             'rigStats' => $rigStats,
             'availableYears' => $availableYears,
+            'initialView' => $request->query('view', 'grid'),
             'filter' => [
                 'bulan' => $bulan,
                 'tahun' => $tahun,
                 'rig_id' => $selectedRigId ? (int)$selectedRigId : null,
+                'view' => $request->query('view', 'grid'),
             ],
             'summary' => [
                 'total_rigs' => $totalRigCount,
@@ -147,110 +128,16 @@ class CsmsController extends Controller
                 'lengkap_count' => $lengkapCount,
                 'pending_count' => $pendingCount,
                 'approved_count' => $approvedCount,
+                'compliance_rate' => $summaryStats['global_compliance_rate'] ?? 0,
             ],
         ]);
     }
 
     /**
-     * View detail RIG CSMS document matrix.
+     * Bangun data matriks cross-tabulation (unit RIG x kategori K3) & statistik kepatuhan.
      */
-    public function showRig(Request $request, $id)
+    public static function buildRigMatrixData($rigs, $categories, string $bulan, int $tahun): array
     {
-        $user = auth()->user();
-        // Proteksi: Jika user lapangan mencoba melihat rig lain, paksa kembali ke rig miliknya
-        if ($user && $user->role === 'user' && $user->csms_rig_id && (int)$id !== (int)$user->csms_rig_id) {
-            return redirect()->route('csms.rig-detail', ['id' => $user->csms_rig_id]);
-        }
-
-        $rig = CsmsRig::findOrFail($id);
-        $bulan = $request->query('bulan', 'Januari');
-        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
-        $availableYears = self::getAvailableYears();
-
-        // Pastikan rig memiliki matriks dokumen jika belum ada (auto-seed fallback)
-        $hasMatrix = DokumenMatriks::where('rig_id', $rig->id)->exists();
-        if (!$hasMatrix) {
-            $allCats = CsmsDocumentCategory::orderBy('no')->get();
-            foreach ($allCats as $cat) {
-                DokumenMatriks::create([
-                    'rig_id'             => $rig->id,
-                    'category_id'        => $cat->id,
-                    'no'                 => $cat->no,
-                    'nama_dokumen'       => $cat->nama_dokumen,
-                    'durasi'             => $cat->durasi,
-                    'scope'              => $cat->scope,
-                    'keterangan_default' => $cat->keterangan_default,
-                ]);
-            }
-        }
-
-        // Ambil pemetaan seluruh rig yang memiliki masing-masing dokumen dalam 1 query cepat
-        $allRigAssignments = DokumenMatriks::select('category_id', 'rig_id')
-            ->get()
-            ->groupBy('category_id')
-            ->map(fn($g) => $g->pluck('rig_id')->toArray());
-
-        $categories = DokumenMatriks::where('rig_id', $rig->id)
-            ->orderBy('no')
-            ->get()
-            ->map(function ($dm) use ($allRigAssignments, $rig) {
-                return [
-                    'id'                 => $dm->category_id,
-                    'matrix_id'          => $dm->id,
-                    'no'                 => $dm->no,
-                    'nama_dokumen'       => $dm->nama_dokumen,
-                    'durasi'             => $dm->durasi,
-                    'scope'              => $dm->scope,
-                    'keterangan_default' => $dm->keterangan_default,
-                    'assigned_rig_ids'   => $allRigAssignments->get($dm->category_id, [$rig->id]),
-                ];
-            });
-
-        $records = CsmsRecord::where('csms_rig_id', $rig->id)
-            ->where('periode_bulan', $bulan)
-            ->where('periode_tahun', $tahun)
-            ->get();
-
-        // Organize records into matrix indexed by [category_id][crew]
-        $matrix = [];
-        foreach ($records as $rec) {
-            $crewKey = $rec->crew ?: 'Rig';
-            $matrix[$rec->csms_document_category_id][$crewKey] = $rec;
-        }
-
-        // Jika user lapangan, hanya tampilkan rig miliknya pada daftar switcher
-        $isRestricted = $user && $user->role === 'user' && (bool)$user->csms_rig_id;
-        $allRigs = $isRestricted 
-            ? CsmsRig::where('id', $user->csms_rig_id)->get() 
-            : CsmsRig::where('status', 'active')->orderBy('id')->get();
-
-        return Inertia::render('Csms/RigDetail', [
-            'rig' => $rig,
-            'categories' => $categories,
-            'records' => $records,
-            'matrix' => $matrix,
-            'availableYears' => $availableYears,
-            'filter' => [
-                'bulan' => $bulan,
-                'tahun' => $tahun,
-            ],
-            'allRigs' => $allRigs,
-            'isRestricted' => $isRestricted,
-        ]);
-    }
-
-    /**
-     * [ADMIN & HSE] Halaman Ringkasan & Matriks Statistik Kepatuhan Seluruh RIG (Compliance Heatmap / Cross-Tab)
-     */
-    public function complianceOverview(Request $request): Response
-    {
-        $bulan = $request->query('bulan', 'Januari');
-        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
-        $availableYears = self::getAvailableYears();
-
-        $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
-        $categories = CsmsDocumentCategory::orderBy('no')->get();
-
         // Ambil penugasan matriks per rig dari DokumenMatriks
         $matrixAssignments = DokumenMatriks::select('rig_id', 'category_id')->get();
         $assignedMap = [];
@@ -259,7 +146,8 @@ class CsmsController extends Controller
         }
 
         // Ambil semua records untuk periode ini dalam 1 query efisien tanpa N+1
-        $records = CsmsRecord::whereIn('csms_rig_id', $rigs->pluck('id'))
+        $records = CsmsRecord::with(['rig', 'category'])
+            ->whereIn('csms_rig_id', $rigs->pluck('id'))
             ->where('periode_bulan', $bulan)
             ->where('periode_tahun', $tahun)
             ->get();
@@ -447,21 +335,156 @@ class CsmsController extends Controller
             ];
         });
 
-        // ── AGREGASI STATISTIK KEAKTIFAN PETUGAS HFO ──────────────────────────
+        $rigStats = collect($rigMatrixData)->map(function ($item) use ($rigs) {
+            $rigObj = $rigs->firstWhere('id', $item['rig']['id']);
+            $hfoList = array_values(array_filter([$rigObj?->hfo_1, $rigObj?->hfo_2, $rigObj?->hfo_3]));
+            return [
+                'id'              => $item['rig']['id'],
+                'name'            => $item['rig']['name'],
+                'code'            => $item['rig']['code'],
+                'status'          => $rigObj?->status ?? 'active',
+                'hfo_list'        => $hfoList,
+                'hfo_1'           => $rigObj?->hfo_1 ?? '',
+                'hfo_2'           => $rigObj?->hfo_2 ?? '',
+                'hfo_3'           => $rigObj?->hfo_3 ?? '',
+                'completed_count' => $item['stats']['uploaded'],
+                'approved_count'  => $item['stats']['approved'],
+                'total_required'  => $item['stats']['required'],
+                'percentage'      => $item['stats']['percentage'],
+            ];
+        })->values();
+
+        return [
+            'records'             => $records,
+            'rigMatrix'           => $rigMatrixData,
+            'formattedCategories' => $formattedCategories,
+            'summaryStats'        => $summaryStats,
+            'rigStats'            => $rigStats,
+        ];
+    }
+
+    /**
+     * View detail RIG CSMS document matrix.
+     */
+    public function showRig(Request $request, $id)
+    {
+        $user = auth()->user();
+        // Proteksi: Jika user lapangan mencoba melihat rig lain, paksa kembali ke rig miliknya
+        if ($user && $user->role === 'user' && $user->csms_rig_id && (int)$id !== (int)$user->csms_rig_id) {
+            return redirect()->route('csms.rig-detail', ['id' => $user->csms_rig_id]);
+        }
+
+        $rig = CsmsRig::findOrFail($id);
+        $bulan = $request->query('bulan', 'Januari');
+        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
+        $availableYears = self::getAvailableYears();
+
+        // Pastikan rig memiliki matriks dokumen jika belum ada (auto-seed fallback)
+        $hasMatrix = DokumenMatriks::where('rig_id', $rig->id)->exists();
+        if (!$hasMatrix) {
+            $allCats = CsmsDocumentCategory::orderBy('no')->get();
+            foreach ($allCats as $cat) {
+                DokumenMatriks::create([
+                    'rig_id'             => $rig->id,
+                    'category_id'        => $cat->id,
+                    'no'                 => $cat->no,
+                    'nama_dokumen'       => $cat->nama_dokumen,
+                    'durasi'             => $cat->durasi,
+                    'scope'              => $cat->scope,
+                    'keterangan_default' => $cat->keterangan_default,
+                ]);
+            }
+        }
+
+        // Ambil pemetaan seluruh rig yang memiliki masing-masing dokumen dalam 1 query cepat
+        $allRigAssignments = DokumenMatriks::select('category_id', 'rig_id')
+            ->get()
+            ->groupBy('category_id')
+            ->map(fn($g) => $g->pluck('rig_id')->toArray());
+
+        $categories = DokumenMatriks::where('rig_id', $rig->id)
+            ->orderBy('no')
+            ->get()
+            ->map(function ($dm) use ($allRigAssignments, $rig) {
+                return [
+                    'id'                 => $dm->category_id,
+                    'matrix_id'          => $dm->id,
+                    'no'                 => $dm->no,
+                    'nama_dokumen'       => $dm->nama_dokumen,
+                    'durasi'             => $dm->durasi,
+                    'scope'              => $dm->scope,
+                    'keterangan_default' => $dm->keterangan_default,
+                    'assigned_rig_ids'   => $allRigAssignments->get($dm->category_id, [$rig->id]),
+                ];
+            });
+
+        $records = CsmsRecord::where('csms_rig_id', $rig->id)
+            ->where('periode_bulan', $bulan)
+            ->where('periode_tahun', $tahun)
+            ->get();
+
+        // Organize records into matrix indexed by [category_id][crew]
+        $matrix = [];
+        foreach ($records as $rec) {
+            $crewKey = $rec->crew ?: 'Rig';
+            $matrix[$rec->csms_document_category_id][$crewKey] = $rec;
+        }
+
+        // Jika user lapangan, hanya tampilkan rig miliknya pada daftar switcher
+        $isRestricted = $user && $user->role === 'user' && (bool)$user->csms_rig_id;
+        $allRigs = $isRestricted 
+            ? CsmsRig::where('id', $user->csms_rig_id)->get() 
+            : CsmsRig::where('status', 'active')->orderBy('id')->get();
+
+        return Inertia::render('Csms/RigDetail', [
+            'rig' => $rig,
+            'categories' => $categories,
+            'records' => $records,
+            'matrix' => $matrix,
+            'availableYears' => $availableYears,
+            'filter' => [
+                'bulan' => $bulan,
+                'tahun' => $tahun,
+            ],
+            'allRigs' => $allRigs,
+            'isRestricted' => $isRestricted,
+        ]);
+    }
+
+    /**
+     * [ADMIN & HSE] Halaman Statistik Keaktifan Petugas HFO & Rekap Kepatuhan.
+     */
+    public function hfoStats(Request $request): Response
+    {
+        $bulan = $request->query('bulan', 'Januari');
+        $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
+        $availableYears = self::getAvailableYears();
         $hfoStats = self::buildHfoActivityStats($bulan, $tahun);
 
+        $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
+        $categories = CsmsDocumentCategory::orderBy('no')->get();
+        $matrixBundle = self::buildRigMatrixData($rigs, $categories, $bulan, $tahun);
+
         return Inertia::render('Csms/ComplianceOverview', [
-            'summaryStats'   => $summaryStats,
-            'rigMatrix'      => $rigMatrixData,
-            'categories'     => $formattedCategories,
+            'hfoStats'       => $hfoStats,
+            'summaryStats'   => $matrixBundle['summaryStats'],
+            'rigMatrix'      => $matrixBundle['rigMatrix'],
+            'categories'     => $matrixBundle['formattedCategories'],
             'availableYears' => $availableYears,
             'filter'         => [
                 'bulan' => $bulan,
                 'tahun' => $tahun,
             ],
-            'hfoStats'       => $hfoStats,
-            'activeTab'      => $request->query('tab', 'matrix'),
+            'activeTab'      => $request->query('tab', 'hfo'),
         ]);
+    }
+
+    /**
+     * Halaman Kepatuhan / Kompatibilitas rute lama /admin/csms/compliance.
+     */
+    public function complianceOverview(Request $request)
+    {
+        return $this->hfoStats($request);
     }
 
     /**

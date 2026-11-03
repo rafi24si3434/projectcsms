@@ -36,18 +36,10 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        // Jumlah akun Pending & Rig Diarsipkan — hanya dihitung jika ada user login sebagai admin
-        $pendingUsersCount = 0;
-        $archivedRigsCount = 0;
-        if ($request->user() && $request->user()->role === 'admin') {
-            $pendingUsersCount = User::where('status', 'Pending')->count();
-            $archivedRigsCount = \App\Models\CsmsRig::where('status', 'archived')->count();
-        }
-
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? [
+                'user' => fn () => $request->user() ? [
                     'id'          => $request->user()->id,
                     'name'        => $request->user()->name,
                     'email'       => $request->user()->email,
@@ -62,9 +54,21 @@ class HandleInertiaRequests extends Middleware
                     ] : null,
                 ] : null,
             ],
-            // Badge notifikasi untuk admin sidebar
-            'pendingUsersCount' => $pendingUsersCount,
-            'archivedRigsCount' => $archivedRigsCount,
+            // Badge notifikasi untuk admin sidebar — dihitung secara lazy hanya jika user login sebagai admin
+            'pendingUsersCount' => fn () => ($request->user() && $request->user()->role === 'admin')
+                ? User::where('status', 'Pending')->count()
+                : 0,
+            'archivedRigsCount' => fn () => ($request->user() && $request->user()->role === 'admin')
+                ? \App\Models\CsmsRig::where('status', 'archived')->count()
+                : 0,
+            // Flash messages global
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error'   => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
+                'info'    => fn () => $request->session()->get('info'),
+                'status'  => fn () => $request->session()->get('status'),
+            ],
         ];
     }
 }

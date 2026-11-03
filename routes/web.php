@@ -101,11 +101,11 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     // Halaman Arsip Rig
     Route::get('/rigs/archived', [CsmsController::class, 'archivedRigs'])->name('admin.rigs.archived');
 
-    // Halaman Ringkasan & Matriks Statistik Kepatuhan Seluruh RIG (Heatmap / Cross-Tab)
+    // Matriks Kepatuhan terintegrasi di CSMS Storage (Redirect rute lama ke CSMS Storage view=matrix)
     Route::get('/csms/compliance', [CsmsController::class, 'complianceOverview'])->name('admin.csms.compliance');
-    Route::get('/csms/hfo-stats', function (\Illuminate\Http\Request $request) {
-        return redirect()->route('admin.csms.compliance', array_merge($request->query(), ['tab' => 'hfo']));
-    })->name('admin.csms.hfo-stats');
+
+    // Halaman Statistik Keaktifan Petugas HFO
+    Route::get('/csms/hfo-stats', [CsmsController::class, 'hfoStats'])->name('admin.csms.hfo-stats');
 
     // Rig Document Package Download (Admin Only)
     Route::get('/csms/rigs/{rig_id}/download-zip', [CsmsController::class, 'downloadRigZip'])->name('admin.csms.rigs.download-zip');

@@ -3,6 +3,7 @@ import { Head, Link, router } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import DocumentViewerModal from "@/Components/DocumentViewerModal";
 import YearSelect from "@/Components/YearSelect";
+import CustomDropdown from "@/Components/CustomDropdown";
 import {
     Activity,
     Award,
@@ -33,6 +34,9 @@ import {
     Trophy,
     Users,
     Flame,
+    BarChart3,
+    Table,
+    ChevronUp,
 } from "lucide-react";
 
 export default function ComplianceOverview({
@@ -42,7 +46,7 @@ export default function ComplianceOverview({
     availableYears = [],
     filter = {},
     hfoStats = {},
-    activeTab: initialActiveTab = "matrix",
+    activeTab: initialActiveTab = "hfo",
 }) {
     const months = [
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -90,6 +94,7 @@ export default function ComplianceOverview({
     const [hfoSortBy, setHfoSortBy] = useState("uploaded_desc"); // 'uploaded_desc' | 'uploaded_asc' | 'name_asc' | 'name_desc' | 'rig_asc'
     const [hfoPage, setHfoPage] = useState(1);
     const [hfoPerPage, setHfoPerPage] = useState(15);
+    const [showHfoTable, setShowHfoTable] = useState(false);
 
     // List unique rigs for HFO Rig filter dropdown
     const uniqueHfoRigs = useMemo(() => {
@@ -189,8 +194,11 @@ export default function ComplianceOverview({
     const handleFilterChange = (month, year) => {
         setSelectedMonth(month);
         setSelectedYear(year);
+        const targetPath = typeof window !== "undefined" && window.location.pathname.includes("/hfo-stats")
+            ? "/admin/csms/hfo-stats"
+            : "/admin/csms/compliance";
         router.get(
-            "/admin/csms/compliance",
+            targetPath,
             { bulan: month, tahun: year, tab: currentTab },
             { preserveState: true, preserveScroll: true }
         );
@@ -227,21 +235,24 @@ export default function ComplianceOverview({
 
     // Filter daftar rig berdasarkan pencarian dan status kepatuhan
     const filteredRigMatrix = useMemo(() => {
-        return rigMatrix.filter((item) => {
-            const matchSearch =
-                item.rig.name.toLowerCase().includes(searchRig.toLowerCase()) ||
-                item.rig.code.toLowerCase().includes(searchRig.toLowerCase());
+        return (rigMatrix || []).filter((item) => {
+            if (!item || !item.rig) return false;
+            const rigName = String(item.rig.name || "").toLowerCase();
+            const rigCode = String(item.rig.code || "").toLowerCase();
+            const q = searchRig.toLowerCase();
+            const matchSearch = rigName.includes(q) || rigCode.includes(q);
 
             if (!matchSearch) return false;
 
+            const percentage = item.stats?.percentage ?? 0;
             if (statusFilter === "perfect") {
-                return item.stats.percentage >= 100;
+                return percentage >= 100;
             }
             if (statusFilter === "high") {
-                return item.stats.percentage >= 80 && item.stats.percentage < 100;
+                return percentage >= 80 && percentage < 100;
             }
             if (statusFilter === "attention") {
-                return item.stats.percentage < 80;
+                return percentage < 80;
             }
             return true;
         });
@@ -280,7 +291,7 @@ export default function ComplianceOverview({
         <AdminLayout>
             <Head title="Rekapitulasi Kepatuhan & Matriks 20 RIG — Portal HSE CSMS" />
 
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1700px] mx-auto space-y-6">
+            <div className={`p-4 sm:p-6 lg:p-8 ${currentTab === "hfo" ? "max-w-6xl" : "max-w-[1700px]"} mx-auto space-y-6 transition-all`}>
 
                 {/* ═══════════════════════════════════════════════════════════════
                     PAGE HEADER & PERIOD CONTROLS
@@ -305,25 +316,17 @@ export default function ComplianceOverview({
 
                     {/* Period Switcher (Month & Year) */}
                     <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs">
-                            <span className="text-xs font-bold text-slate-500">Periode:</span>
-                            <div className="relative">
-                                <select
-                                    value={selectedMonth}
-                                    onChange={(e) => handleFilterChange(e.target.value, selectedYear)}
-                                    className="text-xs font-bold text-slate-800 bg-transparent pr-5 border-none focus:outline-none cursor-pointer appearance-none"
-                                >
-                                    {months.map((m) => (
-                                        <option key={m} value={m}>
-                                            {m}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            </div>
-
-                            <span className="text-slate-300">/</span>
-
+                        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+                            <span className="text-xs font-bold text-slate-500 mr-0.5">Periode:</span>
+                            <CustomDropdown
+                                value={selectedMonth}
+                                onChange={(m) => handleFilterChange(m, selectedYear)}
+                                options={months}
+                                headerLabel="PILIH BULAN"
+                                variant="inline"
+                                minWidth="w-48 sm:w-52"
+                            />
+                            <span className="text-slate-300 mx-0.5">/</span>
                             <YearSelect
                                 value={selectedYear}
                                 onChange={(year) => handleFilterChange(selectedMonth, year)}
@@ -526,19 +529,19 @@ export default function ComplianceOverview({
                                     />
                                 </div>
 
-                                <div className="relative">
-                                    <select
-                                        value={statusFilter}
-                                        onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="text-xs font-bold text-slate-700 border border-slate-200 rounded-xl px-3 py-2 pr-7 bg-white focus:outline-none cursor-pointer appearance-none"
-                                    >
-                                        <option value="all">Semua Status RIG ({rigMatrix.length})</option>
-                                        <option value="perfect">Kepatuhan 100%</option>
-                                        <option value="high">Kepatuhan 80% - 99%</option>
-                                        <option value="attention">Kepatuhan &lt; 80%</option>
-                                    </select>
-                                    <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                </div>
+                                <CustomDropdown
+                                    value={statusFilter}
+                                    onChange={(val) => setStatusFilter(val)}
+                                    options={[
+                                        { value: "all", label: `Semua Status RIG (${rigMatrix.length})` },
+                                        { value: "perfect", label: "Kepatuhan 100%", badge: "100%" },
+                                        { value: "high", label: "Kepatuhan 80% - 99%", badge: "80-99%" },
+                                        { value: "attention", label: "Kepatuhan < 80%", badge: "<80%" },
+                                    ]}
+                                    headerLabel="STATUS KEPATUHAN"
+                                    size="sm"
+                                    minWidth="w-56"
+                                />
                             </div>
 
                             {/* Color Legend (Petunjuk Warna) */}
@@ -864,210 +867,310 @@ export default function ComplianceOverview({
                             </div>
                         </div>
 
-                        {/* ── LEADERBOARD WIDGETS (2 KARTU PERBANDINGAN) ── */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                            {/* WIDGET 1: TOP 5 PETUGAS HFO PALING AKTIF */}
-                            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col justify-between">
-                                <div>
-                                    <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-center shrink-0">
-                                                <Trophy size={20} className="text-amber-600" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                                    <span>Top 5 Petugas HFO Paling Aktif</span>
-                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                        Leaderboard
-                                                    </span>
-                                                </h3>
-                                                <p className="text-xs text-slate-400 mt-0.5">
-                                                    Personil dengan frekuensi kontribusi unggahan berkas K3 terbanyak
-                                                </p>
-                                            </div>
-                                        </div>
+                        {/* ── VISUAL DIAGRAM BATANG HORIZONTAL KEAKTIFAN PERSONIL HFO (HORIZONTAL BAR CHART) ── */}
+                        <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
+                            {/* 1. Header Kontrol di Atas Grafik */}
+                            <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                                        <BarChart3 size={17} />
                                     </div>
-
-                                    {/* List of Top 5 HFOs */}
-                                    <div className="space-y-3">
-                                        {(!hfoStats?.top_active || hfoStats.top_active.length === 0) ? (
-                                            <div className="text-center py-8 text-slate-400 text-xs italic">
-                                                Belum ada riwayat unggahan dokumen oleh personil HFO.
-                                            </div>
-                                        ) : (
-                                            hfoStats.top_active.map((item, idx) => {
-                                                const rank = item.rank || idx + 1;
-                                                return (
-                                                    <div
-                                                        key={item.name + idx}
-                                                        className="p-3 sm:p-3.5 rounded-xl border border-slate-100 hover:border-emerald-200 bg-slate-50/50 hover:bg-emerald-50/30 transition-all flex items-center justify-between gap-3 group"
-                                                    >
-                                                        <div className="flex items-center gap-3 min-w-0">
-                                                            {/* Rank Badge */}
-                                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                                                                rank === 1
-                                                                    ? "bg-amber-400 text-amber-950 shadow-xs ring-2 ring-amber-300"
-                                                                    : rank === 2
-                                                                    ? "bg-slate-200 text-slate-800 font-extrabold"
-                                                                    : rank === 3
-                                                                    ? "bg-amber-100 text-amber-900 font-extrabold"
-                                                                    : "bg-white text-slate-600 border border-slate-200"
-                                                            }`}>
-                                                                #{rank}
-                                                            </div>
-
-                                                            {/* Avatar & Info */}
-                                                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${getHfoAvatarGradient(item.name)} text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs`}>
-                                                                {getHfoInitials(item.name)}
-                                                            </div>
-
-                                                            <div className="min-w-0">
-                                                                <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                                                                        {item.name}
-                                                                    </span>
-                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-emerald-800 border border-emerald-300">
-                                                                        {item.rig_code}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5 truncate">
-                                                                    <span>Aktivitas terakhir:</span>
-                                                                    <span className="font-semibold text-slate-700 truncate">
-                                                                        {item.last_activity_date || "Hari ini"}
-                                                                    </span>
-                                                                    {item.last_activity_doc && (
-                                                                        <>
-                                                                            <span className="text-slate-300">•</span>
-                                                                            <span className="truncate max-w-[140px] text-slate-500" title={item.last_activity_doc}>
-                                                                                {item.last_activity_doc}
-                                                                            </span>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Upload Count Badge */}
-                                                        <div className="text-right shrink-0">
-                                                            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-200 font-black text-xs sm:text-sm">
-                                                                <span>{item.total_uploaded}</span>
-                                                                <span className="text-[10px] font-bold text-emerald-700">Berkas</span>
-                                                            </div>
-                                                            <div className="text-[10px] text-slate-400 font-medium mt-0.5">
-                                                                ACC: <strong className="text-emerald-700">{item.approved_count}</strong>
-                                                                {item.revision_count > 0 && <span> • Rev: <strong className="text-amber-700">{item.revision_count}</strong></span>}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        )}
+                                    <div>
+                                        <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                                            <span>Grafik Keaktifan Personil HFO</span>
+                                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                {filteredHfoList.length} Petugas
+                                            </span>
+                                        </h3>
+                                        <p className="text-xs text-slate-400 mt-0.5">
+                                            Visualisasi volume kontribusi pengunggahan dokumen K3 personil HFO
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
-                                    <span>Diurutkan berdasarkan total unggahan dokumen rekaman K3</span>
-                                    <span className="font-bold text-emerald-700">Top 5 Performer</span>
+                                {/* Controls: Search, Rig Filter, Sorting, Per-Page */}
+                                <div className="flex items-center gap-2.5 flex-wrap">
+                                    {/* Kotak Pencarian Cepat */}
+                                    <div className="relative min-w-[170px] sm:min-w-[190px] flex-1 sm:flex-none">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            value={searchHfo}
+                                            onChange={(e) => setSearchHfo(e.target.value)}
+                                            placeholder="Cari nama HFO / RIG..."
+                                            className="w-full text-xs font-medium pl-8 pr-7 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-2xs placeholder-slate-400"
+                                        />
+                                        {searchHfo && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSearchHfo("")}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                            >
+                                                <X size={13} />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Filter Dropdown Unit RIG */}
+                                    <CustomDropdown
+                                        value={selectedHfoRig}
+                                        onChange={(val) => setSelectedHfoRig(val)}
+                                        options={[
+                                            { value: "all", label: `Semua RIG (${uniqueHfoRigs.length} Unit)` },
+                                            ...uniqueHfoRigs.map((rig) => ({
+                                                value: rig.id,
+                                                label: `RIG ${rig.code}`,
+                                            })),
+                                        ]}
+                                        headerLabel="FILTER UNIT RIG"
+                                        size="sm"
+                                        minWidth="w-56"
+                                    />
+
+                                    {/* Filter Sorting */}
+                                    <CustomDropdown
+                                        value={hfoSortBy}
+                                        onChange={(val) => setHfoSortBy(val)}
+                                        options={[
+                                            { value: "uploaded_desc", label: "Unggahan Terbanyak (Tertinggi)" },
+                                            { value: "uploaded_asc", label: "Unggahan Tersedikit (Terendah)" },
+                                            { value: "name_asc", label: "Nama Petugas (A - Z)" },
+                                            { value: "rig_asc", label: "Unit RIG Penugasan" },
+                                        ]}
+                                        headerLabel="URUTKAN"
+                                        size="sm"
+                                        minWidth="w-60"
+                                    />
+
+                                    {/* Pilihan Paginasi Ringkas */}
+                                    <CustomDropdown
+                                        value={hfoPerPage}
+                                        onChange={(val) => setHfoPerPage(Number(val))}
+                                        options={[
+                                            { value: 15, label: "15 / hal" },
+                                            { value: 30, label: "30 / hal" },
+                                            { value: -1, label: "Semua" },
+                                        ]}
+                                        headerLabel="DATA PER HALAMAN"
+                                        size="sm"
+                                        minWidth="w-36"
+                                        align="right"
+                                        searchable={false}
+                                    />
                                 </div>
                             </div>
 
-                            {/* WIDGET 2: PETUGAS HFO JARANG / BELUM MENGUNGGAH */}
-                            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col justify-between">
-                                <div>
-                                    <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-center shrink-0">
-                                                <AlertTriangle size={20} className="text-rose-600" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                                    <span>Petugas HFO Jarang / Belum Mengunggah</span>
-                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">
-                                                        Perlu Evaluasi
+                            {/* 2. Header Kolom Rapi (Subtle Scale Guide) */}
+                            <div className="hidden sm:flex items-center text-[10.5px] font-bold text-slate-400 uppercase tracking-wider py-2.5 px-4 sm:px-5 border-b border-slate-100 bg-slate-50/40">
+                                <div className="w-56 sm:w-64 md:w-72 shrink-0">
+                                    Personil HFO & Unit RIG
+                                </div>
+                                <div className="flex-1 px-3 text-center text-[10px] font-medium text-slate-400">
+                                    Skala Volume Unggahan (0 - {maxHfoUploads} Berkas)
+                                </div>
+                                <div className="w-52 sm:w-60 md:w-68 shrink-0 text-right pr-1">
+                                    Rekap Berkas & Status
+                                </div>
+                            </div>
+
+                            {/* 3. Daftar Baris Garis HFO (Layout Rapi Sejajar & Bebas Hover Melayang) */}
+                            <div className="divide-y divide-slate-100">
+                                {paginatedHfoList.length === 0 ? (
+                                    <div className="py-12 text-center text-slate-400">
+                                        <Users size={32} className="mx-auto text-slate-300 mb-2" />
+                                        <p className="font-semibold text-slate-700 text-xs">
+                                            Tidak ada personil HFO yang cocok
+                                        </p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">
+                                            Coba sesuaikan filter Unit RIG atau bersihkan kata kunci pencarian.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSearchHfo("");
+                                                setSelectedHfoRig("all");
+                                                setHfoSortBy("uploaded_desc");
+                                            }}
+                                            className="mt-2.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100 cursor-pointer"
+                                        >
+                                            Reset Filter
+                                        </button>
+                                    </div>
+                                ) : (
+                                    paginatedHfoList.map((item, idx) => {
+                                        const rank = hfoPerPage === -1 ? idx + 1 : (hfoPage - 1) * hfoPerPage + idx + 1;
+                                        const isZero = (item.total_uploaded || 0) === 0;
+                                        const barWidthPercent = maxHfoUploads > 0
+                                            ? Math.min(100, Math.round(((item.total_uploaded || 0) / maxHfoUploads) * 100))
+                                            : 0;
+
+                                        return (
+                                            <div
+                                                key={item.name + idx}
+                                                className="flex items-center gap-2 sm:gap-3 py-2.5 sm:py-3 px-3.5 sm:px-5 hover:bg-slate-50/70 transition-colors"
+                                            >
+                                                {/* Sisi Kiri (Label Personil) */}
+                                                <div className="w-56 sm:w-64 md:w-72 shrink-0 flex items-center gap-2.5 min-w-0">
+                                                    {/* Nomor urut simpel */}
+                                                    <span className="w-5 text-right font-mono text-xs font-semibold text-slate-400 shrink-0">
+                                                        {rank}.
                                                     </span>
-                                                </h3>
-                                                <p className="text-xs text-slate-400 mt-0.5">
-                                                    Personil dengan unggahan paling rendah atau 0 berkas rekaman K3
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                                    {/* Nama Petugas HFO */}
+                                                    <span className="text-sm font-semibold text-slate-800 truncate" style={{ maxWidth: "160px" }}>
+                                                        {item.name}
+                                                    </span>
+                                                    {/* Badge Unit RIG */}
+                                                    <span className="shrink-0 text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
+                                                        {item.rig_code}
+                                                    </span>
+                                                </div>
 
-                                    {/* List of Low Activity HFOs */}
-                                    <div className="space-y-3">
-                                        {(!hfoStats?.low_activity || hfoStats.low_activity.length === 0) ? (
-                                            <div className="text-center py-8 text-slate-400 text-xs italic">
-                                                Seluruh personil HFO aktif mengunggah dokumen K3.
-                                            </div>
-                                        ) : (
-                                            hfoStats.low_activity.slice(0, 5).map((item, idx) => {
-                                                const isZero = (item.total_uploaded || 0) === 0;
-                                                return (
-                                                    <div
-                                                        key={item.name + idx}
-                                                        className="p-3 sm:p-3.5 rounded-xl border border-slate-100 hover:border-rose-200 bg-slate-50/50 hover:bg-rose-50/20 transition-all flex items-center justify-between gap-3"
-                                                    >
-                                                        <div className="flex items-center gap-3 min-w-0">
-                                                            {/* Alert Icon Badge */}
-                                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                                                                isZero ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-800"
-                                                            }`}>
-                                                                <AlertTriangle size={13} />
-                                                            </div>
-
-                                                            {/* Avatar & Info */}
-                                                            <div className="w-9 h-9 rounded-xl bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0">
-                                                                {getHfoInitials(item.name)}
-                                                            </div>
-
-                                                            <div className="min-w-0">
-                                                                <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                                                                        {item.name}
-                                                                    </span>
-                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-slate-700 border border-slate-300">
-                                                                        {item.rig_code}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="text-[11px] text-slate-500 mt-0.5 truncate">
-                                                                    Penugasan: <span className="font-medium text-slate-700">{item.rig_name}</span> • {isZero ? "Belum ada berkas terunggah" : `Baru ${item.total_uploaded} berkas`}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Action Pill */}
-                                                        <div className="text-right shrink-0">
-                                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border ${
-                                                                isZero
-                                                                    ? "bg-rose-100 text-rose-800 border-rose-300"
-                                                                    : "bg-amber-100 text-amber-800 border-amber-300"
-                                                            }`}>
-                                                                {isZero ? "0 Berkas" : `${item.total_uploaded} Berkas`}
-                                                            </span>
-                                                            <div className="text-[10px] text-rose-600 font-bold mt-0.5">
-                                                                Perlu Follow-up
-                                                            </div>
-                                                        </div>
+                                                {/* Sisi Tengah (Batang Progress / Bar) */}
+                                                <div className="flex-1 min-w-[100px] flex items-center px-2">
+                                                    {/* Rel latar belakang abu-abu tipis (h-3 w-full) */}
+                                                    <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                                                        {/* Garis batang dinamis dengan transisi halus */}
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-300 ease-out ${
+                                                                item.total_uploaded >= 5
+                                                                    ? "bg-emerald-500"
+                                                                    : item.total_uploaded >= 1
+                                                                    ? "bg-amber-500"
+                                                                    : "bg-slate-200"
+                                                            }`}
+                                                            style={{
+                                                                width: isZero ? "0%" : `${Math.max(3, barWidthPercent)}%`,
+                                                            }}
+                                                        />
                                                     </div>
-                                                );
-                                            })
-                                        )}
-                                    </div>
+                                                </div>
+
+                                                {/* Sisi Kanan (Angka Rekap Statis) */}
+                                                <div className="w-52 sm:w-60 md:w-68 shrink-0 flex items-center justify-end gap-2 text-right">
+                                                    {/* Badge total berkas */}
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border shrink-0 ${
+                                                        item.total_uploaded >= 5
+                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                            : item.total_uploaded >= 1
+                                                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                            : "bg-slate-50 text-slate-400 border-slate-200"
+                                                    }`}>
+                                                        {item.total_uploaded} Berkas
+                                                    </span>
+
+                                                    {/* Rincian status singkat langsung tertulis di sampingnya secara STATIS */}
+                                                    <div className="min-w-0 truncate text-right">
+                                                        {item.total_uploaded > 0 ? (
+                                                            <span className="text-[11.5px] text-slate-500 font-medium truncate block">
+                                                                <strong className="text-emerald-700 font-bold">{item.approved_count} ACC</strong>
+                                                                {item.pending_count > 0 && (
+                                                                    <span className="text-amber-700 font-medium ml-1">
+                                                                        , {item.pending_count} Pend
+                                                                    </span>
+                                                                )}
+                                                                {item.last_activity_date && (
+                                                                    <span className="text-slate-400 text-[10.5px] ml-1.5 hidden md:inline">
+                                                                        • {item.last_activity_date}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[11.5px] text-slate-400 italic">
+                                                                0 ACC • Belum Unggah
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* 4. Footer Paginasi Ringkas */}
+                            <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+                                <div>
+                                    Menampilkan <strong className="text-slate-700">{filteredHfoList.length === 0 ? 0 : (hfoPage - 1) * hfoPerPage + 1}</strong> - <strong className="text-slate-700">{hfoPerPage === -1 ? filteredHfoList.length : Math.min(hfoPage * hfoPerPage, filteredHfoList.length)}</strong> dari <strong className="text-slate-700">{filteredHfoList.length}</strong> personil HFO
                                 </div>
 
-                                {/* Follow up callout banner */}
-                                <div className="mt-4 p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
-                                    <Info size={14} className="text-amber-700 shrink-0 mt-0.5" />
-                                    <p className="leading-relaxed">
-                                        <strong>Tindak Lanjut Admin HSE:</strong> Hubungi personil HFO di atas atau Rig Superintendent terkait untuk percepatan pemenuhan dokumen rekaman K3 periode berjalan.
-                                    </p>
-                                </div>
+                                {/* Page Numbers */}
+                                {totalHfoPages > 1 && (
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setHfoPage((p) => Math.max(1, p - 1))}
+                                            disabled={hfoPage <= 1}
+                                            className="p-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 cursor-pointer shadow-2xs"
+                                            title="Sebelumnya"
+                                        >
+                                            <ChevronLeft size={13} />
+                                        </button>
+
+                                        {Array.from({ length: Math.min(totalHfoPages, 7) }, (_, i) => {
+                                            const pageNum = i + 1;
+                                            return (
+                                                <button
+                                                    key={pageNum}
+                                                    type="button"
+                                                    onClick={() => setHfoPage(pageNum)}
+                                                    className={`w-7 h-7 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                                                        hfoPage === pageNum
+                                                            ? "bg-emerald-600 text-white shadow-2xs"
+                                                            : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
+                                                    }`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            );
+                                        })}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setHfoPage((p) => Math.min(totalHfoPages, p + 1))}
+                                            disabled={hfoPage >= totalHfoPages}
+                                            className="p-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 cursor-pointer shadow-2xs"
+                                            title="Berikutnya"
+                                        >
+                                            <ChevronRight size={13} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* ── TABEL DETAIL KEAKTIFAN SELURUH PERSONIL HFO ── */}
-                        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                        {/* ── COLLAPSIBLE TABEL DETAIL AUDIT TRAIL PERSONIL HFO ── */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                            {/* Accordion Toggle Header */}
+                            <div
+                                onClick={() => setShowHfoTable(!showHfoTable)}
+                                className="p-4 sm:p-5 bg-gradient-to-r from-slate-50/80 to-white flex items-center justify-between cursor-pointer hover:bg-slate-100/70 transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+                                        <Table size={16} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                            <span>Tabel Lengkap Audit Trail Pengunggahan Dokumen HFO</span>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                                Tabular
+                                            </span>
+                                        </h4>
+                                        <p className="text-xs text-slate-400 mt-0.5">
+                                            Klik untuk {showHfoTable ? "menutup" : "membuka"} rincian tabular seluruh berkas, waktu unggah, dan status verifikasi ACC
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                                    <span>{showHfoTable ? "Sembunyikan Tabel" : "Lihat Tabel Lengkap"}</span>
+                                    {showHfoTable ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                </div>
+                            </div>
+
+                            {/* Collapsible Content */}
+                            {showHfoTable && (
+                                <div className="border-t border-slate-200 animate-in fade-in duration-200">
+                                    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
                             {/* Header Tabel & Controls Bar */}
                             <div className="p-5 border-b border-slate-200/90 bg-gradient-to-r from-slate-50 to-white flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                                 <div>
@@ -1108,52 +1211,51 @@ export default function ComplianceOverview({
                                     </div>
 
                                     {/* Rig Filter Dropdown */}
-                                    <div className="relative">
-                                        <select
-                                            value={selectedHfoRig}
-                                            onChange={(e) => setSelectedHfoRig(e.target.value)}
-                                            className="text-xs font-bold text-slate-700 border border-slate-200 rounded-xl px-3 py-2 pr-7 bg-white focus:outline-none cursor-pointer appearance-none shadow-2xs"
-                                        >
-                                            <option value="all">Semua Unit RIG ({uniqueHfoRigs.length})</option>
-                                            {uniqueHfoRigs.map((rig) => (
-                                                <option key={rig.id} value={rig.id}>
-                                                    {rig.code} ({rig.name})
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                    </div>
+                                    <CustomDropdown
+                                        value={selectedHfoRig}
+                                        onChange={(val) => setSelectedHfoRig(val)}
+                                        options={[
+                                            { value: "all", label: `Semua Unit RIG (${uniqueHfoRigs.length})` },
+                                            ...uniqueHfoRigs.map((rig) => ({
+                                                value: rig.id,
+                                                label: `${rig.code} (${rig.name})`,
+                                            })),
+                                        ]}
+                                        headerLabel="UNIT RIG PENUGASAN"
+                                        size="sm"
+                                        minWidth="w-56"
+                                    />
 
                                     {/* Status Filter Dropdown */}
-                                    <div className="relative">
-                                        <select
-                                            value={hfoStatusFilter}
-                                            onChange={(e) => setHfoStatusFilter(e.target.value)}
-                                            className="text-xs font-bold text-slate-700 border border-slate-200 rounded-xl px-3 py-2 pr-7 bg-white focus:outline-none cursor-pointer appearance-none shadow-2xs"
-                                        >
-                                            <option value="all">Semua Keaktifan</option>
-                                            <option value="sangat_aktif">Sangat Aktif (≥ 5)</option>
-                                            <option value="cukup_aktif">Cukup Aktif (1 - 4)</option>
-                                            <option value="belum_aktif">Belum Aktif (0)</option>
-                                        </select>
-                                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                    </div>
+                                    <CustomDropdown
+                                        value={hfoStatusFilter}
+                                        onChange={(val) => setHfoStatusFilter(val)}
+                                        options={[
+                                            { value: "all", label: "Semua Keaktifan" },
+                                            { value: "sangat_aktif", label: "Sangat Aktif (≥ 5)", badge: "≥ 5" },
+                                            { value: "cukup_aktif", label: "Cukup Aktif (1 - 4)", badge: "1-4" },
+                                            { value: "belum_aktif", label: "Belum Aktif (0)", badge: "0" },
+                                        ]}
+                                        headerLabel="FILTER KEAKTIFAN"
+                                        size="sm"
+                                        minWidth="w-48"
+                                    />
 
                                     {/* Sort Dropdown */}
-                                    <div className="relative">
-                                        <select
-                                            value={hfoSortBy}
-                                            onChange={(e) => setHfoSortBy(e.target.value)}
-                                            className="text-xs font-bold text-slate-700 border border-slate-200 rounded-xl px-3 py-2 pr-7 bg-white focus:outline-none cursor-pointer appearance-none shadow-2xs"
-                                        >
-                                            <option value="uploaded_desc">Dokumen Terbanyak ↓</option>
-                                            <option value="uploaded_asc">Dokumen Tersedikit ↑</option>
-                                            <option value="name_asc">Nama HFO (A - Z)</option>
-                                            <option value="name_desc">Nama HFO (Z - A)</option>
-                                            <option value="rig_asc">Unit RIG (BMS)</option>
-                                        </select>
-                                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                    </div>
+                                    <CustomDropdown
+                                        value={hfoSortBy}
+                                        onChange={(val) => setHfoSortBy(val)}
+                                        options={[
+                                            { value: "uploaded_desc", label: "Dokumen Terbanyak ↓" },
+                                            { value: "uploaded_asc", label: "Dokumen Tersedikit ↑" },
+                                            { value: "name_asc", label: "Nama HFO (A - Z)" },
+                                            { value: "name_desc", label: "Nama HFO (Z - A)" },
+                                            { value: "rig_asc", label: "Unit RIG (BMS)" },
+                                        ]}
+                                        headerLabel="URUTKAN DATA"
+                                        size="sm"
+                                        minWidth="w-56"
+                                    />
                                 </div>
                             </div>
 
@@ -1361,18 +1463,23 @@ export default function ComplianceOverview({
                                         Menampilkan <strong>{filteredHfoList.length === 0 ? 0 : (hfoPage - 1) * hfoPerPage + 1}</strong> - <strong>{Math.min(hfoPage * hfoPerPage, filteredHfoList.length)}</strong> dari <strong>{filteredHfoList.length}</strong> personil HFO
                                     </span>
                                     <span className="text-slate-300">|</span>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1.5">
                                         <span className="text-slate-500">Tampilkan:</span>
-                                        <select
+                                        <CustomDropdown
                                             value={hfoPerPage}
-                                            onChange={(e) => setHfoPerPage(Number(e.target.value))}
-                                            className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-                                        >
-                                            <option value={15}>15 per hal</option>
-                                            <option value={25}>25 per hal</option>
-                                            <option value={50}>50 per hal</option>
-                                            <option value={-1}>Semua ({filteredHfoList.length})</option>
-                                        </select>
+                                            onChange={(val) => setHfoPerPage(Number(val))}
+                                            options={[
+                                                { value: 15, label: "15 per hal" },
+                                                { value: 25, label: "25 per hal" },
+                                                { value: 50, label: "50 per hal" },
+                                                { value: -1, label: `Semua (${filteredHfoList.length})` },
+                                            ]}
+                                            headerLabel="DATA PER HALAMAN"
+                                            size="sm"
+                                            minWidth="w-36"
+                                            align="right"
+                                            searchable={false}
+                                        />
                                     </div>
                                 </div>
 
@@ -1420,9 +1527,12 @@ export default function ComplianceOverview({
                                 )}
                             </div>
                         </div>
-
                     </div>
                 )}
+            </div>
+        </div>
+    )}
+                
 
                 {/* ═══════════════════════════════════════════════════════════════
                     MODAL SHEET RINCIAN CREW (JIKA DOKUMEN SCOPE CREW)
@@ -1591,9 +1701,10 @@ function getHfoAvatarGradient(name) {
 
 function getHfoInitials(name) {
     if (!name) return "HF";
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    const parts = String(name).trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "HF";
+    if (parts.length === 1) return (parts[0].substring(0, 2) || "HF").toUpperCase();
+    return ((parts[0]?.[0] || "") + (parts[parts.length - 1]?.[0] || "")).toUpperCase() || "HF";
 }
 
 function strtolower(str) {

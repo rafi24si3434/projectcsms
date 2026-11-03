@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Head, Link, router, useForm } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import YearSelect from "@/Components/YearSelect";
+import CustomDropdown from "@/Components/CustomDropdown";
 import RigDownloadModal from "@/Components/RigDownloadModal";
 import {
     CheckCircle2,
@@ -195,23 +196,25 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                         {/* Periode & Rig Selectors */}
                         <div className="flex flex-wrap items-center gap-3">
                             {/* Filter Unit Rig */}
-                            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 shadow-2xs">
-                                <span className="text-xs font-bold text-slate-500 mr-2">RIG:</span>
-                                <select
+                            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+                                <span className="text-xs font-bold text-slate-500 mr-1.5">RIG:</span>
+                                <CustomDropdown
                                     value={selectedRigId}
-                                    onChange={(e) => {
-                                        setSelectedRigId(e.target.value);
-                                        handleFilterApply(selectedMonth, selectedYear, e.target.value, selectedStatus);
+                                    onChange={(val) => {
+                                        setSelectedRigId(val);
+                                        handleFilterApply(selectedMonth, selectedYear, val, selectedStatus);
                                     }}
-                                    className="bg-transparent text-slate-800 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
-                                >
-                                    <option value="">Semua Unit RIG (20 Unit)</option>
-                                    {rigs.map((r) => (
-                                        <option key={r.id} value={r.id}>
-                                            {r.name} ({r.code})
-                                        </option>
-                                    ))}
-                                </select>
+                                    options={[
+                                        { value: "", label: "Semua Unit RIG (20 Unit)" },
+                                        ...rigs.map((r) => ({
+                                            value: r.id,
+                                            label: `${r.name} (${r.code})`,
+                                        })),
+                                    ]}
+                                    headerLabel="FILTER UNIT RIG"
+                                    variant="inline"
+                                    minWidth="w-56 sm:w-64"
+                                />
                             </div>
 
                             {/* Filter Periode */}
@@ -219,19 +222,18 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                 <div className="flex items-center pl-2 pr-1 text-emerald-600">
                                     <Calendar size={15} />
                                 </div>
-                                <select
+                                <CustomDropdown
                                     value={selectedMonth}
-                                    onChange={(e) => {
-                                        setSelectedMonth(e.target.value);
-                                        handleFilterApply(e.target.value, selectedYear, selectedRigId, selectedStatus);
+                                    onChange={(m) => {
+                                        setSelectedMonth(m);
+                                        handleFilterApply(m, selectedYear, selectedRigId, selectedStatus);
                                     }}
-                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
-                                >
-                                    {months.map((m) => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
-                                <span className="text-slate-300">/</span>
+                                    options={months}
+                                    headerLabel="PILIH BULAN"
+                                    variant="inline"
+                                    minWidth="w-48 sm:w-52"
+                                />
+                                <span className="text-slate-300 mx-0.5">/</span>
                                 <YearSelect
                                     value={selectedYear}
                                     onChange={(year) => {
@@ -239,7 +241,7 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                         handleFilterApply(selectedMonth, year, selectedRigId, selectedStatus);
                                     }}
                                     availableYears={availableYears}
-                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
+                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-1 focus:outline-none"
                                     optionClass="bg-white text-slate-800"
                                 />
                             </div>
@@ -767,16 +769,19 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                                     Status Keputusan
                                 </label>
-                                <select
+                                <CustomDropdown
                                     value={data.approval_status}
-                                    onChange={(e) => setData("approval_status", e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg p-2 text-xs font-bold bg-white text-slate-800 focus:ring-1 focus:ring-emerald-500 outline-none"
-                                >
-                                    <option value="approved">Disetujui (ACC Sah)</option>
-                                    <option value="revision">Perlu Revisi (Minta Perbaikan)</option>
-                                    <option value="ditolak">Ditolak Tidak Sesuai</option>
-                                    <option value="pending">Kembalikan ke Status Pending</option>
-                                </select>
+                                    onChange={(val) => setData("approval_status", val)}
+                                    options={[
+                                        { value: "approved", label: "Disetujui (ACC Sah)", badge: "ACC" },
+                                        { value: "revision", label: "Perlu Revisi (Minta Perbaikan)", badge: "Revisi" },
+                                        { value: "ditolak", label: "Ditolak Tidak Sesuai", badge: "Tolak" },
+                                        { value: "pending", label: "Kembalikan ke Status Pending", badge: "Pending" },
+                                    ]}
+                                    headerLabel="STATUS KEPUTUSAN"
+                                    variant="form"
+                                    className="w-full"
+                                />
                             </div>
 
                             <div>

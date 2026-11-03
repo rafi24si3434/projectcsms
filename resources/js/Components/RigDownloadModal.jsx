@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import CustomDropdown from "@/Components/CustomDropdown";
 import {
     Download,
     FolderArchive,
@@ -137,25 +138,18 @@ export default function RigDownloadModal({
                         <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1.5">
                             Pilih Unit RIG Target
                         </label>
-                        <div className="relative">
-                            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                                <HardHat size={16} />
-                            </div>
-                            <select
-                                value={targetRigId}
-                                onChange={(e) => setTargetRigId(e.target.value)}
-                                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer appearance-none"
-                            >
-                                {rigs.map((r) => (
-                                    <option key={r.id} value={r.id}>
-                                        {r.name} ({r.code})
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                                <ChevronDown size={15} />
-                            </div>
-                        </div>
+                        <CustomDropdown
+                            value={targetRigId}
+                            onChange={(val) => setTargetRigId(val)}
+                            options={rigs.map((r) => ({
+                                value: r.id,
+                                label: `${r.name} (${r.code})`,
+                            }))}
+                            headerLabel="PILIH UNIT RIG TARGET"
+                            icon={HardHat}
+                            variant="form"
+                            className="w-full"
+                        />
                     </div>
 
                     {/* 2. Grid Periode Tahun & Bulan */}
@@ -165,25 +159,18 @@ export default function RigDownloadModal({
                             <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1.5">
                                 Periode Tahun
                             </label>
-                            <div className="relative">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                                    <Calendar size={14} />
-                                </div>
-                                <select
-                                    value={targetYear}
-                                    onChange={(e) => setTargetYear(e.target.value)}
-                                    className="w-full pl-9 pr-7 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer appearance-none"
-                                >
-                                    {availableYears.map((y) => (
-                                        <option key={y.key} value={y.key}>
-                                            {y.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                                    <ChevronDown size={14} />
-                                </div>
-                            </div>
+                            <CustomDropdown
+                                value={targetYear}
+                                onChange={(val) => setTargetYear(val)}
+                                options={availableYears.map((y) => ({
+                                    value: y.key,
+                                    label: y.label,
+                                }))}
+                                headerLabel="PERIODE TAHUN"
+                                icon={Calendar}
+                                variant="form"
+                                className="w-full"
+                            />
                         </div>
 
                         {/* Pilihan Bulan */}
@@ -191,25 +178,18 @@ export default function RigDownloadModal({
                             <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1.5">
                                 Periode Bulan
                             </label>
-                            <div className="relative">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                                    <Layers size={14} />
-                                </div>
-                                <select
-                                    value={targetMonth}
-                                    onChange={(e) => setTargetMonth(e.target.value)}
-                                    className="w-full pl-9 pr-7 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer appearance-none"
-                                >
-                                    {months.map((m) => (
-                                        <option key={m.key} value={m.key}>
-                                            {m.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                                    <ChevronDown size={14} />
-                                </div>
-                            </div>
+                            <CustomDropdown
+                                value={targetMonth}
+                                onChange={(val) => setTargetMonth(val)}
+                                options={months.map((m) => ({
+                                    value: m.key,
+                                    label: m.label,
+                                }))}
+                                headerLabel="PERIODE BULAN"
+                                icon={Layers}
+                                variant="form"
+                                className="w-full"
+                            />
                         </div>
                     </div>
 

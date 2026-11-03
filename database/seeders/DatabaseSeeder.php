@@ -29,8 +29,9 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@besmindo.com'],
             [
                 'name'           => 'Administrator HSE Pusat',
-                'password'       => $defaultPassword,
-                'plain_password' => 'password',
+                'username'       => 'admin',
+                'password'       => Hash::make('admin123'),
+                'plain_password' => 'admin123',
                 'role'           => 'admin',
                 'status'         => 'Active',
                 'csms_rig_id'    => null,

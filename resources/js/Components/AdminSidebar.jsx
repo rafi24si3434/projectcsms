@@ -30,8 +30,7 @@ function AdminSidebar() {
     const adminMainMenu = [
         { name: "CSMS Storage (20 RIG)", href: "/csms",                  icon: HardDrive },
         { name: "Matriks Dokumen K3",    href: "/csms/rig/1",            icon: Layers },
-        { name: "Rekap Kepatuhan RIG",   href: "/admin/csms/compliance", icon: BarChart3 },
-        { name: "Keaktifan Petugas HFO", href: "/admin/csms/compliance?tab=hfo", icon: Award },
+        { name: "Keaktifan Petugas HFO", href: "/admin/csms/hfo-stats",  icon: Award },
         { name: "Verifikasi & ACC CSMS", href: "/csms/input-rig",        icon: ShieldCheck },
     ];
 
@@ -59,8 +58,11 @@ function AdminSidebar() {
         if (href.includes("?")) {
             return url === href;
         }
-        if (href === "/admin/csms/compliance") {
-            return url === "/admin/csms/compliance" || (url.startsWith("/admin/csms/compliance") && !url.includes("tab=hfo"));
+        if (href === "/csms") {
+            return url === "/csms" || url.startsWith("/csms?") || url === "/admin/csms" || url === "/admin/dashboard";
+        }
+        if (href === "/admin/csms/hfo-stats") {
+            return url === "/admin/csms/hfo-stats" || url.startsWith("/admin/csms/hfo-stats?") || url === "/admin/csms/compliance" || url.startsWith("/admin/csms/compliance?");
         }
         return url === href || (href !== "/csms" && url.startsWith(href));
     };
@@ -85,7 +87,12 @@ function AdminSidebar() {
 
             {/* ── BRANDING & LOGO SECTION ── */}
             <div className="p-5 border-b border-slate-100 shrink-0 flex flex-col items-center justify-center">
-                <Link href={isRigUser ? "/csms/input-rig" : "/csms"} className="block focus:outline-none">
+                <Link
+                    href={isRigUser ? "/csms/input-rig" : "/csms"}
+                    prefetch="mount"
+                    preserveScroll
+                    className="block focus:outline-none"
+                >
                     <img
                         src="/images/logo-besmindo.png"
                         alt="PT BESMINDO MATERI SEWATAMA"
@@ -145,6 +152,8 @@ function AdminSidebar() {
                                     <Link
                                         key={item.href}
                                         href={item.href}
+                                        prefetch="mount"
+                                        preserveScroll
                                         className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
                                             active
                                                 ? "bg-emerald-50 text-emerald-800 border-l-4 border-emerald-600 shadow-2xs"
@@ -181,6 +190,8 @@ function AdminSidebar() {
                                         <Link
                                             key={item.href}
                                             href={item.href}
+                                            prefetch="mount"
+                                            preserveScroll
                                             className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
                                                 active
                                                     ? "bg-emerald-50 text-emerald-800 border-l-4 border-emerald-600 shadow-2xs"
@@ -215,6 +226,8 @@ function AdminSidebar() {
                                         <Link
                                             key={item.href}
                                             href={item.href}
+                                            prefetch="mount"
+                                            preserveScroll
                                             className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
                                                 active
                                                     ? "bg-emerald-50 text-emerald-800 border-l-4 border-emerald-600 shadow-2xs"

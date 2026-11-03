@@ -3,14 +3,18 @@ import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import FileDropzone from "@/Components/FileDropzone";
 import AttachmentsModal from "@/Components/AttachmentsModal";
+import DocumentViewerModal from "@/Components/DocumentViewerModal";
 import RigDownloadModal from "@/Components/RigDownloadModal";
 import YearSelect from "@/Components/YearSelect";
+import CustomDropdown from "@/Components/CustomDropdown";
 import { useTheme } from "@/Contexts/ThemeContext";
 import {
     HardDrive,
     Upload,
     FileText,
     ChevronRight,
+    ChevronDown,
+    ChevronUp,
     Plus,
     X,
     Eye,
@@ -29,9 +33,30 @@ import {
     Calendar,
     Sparkles,
     Download,
+    LayoutGrid,
+    Table,
+    Check,
+    RotateCcw,
+    XCircle,
+    ArrowUpRight,
+    Layers,
+    ExternalLink,
+    Users,
 } from "lucide-react";
 
-export default function CsmsDashboard({ rigs, categories, records, rigStats, filter, summary, availableYears = [] }) {
+export default function CsmsDashboard({
+    rigs = [],
+    categories = [],
+    matrixCategories = [],
+    rigMatrix = [],
+    summaryStats = {},
+    records = [],
+    rigStats = [],
+    filter = {},
+    summary = {},
+    availableYears = [],
+    initialView = "grid",
+}) {
     const { auth } = usePage().props;
     const isAdmin = auth?.user?.role === "admin";
     const { theme, toggleTheme } = useTheme();
@@ -45,6 +70,35 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
             setSelectedYear(filter.tahun);
         }
     }, [filter?.tahun]);
+
+    // State Modal Dialog Checklist Dokumen RIG (Centered Modal)
+    const [drawerRig, setDrawerRig] = useState(null);
+    const [drawerFilter, setDrawerFilter] = useState("all"); // 'all' | 'uploaded' | 'missing'
+    const [drawerSearch, setDrawerSearch] = useState("");
+
+    // Keyboard listener untuk tombol Escape agar menutup modal dialog
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape" && drawerRig) {
+                setDrawerRig(null);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [drawerRig]);
+
+    // Modal untuk sel multi-crew (Crew A, B, C)
+    const [activeCellModal, setActiveCellModal] = useState(null); // { rig, category, cell }
+
+    // Modal In-App Document Viewer
+    const [viewerState, setViewerState] = useState({
+        isOpen: false,
+        record: null,
+        category: null,
+        crew: null,
+        initialIndex: 0,
+    });
+
     const [searchRig, setSearchRig] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [viewAttachmentsRecord, setViewAttachmentsRecord] = useState(null);
@@ -200,6 +254,63 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
         );
     };
 
+    // Handler Klik Sel Matriks
+    const handleCellClick = (rig, category, cell) => {
+        if (!cell.is_assigned || cell.status === "not_assigned") {
+            alert(`Dokumen "${category.nama_dokumen}" tidak ditugaskan pada unit ${rig.code}.`);
+            return;
+        }
+
+        if (!cell.records || cell.records.length === 0) {
+            alert(`Unit ${rig.code} belum mengunggah dokumen "${category.nama_dokumen}" pada periode ${selectedMonth} ${selectedYear}.`);
+            return;
+        }
+
+        // Jika hanya 1 berkas, langsung buka di DocumentViewerModal
+        if (cell.records.length === 1) {
+            const rec = cell.records[0];
+            setViewerState({
+                isOpen: true,
+                record: rec,
+                category: category,
+                crew: rec.crew,
+                initialIndex: 0,
+            });
+            return;
+        }
+
+        // Jika multi-crew (Crew A, B, C), buka lembar modal pemilihan crew
+        setActiveCellModal({ rig, category, cell });
+    };
+
+    const handleApproveFromViewer = (recordId) => {
+        router.post(
+            `/admin/csms/verify/${recordId}`,
+            { approval_status: "approved" },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setViewerState((prev) => ({ ...prev, isOpen: false }));
+                    setActiveCellModal(null);
+                },
+            }
+        );
+    };
+
+    const handleReviseFromViewer = (recordId, notes) => {
+        router.post(
+            `/admin/csms/verify/${recordId}`,
+            { approval_status: "revision", approval_notes: notes },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setViewerState((prev) => ({ ...prev, isOpen: false }));
+                    setActiveCellModal(null);
+                },
+            }
+        );
+    };
+
     const handleUploadSubmit = (e) => {
         e.preventDefault();
         if (!data.files || data.files.length === 0) {
@@ -260,6 +371,114 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
         return Math.round(total / rigStats.length);
     }, [rigStats]);
 
+    // Memoized Map untuk mengambil data dokumen checklist per unit RIG secara instan
+    const rigMatrixMap = useMemo(() => {
+        const map = new Map();
+        (rigMatrix || []).forEach((item) => {
+            if (item?.rig?.id) {
+                map.set(item.rig.id, item);
+            }
+        });
+        return map;
+    }, [rigMatrix]);
+
+    const activeCategories = useMemo(() => {
+        return matrixCategories?.length > 0 ? matrixCategories : categories;
+    }, [matrixCategories, categories]);
+
+    // Perhitungan data dokumen checklist untuk RIG yang sedang dibuka di Slide-Over Drawer
+    const drawerMatrixItem = useMemo(() => {
+        if (!drawerRig) return null;
+        return rigMatrixMap.get(drawerRig.id) || null;
+    }, [drawerRig, rigMatrixMap]);
+
+    const drawerChecklistData = useMemo(() => {
+        if (!drawerRig) {
+            return {
+                items: [],
+                totalAssigned: 0,
+                uploadedCount: 0,
+                approvedCount: 0,
+                pendingCount: 0,
+                revisionCount: 0,
+                missingCount: 0,
+            };
+        }
+
+        const cells = drawerMatrixItem?.cells || {};
+        let totalAssigned = 0;
+        let uploadedCount = 0;
+        let approvedCount = 0;
+        let pendingCount = 0;
+        let revisionCount = 0;
+
+        const items = activeCategories.map((cat) => {
+            const cell = cells[cat.id];
+            const isAssigned = cell ? (cell.is_assigned !== false && cell.status !== "not_assigned") : true;
+            const records = cell?.records || [];
+            const hasRecords = records.length > 0;
+            const cellStatus = cell?.status || (hasRecords ? "pending" : "empty");
+
+            const isApproved = cellStatus === "approved" || cellStatus === "partial_approved";
+            const isPending = cellStatus === "pending";
+            const isRevision = cellStatus === "revision";
+            const isUploaded = hasRecords || isApproved || isPending || isRevision;
+
+            if (isAssigned) {
+                totalAssigned++;
+                if (isUploaded) uploadedCount++;
+                if (isApproved) approvedCount++;
+                if (isPending) pendingCount++;
+                if (isRevision) revisionCount++;
+            }
+
+            return {
+                cat,
+                cell,
+                isAssigned,
+                isUploaded,
+                isApproved,
+                isPending,
+                isRevision,
+                records,
+            };
+        });
+
+        const missingCount = Math.max(0, totalAssigned - uploadedCount);
+
+        return {
+            items,
+            totalAssigned,
+            uploadedCount,
+            approvedCount,
+            pendingCount,
+            revisionCount,
+            missingCount,
+        };
+    }, [drawerRig, drawerMatrixItem, activeCategories]);
+
+    // Filter dokumen di dalam drawer berdasarkan tab dan pencarian
+    const filteredDrawerItems = useMemo(() => {
+        return drawerChecklistData.items.filter((item) => {
+            if (!item.isAssigned) return false;
+
+            // Filter tab
+            if (drawerFilter === "uploaded" && !item.isUploaded) return false;
+            if (drawerFilter === "missing" && item.isUploaded) return false;
+
+            // Search query
+            if (drawerSearch.trim()) {
+                const q = drawerSearch.toLowerCase();
+                const nameMatch = item.cat.nama_dokumen?.toLowerCase().includes(q);
+                const shortMatch = item.cat.short_name?.toLowerCase().includes(q);
+                const noMatch = String(item.cat.no || "").includes(q);
+                if (!nameMatch && !shortMatch && !noMatch) return false;
+            }
+
+            return true;
+        });
+    }, [drawerChecklistData, drawerFilter, drawerSearch]);
+
     return (
         <AdminLayout>
             <Head title="CSMS Portal - PT Besmindo Materi Sewatama" />
@@ -305,23 +524,20 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <div className="flex items-center pl-2 pr-1 text-emerald-600">
                                     <Calendar size={15} />
                                 </div>
-                                <select
+                                <CustomDropdown
                                     value={selectedMonth}
-                                    onChange={(e) => handleFilterChange(e.target.value, selectedYear)}
-                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
-                                >
-                                    {months.map((m) => (
-                                        <option key={m} value={m} className="bg-white text-slate-800">
-                                            {m}
-                                        </option>
-                                    ))}
-                                </select>
-                                <span className="text-slate-300">/</span>
+                                    onChange={(m) => handleFilterChange(m, selectedYear)}
+                                    options={months}
+                                    headerLabel="PILIH BULAN"
+                                    variant="inline"
+                                    minWidth="w-48 sm:w-52"
+                                />
+                                <span className="text-slate-300 mx-0.5">/</span>
                                 <YearSelect
                                     value={selectedYear}
                                     onChange={(year) => handleFilterChange(selectedMonth, year)}
                                     availableYears={availableYears}
-                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
+                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-1 focus:outline-none"
                                     optionClass="bg-white text-slate-800"
                                 />
                             </div>
@@ -373,7 +589,7 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════
-                    2. K3 SUMMARY METRICS - 4 CARD PUTIH BERSIH & SEGAR
+                    2. K3 SUMMARY METRICS - 4 KARTU BERSIH & SEGAR
                 ═══════════════════════════════════════════════════════════════ */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                     {/* Card 1: Total Rig Aktif */}
@@ -438,7 +654,7 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════
-                    3. GRID KARTU 20 RIG - SEMUA CARD PUTIH BERSIH
+                    3. KONTEN UTAMA: GRID KARTU UNIT RIG & ACCORDION MINI RESUME
                 ═══════════════════════════════════════════════════════════════ */}
                 <div className="space-y-4">
                     {/* Header Bar Grid */}
@@ -460,12 +676,12 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                     placeholder="Cari Rig (misal: BMS-01)..."
                                     value={searchRig}
                                     onChange={(e) => setSearchRig(e.target.value)}
-                                    className="pl-8 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 shadow-2xs w-52 placeholder-slate-400"
+                                    className="pl-8 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 shadow-2xs w-48 placeholder-slate-400"
                                 />
                             </div>
 
                             {/* Filter Status Tabs */}
-                            <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold">
+                            <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold shadow-2xs">
                                 <button
                                     onClick={() => setStatusFilter("all")}
                                     className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
@@ -513,7 +729,7 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                         </div>
                     </div>
 
-                    {/* 20 RIG CARD GRID - PUTIH BERSIH */}
+                    {/* 20 RIG CARD GRID DENGAN ACCORDION MINI RESUME */}
                     {filteredRigs.length === 0 ? (
                         <div className="bg-white rounded-2xl p-10 text-center border border-slate-200 shadow-xs">
                             <AlertTriangle size={32} className="mx-auto text-amber-500 mb-2" />
@@ -532,31 +748,38 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                             )}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 items-start gap-4">
                             {filteredRigs.map((rig) => {
                                 const isComplete = rig.percentage >= 100;
                                 const isHalf = rig.percentage > 0 && rig.percentage < 100;
+                                const isDrawerActive = drawerRig?.id === rig.id;
 
                                 return (
-                                    <Link
+                                    <div
                                         key={rig.id}
-                                        href={`/csms/rig/${rig.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
-                                        className="group bg-white rounded-2xl border border-slate-200 p-4 shadow-xs hover:shadow-lg hover:border-emerald-500 transition-all duration-200 flex flex-col justify-between hover:-translate-y-0.5"
+                                        className={`bg-white rounded-2xl border transition-all duration-200 p-4 shadow-xs flex flex-col justify-between ${
+                                            isDrawerActive
+                                                ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-md"
+                                                : "border-slate-200 hover:border-emerald-400 hover:shadow-md"
+                                        }`}
                                     >
                                         <div>
-                                            <div className="flex items-center justify-between gap-2 mb-2.5">
-                                                <span className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+                                            {/* Baris Atas: Kode Rig & Tombol Aksi Admin */}
+                                            <div className="flex items-center justify-between gap-2 mb-2">
+                                                <Link
+                                                    href={`/csms/rig/${rig.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                                    className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors"
+                                                    title={`Buka detail dokumen K3 ${rig.name}`}
+                                                >
                                                     {rig.code}
-                                                </span>
+                                                </Link>
 
                                                 <div className="flex items-center gap-1.5">
                                                     {isAdmin && (
-                                                        <div className="flex items-center gap-1">
+                                                        <div className="flex items-center gap-0.5">
                                                             <button
                                                                 type="button"
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
+                                                                onClick={() => {
                                                                     setDownloadRigTarget(rig);
                                                                     setIsDownloadModalOpen(true);
                                                                 }}
@@ -568,11 +791,7 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
 
                                                             <button
                                                                 type="button"
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    handleOpenEditRigModal(rig);
-                                                                }}
+                                                                onClick={() => handleOpenEditRigModal(rig)}
                                                                 title={`Ubah Data ${rig.name} & Personil HFO`}
                                                                 className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all cursor-pointer"
                                                             >
@@ -581,11 +800,7 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
 
                                                             <button
                                                                 type="button"
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    setRigToArchive(rig);
-                                                                }}
+                                                                onClick={() => setRigToArchive(rig)}
                                                                 title={`Arsipkan Unit ${rig.name} (${rig.code})`}
                                                                 className="p-1 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-all cursor-pointer"
                                                             >
@@ -608,23 +823,36 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                                 </div>
                                             </div>
 
-                                            <h3 className="font-black text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">
-                                                {rig.name}
-                                            </h3>
+                                            {/* Nama Rig & Rangkuman Dokumen */}
+                                            <Link
+                                                href={`/csms/rig/${rig.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                                className="block group/title mt-1"
+                                                title={`Buka detail matriks K3 ${rig.name}`}
+                                            >
+                                                <h3 className="font-black text-slate-800 text-sm group-hover/title:text-emerald-600 transition-colors flex items-center justify-between">
+                                                    <span>{rig.name}</span>
+                                                    <ArrowUpRight size={13} className="opacity-0 group-hover/title:opacity-100 text-emerald-600 transition-opacity" />
+                                                </h3>
+                                            </Link>
 
-                                            <p className="text-[11px] font-medium text-slate-500 mt-1">
+                                            <p className="text-[11px] font-medium text-slate-500 mt-0.5">
                                                 {rig.completed_count} dari {rig.total_required} dokumen
                                             </p>
 
+                                            {/* Personil HFO Penugasan */}
                                             {rig.hfo_list && rig.hfo_list.length > 0 && (
-                                                <div className="mt-2 text-[10px] text-slate-500 font-semibold truncate flex items-center gap-1.5" title={`Petugas HFO: ${rig.hfo_list.join(', ')}`}>
+                                                <div
+                                                    className="mt-2 text-[10px] text-slate-500 font-semibold truncate flex items-center gap-1.5"
+                                                    title={`Petugas HFO: ${rig.hfo_list.join(", ")}`}
+                                                >
                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                                    <span className="truncate"><strong>HFO:</strong> {rig.hfo_list.join(', ')}</span>
+                                                    <span className="truncate"><strong>HFO:</strong> {rig.hfo_list.join(", ")}</span>
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5">
+                                        {/* Progress Bar & Trigger Slide-Over Drawer */}
+                                        <div className="mt-3.5 space-y-2">
                                             <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                                                 <div
                                                     className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -638,12 +866,36 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                                 />
                                             </div>
 
-                                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 group-hover:text-emerald-600 transition-colors pt-0.5">
-                                                <span>Matriks 21 Dokumen</span>
-                                                <ChevronRight size={13} className="transform group-hover:translate-x-1 transition-transform" />
-                                            </div>
+                                            {/* Tombol Trigger Modal Dialog Checklist Dokumen */}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setDrawerRig(rig);
+                                                    setDrawerFilter("all");
+                                                    setDrawerSearch("");
+                                                }}
+                                                className={`w-full pt-2.5 border-t flex items-center justify-between text-[11px] font-bold transition-all cursor-pointer group/btn ${
+                                                    isDrawerActive
+                                                        ? "border-emerald-200 text-emerald-700"
+                                                        : "border-slate-100 text-slate-500 hover:text-emerald-700"
+                                                }`}
+                                                title={`Buka ringkasan checklist dokumen ${rig.name}`}
+                                            >
+                                                <span className="flex items-center gap-1.5">
+                                                    <Layers size={13} className={`transition-colors ${isDrawerActive ? "text-emerald-600" : "text-slate-400 group-hover/btn:text-emerald-600"}`} />
+                                                    <span>Checklist Dokumen</span>
+                                                </span>
+                                                <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border font-black transition-colors ${
+                                                    isDrawerActive
+                                                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                                        : "bg-slate-50 text-slate-600 border-slate-200 group-hover/btn:bg-emerald-50 group-hover/btn:text-emerald-700 group-hover/btn:border-emerald-200"
+                                                }`}>
+                                                    <span>{rig.completed_count}/{rig.total_required}</span>
+                                                    <ChevronRight size={11} strokeWidth={2.5} />
+                                                </span>
+                                            </button>
                                         </div>
-                                    </Link>
+                                    </div>
                                 );
                             })}
 
@@ -854,34 +1106,36 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
                                     Pilih Unit RIG
                                 </label>
-                                <select
+                                <CustomDropdown
                                     value={data.csms_rig_id}
-                                    onChange={(e) => setData("csms_rig_id", e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg p-2 text-xs font-semibold bg-white focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-800"
-                                >
-                                    {(rigs || []).map((rig) => (
-                                        <option key={rig.id} value={rig.id}>
-                                            {rig.name} ({rig.code})
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setData("csms_rig_id", val)}
+                                    options={(rigs || []).map((rig) => ({
+                                        value: rig.id,
+                                        label: `${rig.name} (${rig.code})`,
+                                    }))}
+                                    headerLabel="PILIH UNIT RIG"
+                                    placeholder="Pilih Unit RIG"
+                                    variant="form"
+                                    className="w-full"
+                                />
                             </div>
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
                                     Kategori Dokumen K3 (21 Item)
                                 </label>
-                                <select
+                                <CustomDropdown
                                     value={data.csms_document_category_id}
-                                    onChange={(e) => setData("csms_document_category_id", e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-800"
-                                >
-                                    {(categories || []).map((cat) => (
-                                        <option key={cat.id} value={cat.id}>
-                                            {cat.no}. {cat.nama_dokumen} ({cat.durasi})
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setData("csms_document_category_id", val)}
+                                    options={(categories || []).map((cat) => ({
+                                        value: cat.id,
+                                        label: `${cat.no}. ${cat.nama_dokumen} (${cat.durasi})`,
+                                    }))}
+                                    headerLabel="PILIH KATEGORI K3"
+                                    placeholder="Pilih Kategori Dokumen"
+                                    variant="form"
+                                    className="w-full"
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
@@ -889,30 +1143,36 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                     <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
                                         Crew / Scope
                                     </label>
-                                    <select
+                                    <CustomDropdown
                                         value={data.crew}
-                                        onChange={(e) => setData("crew", e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-800"
-                                    >
-                                        <option value="Crew A">Crew A</option>
-                                        <option value="Crew B">Crew B</option>
-                                        <option value="Crew C">Crew C</option>
-                                        <option value="Rig">Seluruh Rig</option>
-                                    </select>
+                                        onChange={(val) => setData("crew", val)}
+                                        options={[
+                                            { value: "Crew A", label: "Crew A" },
+                                            { value: "Crew B", label: "Crew B" },
+                                            { value: "Crew C", label: "Crew C" },
+                                            { value: "Rig", label: "Seluruh Rig" },
+                                        ]}
+                                        headerLabel="PILIH CREW"
+                                        variant="form"
+                                        className="w-full"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
                                         Status Dokumen
                                     </label>
-                                    <select
+                                    <CustomDropdown
                                         value={data.status}
-                                        onChange={(e) => setData("status", e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg p-2 text-xs font-bold bg-white focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-800"
-                                    >
-                                        <option value="Lengkap">Lengkap</option>
-                                        <option value="Pending">Pending</option>
-                                        <option value="Tidak Ada">Tidak Ada</option>
-                                    </select>
+                                        onChange={(val) => setData("status", val)}
+                                        options={[
+                                            { value: "Lengkap", label: "Lengkap", badge: "ACC" },
+                                            { value: "Pending", label: "Pending", badge: "Proses" },
+                                            { value: "Tidak Ada", label: "Tidak Ada", badge: "N/A" },
+                                        ]}
+                                        headerLabel="STATUS DOKUMEN"
+                                        variant="form"
+                                        className="w-full"
+                                    />
                                 </div>
                             </div>
 
@@ -1054,14 +1314,17 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                                     Status Operasional
                                 </label>
-                                <select
+                                <CustomDropdown
                                     value={addRigForm.status}
-                                    onChange={(e) => setAddRigForm({ ...addRigForm, status: e.target.value })}
-                                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-700 font-semibold"
-                                >
-                                    <option value="active">Aktif (Beroperasi)</option>
-                                    <option value="inactive">Nonaktif (Standby / Pemeliharaan)</option>
-                                </select>
+                                    onChange={(val) => setAddRigForm({ ...addRigForm, status: val })}
+                                    options={[
+                                        { value: "active", label: "Aktif (Beroperasi)", badge: "Operasi" },
+                                        { value: "inactive", label: "Nonaktif (Standby / Pemeliharaan)", badge: "Standby" },
+                                    ]}
+                                    headerLabel="STATUS OPERASIONAL"
+                                    variant="form"
+                                    className="w-full"
+                                />
                             </div>
 
                             {/* Input 3 Personil HFO */}
@@ -1202,15 +1465,18 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                                     Status Operasional
                                 </label>
-                                <select
+                                <CustomDropdown
                                     value={editRigForm.status}
-                                    onChange={(e) => setEditRigForm({ ...editRigForm, status: e.target.value })}
-                                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-700 font-semibold"
-                                >
-                                    <option value="active">Aktif (Beroperasi)</option>
-                                    <option value="inactive">Nonaktif (Standby / Pemeliharaan)</option>
-                                    <option value="archived">Diarsipkan (Pusat Arsip)</option>
-                                </select>
+                                    onChange={(val) => setEditRigForm({ ...editRigForm, status: val })}
+                                    options={[
+                                        { value: "active", label: "Aktif (Beroperasi)", badge: "Operasi" },
+                                        { value: "inactive", label: "Nonaktif (Standby / Pemeliharaan)", badge: "Standby" },
+                                        { value: "archived", label: "Diarsipkan (Pusat Arsip)", badge: "Arsip" },
+                                    ]}
+                                    headerLabel="STATUS OPERASIONAL"
+                                    variant="form"
+                                    className="w-full"
+                                />
                             </div>
 
                             {/* Input Personil HFO 1, 2, 3 */}
@@ -1332,6 +1598,419 @@ export default function CsmsDashboard({ rigs, categories, records, rigStats, fil
                     </div>
                 </div>
             )}
+
+            {/* ═══════════════════════════════════════════════════════════════
+                MODAL DIALOG CHECKLIST DOKUMEN RIG (CENTERED MODAL)
+            ═══════════════════════════════════════════════════════════════ */}
+            {drawerRig && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-hidden">
+                    {/* Backdrop Overlay Gelap & Lembut */}
+                    <div
+                        onClick={() => setDrawerRig(null)}
+                        className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in cursor-pointer"
+                    />
+
+                    {/* Modal Dialog Card di Tengah Layar */}
+                    <div className="relative w-full max-w-2xl sm:max-w-3xl max-h-[88vh] bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-10">
+                        {/* 1. Header Tetap (Sticky Top) */}
+                        <div className="p-5 sm:p-6 border-b border-slate-200/80 bg-gradient-to-b from-slate-50/90 to-white shrink-0">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black">
+                                            {drawerRig.code}
+                                        </span>
+                                        <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-md border ${
+                                            drawerRig.percentage >= 100
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : drawerRig.percentage > 0
+                                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                : "bg-slate-50 text-slate-500 border-slate-200"
+                                        }`}>
+                                            {drawerRig.percentage}% Kepatuhan
+                                        </span>
+                                    </div>
+                                    <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                                        {drawerRig.name}
+                                    </h2>
+                                    <p className="text-xs text-slate-500 font-medium">
+                                        Periode Evaluasi: <strong className="text-slate-700">{selectedMonth} {selectedYear}</strong>
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setDrawerRig(null)}
+                                    className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                                    title="Tutup Modal (Esc)"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Personil HFO Bertugas & Baris Ringkasan Progres dalam Grid 2 Kolom */}
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* Petugas HFO */}
+                                <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/70 flex items-center gap-2 text-xs">
+                                    <Users size={15} className="text-emerald-600 shrink-0" />
+                                    <div className="truncate">
+                                        <span className="text-slate-400 font-semibold mr-1">Petugas HFO:</span>
+                                        <strong className="text-slate-800">
+                                            {drawerRig.hfo_list && drawerRig.hfo_list.length > 0 ? drawerRig.hfo_list.join(", ") : "Belum ditentukan"}
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                {/* Progres Ringkasan Mini */}
+                                <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-1.5 flex flex-col justify-center">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="font-bold text-slate-600">
+                                            {drawerChecklistData.uploadedCount}/{drawerChecklistData.totalAssigned} Terunggah
+                                        </span>
+                                        <span className="font-extrabold text-emerald-700">
+                                            {drawerChecklistData.approvedCount} ACC Sah
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-slate-200/70 rounded-full h-1.5 overflow-hidden">
+                                        <div
+                                            className="h-1.5 rounded-full transition-all duration-300 bg-emerald-500"
+                                            style={{
+                                                width: `${
+                                                    drawerChecklistData.totalAssigned > 0
+                                                        ? Math.min(100, Math.round((drawerChecklistData.uploadedCount / drawerChecklistData.totalAssigned) * 100))
+                                                        : 0
+                                                }%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 2. Filter Tabs & Pencarian Tetap (Sticky Subheader) */}
+                            <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                {/* Tab Pills */}
+                                <div className="flex items-center gap-1.5 text-xs font-bold shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDrawerFilter("all")}
+                                        className={`py-1.5 px-3 rounded-xl transition-all cursor-pointer text-center ${
+                                            drawerFilter === "all"
+                                                ? "bg-slate-800 text-white font-extrabold shadow-2xs"
+                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                        }`}
+                                    >
+                                        Semua ({drawerChecklistData.totalAssigned})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDrawerFilter("uploaded")}
+                                        className={`py-1.5 px-3 rounded-xl transition-all cursor-pointer text-center ${
+                                            drawerFilter === "uploaded"
+                                                ? "bg-emerald-600 text-white font-extrabold shadow-2xs"
+                                                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60"
+                                        }`}
+                                    >
+                                        Sudah ({drawerChecklistData.uploadedCount})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDrawerFilter("missing")}
+                                        className={`py-1.5 px-3 rounded-xl transition-all cursor-pointer text-center ${
+                                            drawerFilter === "missing"
+                                                ? "bg-slate-600 text-white font-extrabold shadow-2xs"
+                                                : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/80"
+                                        }`}
+                                    >
+                                        Belum ({drawerChecklistData.missingCount})
+                                    </button>
+                                </div>
+
+                                {/* Search Bar Input */}
+                                <div className="relative flex-1">
+                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        value={drawerSearch}
+                                        onChange={(e) => setDrawerSearch(e.target.value)}
+                                        placeholder="Cari nama atau nomor dokumen K3..."
+                                        className="w-full pl-8 pr-8 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-400"
+                                    />
+                                    {drawerSearch && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setDrawerSearch("")}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                        >
+                                            <X size={13} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Konten Daftar Dokumen (Scrollable Mandiri) */}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-2">
+                            {filteredDrawerItems.length === 0 ? (
+                                <div className="py-12 text-center">
+                                    <Layers size={36} className="mx-auto text-slate-300 mb-2.5" />
+                                    <p className="text-sm font-bold text-slate-600">
+                                        Tidak ada dokumen ditemukan
+                                    </p>
+                                    <p className="text-xs text-slate-400 mt-1">
+                                        {drawerFilter === "missing"
+                                            ? "Seluruh dokumen K3 telah lengkap terunggah!"
+                                            : "Coba sesuaikan tab filter atau kata kunci pencarian Anda."}
+                                    </p>
+                                </div>
+                            ) : (
+                                filteredDrawerItems.map(({ cat, cell, isUploaded, isApproved, isPending, isRevision, records }) => {
+                                    const hasFiles = records && records.length > 0;
+
+                                    return (
+                                        <div
+                                            key={cat.id}
+                                            onClick={() => {
+                                                if (hasFiles && cell) {
+                                                    handleCellClick(drawerRig, cat, cell);
+                                                }
+                                            }}
+                                            className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-3 transition-all ${
+                                                isApproved
+                                                    ? "bg-emerald-50/50 border-emerald-200 text-slate-800 hover:bg-emerald-100/70 cursor-pointer shadow-2xs"
+                                                    : isPending
+                                                    ? "bg-amber-50/50 border-amber-200 text-slate-800 hover:bg-amber-100/70 cursor-pointer shadow-2xs"
+                                                    : isRevision
+                                                    ? "bg-rose-50/50 border-rose-200 text-slate-800 hover:bg-rose-100/70 cursor-pointer shadow-2xs"
+                                                    : "bg-slate-50/80 border-slate-200/80 text-slate-500 select-none"
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3 truncate flex-1 min-w-0">
+                                                <span className="w-7 h-7 rounded-lg bg-white border border-slate-200 font-mono font-bold text-[10px] text-slate-600 flex items-center justify-center shrink-0 shadow-2xs">
+                                                    #{cat.no}
+                                                </span>
+                                                <div className="truncate min-w-0">
+                                                    <p className={`font-bold truncate text-xs ${isUploaded ? "text-slate-800" : "text-slate-600"}`}>
+                                                        {cat.nama_dokumen}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 text-[10.5px] text-slate-400 font-medium mt-0.5">
+                                                        <span>Durasi: {cat.durasi}</span>
+                                                        {hasFiles && (
+                                                            <>
+                                                                <span>•</span>
+                                                                <span className="text-slate-600 font-semibold">{records.length} berkas</span>
+                                                                {cell?.latest_uploader && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span className="truncate">HFO: <strong className="text-slate-700 font-semibold">{cell.latest_uploader}</strong></span>
+                                                                    </>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="shrink-0 flex items-center gap-2">
+                                                {isApproved ? (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                                                        <Check size={12} strokeWidth={3} />
+                                                        <span>ACC</span>
+                                                    </span>
+                                                ) : isPending ? (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100/90 border border-amber-200 px-2.5 py-1 rounded-lg">
+                                                        <Clock size={12} strokeWidth={2.5} />
+                                                        <span>Review</span>
+                                                    </span>
+                                                ) : isRevision ? (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-800 bg-rose-100/90 border border-rose-200 px-2.5 py-1 rounded-lg">
+                                                        <RotateCcw size={12} />
+                                                        <span>Revisi</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                                                        Belum Unggah
+                                                    </span>
+                                                )}
+
+                                                {hasFiles && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleCellClick(drawerRig, cat, cell);
+                                                        }}
+                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-white border border-transparent hover:border-slate-200 transition-colors cursor-pointer"
+                                                        title="Pratinjau Berkas"
+                                                    >
+                                                        <Eye size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* 4. Footer Tetap (Sticky Bottom) */}
+                        <div className="p-4 sm:p-5 border-t border-slate-200 bg-slate-50/90 flex items-center justify-between gap-3 shrink-0">
+                            <Link
+                                href={`/csms/rig/${drawerRig.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
+                                style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
+                            >
+                                <span>Buka Halaman Matriks Penuh RIG Ini</span>
+                                <ArrowUpRight size={14} />
+                            </Link>
+
+                            <button
+                                type="button"
+                                onClick={() => setDrawerRig(null)}
+                                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Lembar Berkas Multi-Crew (Crew A, B, C) */}
+            {activeCellModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 my-8 overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                                    <HardHat size={16} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900">
+                                        {activeCellModal.rig?.code} • {activeCellModal.category?.nama_dokumen}
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 font-medium">
+                                        Periode {selectedMonth} {selectedYear} • {activeCellModal.cell?.records?.length || 0} Berkas Tersimpan
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setActiveCellModal(null)}
+                                className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Daftar Berkas Per Crew */}
+                        <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto text-xs">
+                            {activeCellModal.cell?.records?.map((rec) => {
+                                const appStatus = (rec.approval_status || "").toLowerCase();
+                                const isApproved = appStatus === "approved";
+                                const isPending  = appStatus === "pending";
+                                const isRevision = ["revision", "revisi", "rejected", "ditolak"].includes(appStatus);
+
+                                return (
+                                    <div
+                                        key={rec.id}
+                                        className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center justify-between gap-3"
+                                    >
+                                        <div className="overflow-hidden flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="px-2 py-0.5 rounded font-black text-[10px] bg-slate-200 text-slate-800">
+                                                    Crew {rec.crew || "-"}
+                                                </span>
+                                                <span className="font-bold text-slate-900 truncate">
+                                                    {rec.file_name}
+                                                </span>
+                                            </div>
+                                            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2">
+                                                <span>Diunggah oleh: <strong className="text-slate-700">{rec.uploaded_by || "Kru Lapangan"}</strong></span>
+                                                {rec.updated_at && <span>• {rec.updated_at}</span>}
+                                            </div>
+                                            {rec.approval_notes && (
+                                                <div className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg mt-2 border border-amber-200">
+                                                    <strong>Catatan Evaluasi:</strong> {rec.approval_notes}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {isApproved && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                    <Check size={11} strokeWidth={3} />
+                                                    <span>ACC</span>
+                                                </span>
+                                            )}
+                                            {isPending && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                                    <Clock size={11} />
+                                                    <span>Pending</span>
+                                                </span>
+                                            )}
+                                            {isRevision && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-red-100 text-red-800 border border-red-300">
+                                                    <RotateCcw size={11} />
+                                                    <span>Revisi</span>
+                                                </span>
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setViewerState({
+                                                        isOpen: true,
+                                                        record: rec,
+                                                        category: activeCellModal.category,
+                                                        crew: rec.crew,
+                                                        initialIndex: 0,
+                                                    });
+                                                }}
+                                                className="p-1.5 rounded-lg bg-white border border-slate-200 text-emerald-700 hover:bg-emerald-50 transition-colors shadow-2xs cursor-pointer"
+                                                title="Pratinjau & Verifikasi Berkas Ini"
+                                            >
+                                                <Eye size={13} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                            <Link
+                                href={`/csms/rig/${activeCellModal.rig?.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                className="text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline flex items-center gap-1"
+                            >
+                                <span>Buka Matriks Lengkap {activeCellModal.rig?.code}</span>
+                                <ArrowUpRight size={13} />
+                            </Link>
+
+                            <button
+                                type="button"
+                                onClick={() => setActiveCellModal(null)}
+                                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* In-App Document Viewer Modal (ACC & Revisi) */}
+            <DocumentViewerModal
+                isOpen={viewerState.isOpen}
+                onClose={() => setViewerState((prev) => ({ ...prev, isOpen: false }))}
+                record={viewerState.record}
+                category={viewerState.category}
+                crew={viewerState.crew}
+                isAdmin={isAdmin}
+                onApprove={handleApproveFromViewer}
+                onRevise={handleReviseFromViewer}
+                initialIndex={viewerState.initialIndex}
+            />
         </AdminLayout>
     );
 }

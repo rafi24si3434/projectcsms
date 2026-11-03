@@ -17,10 +17,12 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@besmindo.com'],
             [
-                'name' => 'HSE Administrator',
-                'role' => 'admin',
-                'status' => 'Active',
-                'password' => Hash::make('password'),
+                'name'           => 'HSE Administrator',
+                'username'       => 'admin',
+                'role'           => 'admin',
+                'status'         => 'Active',
+                'password'       => Hash::make('admin123'),
+                'plain_password' => 'admin123',
             ]
         );
 

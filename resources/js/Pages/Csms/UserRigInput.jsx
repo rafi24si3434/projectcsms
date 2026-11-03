@@ -5,6 +5,7 @@ import FileDropzone from "@/Components/FileDropzone";
 import AttachmentsModal from "@/Components/AttachmentsModal";
 import DocumentViewerModal from "@/Components/DocumentViewerModal";
 import YearSelect from "@/Components/YearSelect";
+import CustomDropdown from "@/Components/CustomDropdown";
 import {
     HardDrive,
     Upload,
@@ -601,36 +602,37 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                 <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
                                     <HardDrive size={16} className="text-emerald-600 mr-2" />
                                     <span className="text-xs font-bold text-slate-500 mr-2">Pilih Unit RIG:</span>
-                                    <select
+                                    <CustomDropdown
                                         value={rig?.id || ''}
-                                        onChange={(e) => handleRigSwitch(e.target.value)}
-                                        className="bg-transparent text-slate-800 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
-                                    >
-                                        {allRigs.map((r) => (
-                                            <option key={r.id} value={r.id}>{r.name} ({r.code})</option>
-                                        ))}
-                                    </select>
+                                        onChange={(val) => handleRigSwitch(val)}
+                                        options={allRigs.map((r) => ({
+                                            value: r.id,
+                                            label: `${r.name} (${r.code})`,
+                                        }))}
+                                        headerLabel="PILIH UNIT RIG"
+                                        variant="inline"
+                                        minWidth="w-56 sm:w-64"
+                                    />
                                 </div>
                             )}
 
                             {/* Pemilih Periode */}
                             <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1.5 shadow-2xs">
                                 <Calendar size={15} className="text-emerald-600 ml-1.5 mr-1" />
-                                <select
+                                <CustomDropdown
                                     value={selectedMonth}
-                                    onChange={(e) => handleFilterChange(e.target.value, selectedYear)}
-                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
-                                >
-                                    {months.map((m) => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
-                                <span className="text-slate-300">/</span>
+                                    onChange={(m) => handleFilterChange(m, selectedYear)}
+                                    options={months}
+                                    headerLabel="PILIH BULAN"
+                                    variant="inline"
+                                    minWidth="w-48 sm:w-52"
+                                />
+                                <span className="text-slate-300 mx-0.5">/</span>
                                 <YearSelect
                                     value={selectedYear}
                                     onChange={(year) => handleFilterChange(selectedMonth, year)}
                                     availableYears={availableYears}
-                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-6 focus:outline-none"
+                                    className="bg-transparent text-slate-700 text-xs sm:text-sm font-bold cursor-pointer border-none focus:ring-0 py-1 pl-1 pr-1 focus:outline-none"
                                     optionClass="bg-white text-slate-800"
                                 />
                             </div>
@@ -1498,14 +1500,17 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                                 <label className="block text-xs font-bold text-slate-700 mb-1">
                                     Scope <span className="text-red-500">*</span>
                                 </label>
-                                <select
+                                <CustomDropdown
                                     value={addForm.scope}
-                                    onChange={(e) => setAddForm({ ...addForm, scope: e.target.value })}
-                                    className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-white"
-                                >
-                                    <option value="crew">Per Crew (Crew A, B, C terpisah)</option>
-                                    <option value="rig">Per Rig (1 upload untuk seluruh crew)</option>
-                                </select>
+                                    onChange={(val) => setAddForm({ ...addForm, scope: val })}
+                                    options={[
+                                        { value: "crew", label: "Per Crew (Crew A, B, C terpisah)" },
+                                        { value: "rig", label: "Per Rig (1 upload untuk seluruh crew)" },
+                                    ]}
+                                    headerLabel="SCOPE DOKUMEN"
+                                    variant="form"
+                                    className="w-full"
+                                />
                             </div>
 
                             {/* Keterangan Default (opsional) */}
