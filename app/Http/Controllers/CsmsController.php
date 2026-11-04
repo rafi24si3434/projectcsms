@@ -459,7 +459,26 @@ class CsmsController extends Controller
         $bulan = $request->query('bulan', 'Januari');
         $tahun = self::resolveActiveYear($request->query('tahun') ? (int)$request->query('tahun') : null);
         $availableYears = self::getAvailableYears();
-        $hfoStats = self::buildHfoActivityStats($bulan, $tahun);
+
+        $startDate = $request->query('start_date');
+        $endDate   = $request->query('end_date');
+
+        // Validasi & Default Rentang Tanggal (Default 30 hari terakhir s/d hari ini)
+        if (!$startDate || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+            $startDate = now()->subDays(30)->toDateString();
+        }
+        if (!$endDate || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+            $endDate = now()->toDateString();
+        }
+
+        // Normalisasi jika start_date lebih besar dari end_date
+        if ($startDate > $endDate) {
+            $tmp = $startDate;
+            $startDate = $endDate;
+            $endDate = $tmp;
+        }
+
+        $hfoStats = self::buildHfoActivityStats($startDate, $endDate, $bulan, $tahun);
 
         $rigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
         $categories = CsmsDocumentCategory::orderBy('no')->get();
@@ -472,8 +491,10 @@ class CsmsController extends Controller
             'categories'     => $matrixBundle['formattedCategories'],
             'availableYears' => $availableYears,
             'filter'         => [
-                'bulan' => $bulan,
-                'tahun' => $tahun,
+                'bulan'      => $bulan,
+                'tahun'      => $tahun,
+                'start_date' => $startDate,
+                'end_date'   => $endDate,
             ],
             'activeTab'      => $request->query('tab', 'hfo'),
         ]);
@@ -489,9 +510,21 @@ class CsmsController extends Controller
 
     /**
      * Hitung statistik dan agregasi keaktifan personil HFO pengunggah berkas K3.
+     * Mendukung filter rentang tanggal (start_date s/d end_date) maupun periode bulan/tahun.
      */
-    public static function buildHfoActivityStats(?string $bulan = null, ?int $tahun = null): array
+    public static function buildHfoActivityStats($param1 = null, $param2 = null, ?string $bulan = null, ?int $tahun = null): array
     {
+        $startDate = null;
+        $endDate   = null;
+
+        if (is_string($param1) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $param1)) {
+            $startDate = $param1;
+            $endDate   = (is_string($param2) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $param2)) ? $param2 : now()->toDateString();
+        } elseif (is_string($param1)) {
+            $bulan = $param1;
+            $tahun = is_numeric($param2) ? (int)$param2 : $tahun;
+        }
+
         $activeRigs = CsmsRig::where('status', 'active')->orderBy('id')->get();
 
         // 1. Kumpulkan seluruh master HFO dari rig aktif
@@ -512,10 +545,21 @@ class CsmsController extends Controller
         }
 
         // 2. Query data csms_records yang memiliki uploaded_by
-        $records = CsmsRecord::with(['category', 'rig'])
-            ->whereNotNull('uploaded_by')
-            ->orderBy('updated_at', 'desc')
-            ->get();
+        $recordQuery = CsmsRecord::with(['category', 'rig'])
+            ->whereNotNull('uploaded_by');
+
+        // Filter rentang tanggal berdasarkan created_at rekaman K3
+        if ($startDate && $endDate) {
+            $recordQuery->whereBetween('created_at', [
+                $startDate . ' 00:00:00',
+                $endDate . ' 23:59:59'
+            ]);
+        } elseif ($bulan && $tahun) {
+            $recordQuery->where('periode_bulan', $bulan)
+                        ->where('periode_tahun', $tahun);
+        }
+
+        $records = $recordQuery->orderBy('created_at', 'desc')->get();
 
         $hfoAgg = [];
         foreach ($hfoMaster as $name => $meta) {
@@ -566,10 +610,7 @@ class CsmsController extends Controller
             }
 
             $hfoAgg[$uploader]['total_uploaded']++;
-            
-            if ($bulan && $tahun && $r->periode_bulan === $bulan && (int)$r->periode_tahun === (int)$tahun) {
-                $hfoAgg[$uploader]['period_uploaded']++;
-            }
+            $hfoAgg[$uploader]['period_uploaded']++;
 
             $appStatus = strtolower($r->approval_status ?? 'pending');
             if (in_array($appStatus, ['approved', 'acc', 'sah'])) {
@@ -582,15 +623,16 @@ class CsmsController extends Controller
                 $hfoAgg[$uploader]['pending_count']++;
             }
 
-            if (!$hfoAgg[$uploader]['last_activity_raw'] && $r->updated_at) {
-                $hfoAgg[$uploader]['last_activity_raw'] = $r->updated_at->toISOString();
-                $m = (int)$r->updated_at->format('n');
-                $hfoAgg[$uploader]['last_activity_date'] = $r->updated_at->format('d') . ' ' . ($monthsIndo[$m] ?? '') . ' ' . $r->updated_at->format('Y, H:i');
+            $actTime = $r->created_at ?? $r->updated_at;
+            if (!$hfoAgg[$uploader]['last_activity_raw'] && $actTime) {
+                $hfoAgg[$uploader]['last_activity_raw'] = $actTime->toISOString();
+                $m = (int)$actTime->format('n');
+                $hfoAgg[$uploader]['last_activity_date'] = $actTime->format('d') . ' ' . ($monthsIndo[$m] ?? '') . ' ' . $actTime->format('Y, H:i');
                 $hfoAgg[$uploader]['last_activity_doc'] = $r->category ? $r->category->nama_dokumen : $r->file_name;
             }
         }
 
-        // Tentukan status keaktifan
+        // Tentukan status keaktifan berdasarkan performa rentang tanggal yang dipilih
         $sangatAktifCount = 0;
         $cukupAktifCount = 0;
         $belumAktifCount = 0;
@@ -620,7 +662,7 @@ class CsmsController extends Controller
             return $item;
         })->values()->all();
 
-        // 4. Low Activity (unggah 0 atau terendah)
+        // 4. Low Activity (unggah 0 atau terendah pada rentang tanggal tersebut)
         $lowActivity = $sortedDesc->filter(fn($x) => $x['total_uploaded'] === 0)->take(5)->values()->all();
         if (count($lowActivity) < 5) {
             $lowActivity = collect($hfoAgg)->sortBy('total_uploaded')->take(5)->values()->all();
@@ -637,6 +679,8 @@ class CsmsController extends Controller
             'moderate_count' => $cukupAktifCount,
             'inactive_count' => $belumAktifCount,
             'total_uploads'  => $totalUploads,
+            'start_date'     => $startDate,
+            'end_date'       => $endDate,
         ];
     }
     public function verificationIndex(Request $request): Response
@@ -1380,14 +1424,30 @@ class CsmsController extends Controller
 
         $archivedRigs = CsmsRig::where('status', 'archived')
             ->withCount('records')
+            ->withCount(['records as approved_records_count' => function ($query) {
+                $query->whereIn('approval_status', ['approved', 'acc', 'sah']);
+            }])
             ->orderBy('id')
             ->get();
 
         $totalArchivedRecords = CsmsRecord::whereIn('csms_rig_id', $archivedRigs->pluck('id'))->count();
+        $totalApprovedRecords = CsmsRecord::whereIn('csms_rig_id', $archivedRigs->pluck('id'))
+            ->whereIn('approval_status', ['approved', 'acc', 'sah'])->count();
+
+        // Rata-rata persentase kepatuhan rig sebelum diarsipkan (target 22 kategori dokumen wajib)
+        $avgCompliance = 0;
+        if ($archivedRigs->count() > 0) {
+            $totalTarget = $archivedRigs->count() * 22;
+            $avgCompliance = $totalTarget > 0 ? round(($totalApprovedRecords / $totalTarget) * 100) : 0;
+            if ($avgCompliance == 0 && $totalArchivedRecords > 0) {
+                $avgCompliance = min(100, round(($totalArchivedRecords / $totalTarget) * 100));
+            }
+        }
 
         return \Inertia\Inertia::render('Admin/ArchivedRigs', [
             'archivedRigs'         => $archivedRigs,
             'totalArchivedRecords' => $totalArchivedRecords,
+            'avgCompliance'        => $avgCompliance,
         ]);
     }
 

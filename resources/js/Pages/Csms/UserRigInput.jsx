@@ -524,15 +524,6 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
         <AdminLayout>
             <Head title={`Form Input CSMS - ${rig?.name || 'RIG'}`} />
 
-            {/* SAFETY HAZARD ACCENT STRIPE */}
-            <div
-                className="w-full h-1.5 shrink-0"
-                style={{
-                    background:
-                        "repeating-linear-gradient(45deg, #f59e0b, #f59e0b 16px, #1e293b 16px, #1e293b 32px)",
-                }}
-            />
-
             <div className="p-4 sm:p-6 lg:p-8 max-w-[1560px] mx-auto space-y-7 font-sans bg-[#f8fafc] text-slate-800">
                 
                 {/* ═══════════════════════════════════════════════════════════════

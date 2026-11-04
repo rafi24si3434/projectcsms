@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\CsmsRig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -71,7 +72,9 @@ class AuthController extends Controller
 
     /**
      * Proses autentikasi login.
-     * Menolak akun Pending dan Inactive dengan pesan yang jelas.
+     * Mendukung 2 jalur login terpisah:
+     * 1. HSE Crew: Kode Unit RIG + Validasi Nama HFO Resmi + PIN/Password Unit
+     * 2. HSE Admin: Username/Email + Password Admin
      */
     public function login(Request $request)
     {
@@ -81,39 +84,157 @@ class AuthController extends Controller
             'role'     => ['nullable', 'string', 'in:admin,user,officer,crew'],
             'hfo_name' => ['nullable', 'string', 'max:255'],
         ], [
-            'email.required'    => 'Username atau email wajib diisi.',
-            'password.required' => 'Password wajib diisi.',
+            'email.required'    => 'Username atau Kode Unit RIG wajib diisi.',
+            'password.required' => 'Password atau PIN akses wajib diisi.',
         ]);
 
         $inputLogin = trim($validated['email']);
-        $password = $validated['password'];
+        $password   = $validated['password'];
+        $role       = strtolower($validated['role'] ?? 'admin');
+        $isCrew     = in_array($role, ['user', 'crew', 'officer']);
 
-        // 1. Cek user berdasarkan username (misal 'admin') ATAU email (misal 'admin@besmindo.com')
+        // ══════════════════════════════════════════════════════════════════════
+        // JALUR 1: LOGIN HSE CREW (Otentikasi Unit RIG + Verifikasi Petugas HFO)
+        // ══════════════════════════════════════════════════════════════════════
+        if ($isCrew) {
+            $inputHfo = trim($validated['hfo_name'] ?? '');
+
+            if (empty($inputHfo)) {
+                return back()->withErrors([
+                    'hfo_name' => 'Nama lengkap petugas HFO atau ID petugas wajib diisi.',
+                ])->onlyInput('email', 'role');
+            }
+
+            // 1. Cari Unit RIG berdasarkan Kode RIG (Case-Insensitive & Fleksibel)
+            // Mendukung: "BMS-02", "BMS 02", "bms02", "bms-02", "BMS02", "bms2", "RIG BMS 02", "bms02@besmindo.com"
+            $rawCode   = trim($inputLogin);
+            $cleanCode = trim(preg_replace('/^RIG\s+/i', '', $rawCode));
+            $codeOnly  = explode('@', $cleanCode)[0];
+            $cleanNorm = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($codeOnly));
+
+            $rig = CsmsRig::where(function ($query) use ($rawCode, $cleanCode) {
+                $query->where('code', $rawCode)
+                      ->orWhere('code', str_replace('-', ' ', $cleanCode))
+                      ->orWhere('code', str_replace(' ', '-', $cleanCode))
+                      ->orWhere('name', 'like', "%{$cleanCode}%");
+            })->first();
+
+            if (!$rig && str_starts_with($cleanNorm, 'bms')) {
+                $suffix = substr($cleanNorm, 3);
+                if (is_numeric($suffix) && strlen($suffix) === 1) {
+                    $suffix = '0' . $suffix;
+                }
+                $rig = CsmsRig::where('code', 'BMS ' . strtoupper($suffix))
+                    ->orWhere('code', 'BMS-' . strtoupper($suffix))
+                    ->first();
+            }
+
+            if (!$rig) {
+                return back()->withErrors([
+                    'email' => "Unit RIG dengan kode '{$inputLogin}' tidak ditemukan di sistem. Pastikan format kode sesuai (cth: BMS-02).",
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+
+            // 2. Cek Status RIG (Arsip / Nonaktif)
+            if (strtolower($rig->status) === 'archived') {
+                return back()->withErrors([
+                    'email' => "📦 Unit RIG ({$rig->name}) saat ini telah diarsipkan dan tidak aktif.",
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+
+            // 3. Verifikasi Nama Petugas HFO Terhadap Daftar Resmi RIG Tersebut
+            $hfoList = $rig->hfo_list;
+            if (empty($hfoList)) {
+                return back()->withErrors([
+                    'hfo_name' => "Unit RIG {$rig->name} ({$rig->code}) saat ini belum memiliki daftar petugas HFO resmi yang ditugaskan.",
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+
+            // Pencocokan HFO case-insensitive & toleran karakter (spasi, titik, huruf besar/kecil)
+            $cleanInputHfo = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($inputHfo));
+            $matchedHfo = null;
+
+            foreach ($hfoList as $officer) {
+                $cleanOfficer = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($officer));
+                if ($cleanOfficer === $cleanInputHfo || strcasecmp(trim($officer), $inputHfo) === 0) {
+                    $matchedHfo = $officer; // Ambil nama resmi kanonikal dari database
+                    break;
+                }
+            }
+
+            if (!$matchedHfo) {
+                return back()->withErrors([
+                    'hfo_name' => "Petugas '{$inputHfo}' tidak terdaftar sebagai HFO resmi di unit {$rig->name}. Harap periksa kembali nama lengkap Anda.",
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+
+            // 4. Cari Akun Pengguna yang Tertaut ke Unit RIG Ini
+            $user = User::where('csms_rig_id', $rig->id)->first();
+            if (!$user) {
+                $cleanSuffix = strtolower(str_replace(['BMS ', 'BMS-'], '', $rig->code));
+                $user = User::where('email', "bms{$cleanSuffix}@besmindo.com")->first();
+            }
+
+            if (!$user) {
+                return back()->withErrors([
+                    'email' => "Akun sistem untuk unit {$rig->name} belum dikonfigurasi. Hubungi HSE Admin.",
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+
+            // 5. Verifikasi PIN / Password Akses Unit RIG
+            $passwordValid = Hash::check($password, $user->password)
+                || ($user->plain_password && $password === $user->plain_password);
+
+            if (!$passwordValid) {
+                return back()->withErrors([
+                    'password' => 'PIN / Password akses yang Anda masukkan untuk unit RIG ini tidak sesuai.',
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+
+            // 6. Cek Status Akun Pengguna (Pending, Inactive, Rejected)
+            $status = strtolower($user->status ?? 'active');
+            if ($status === 'pending') {
+                return back()->withErrors([
+                    'email' => '⏳ Akun unit RIG ini masih menunggu persetujuan aktivasi dari HSE Admin.',
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+            if ($status === 'rejected') {
+                return back()->withErrors([
+                    'email' => '❌ Akun unit RIG ini telah ditolak oleh HSE Admin.',
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+            if ($status === 'inactive') {
+                return back()->withErrors([
+                    'email' => '🚫 Akun unit RIG ini telah dinonaktifkan. Silakan hubungi HSE Admin untuk aktivasi.',
+                ])->onlyInput('email', 'hfo_name', 'role');
+            }
+
+            // 7. Berhasil Login → Simpan Sesi Petugas HFO & Masuk ke Halaman Input Rig
+            Auth::login($user, $request->boolean('remember'));
+            $request->session()->regenerate();
+
+            $request->session()->put('hfo_name', $matchedHfo);
+            $request->session()->put('logged_hfo_name', $matchedHfo);
+
+            return redirect()->intended(route('csms.user-rig-input', ['rig_id' => $user->csms_rig_id ?? $rig->id]));
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // JALUR 2: LOGIN HSE ADMIN
+        // ══════════════════════════════════════════════════════════════════════
         $user = User::where(function ($query) use ($inputLogin) {
             $query->where('username', strtolower($inputLogin))
                   ->orWhere('email', strtolower($inputLogin));
         })->first();
 
-        // 2. Fallback khusus jika input adalah 'admin'
+        // Fallback khusus jika input adalah 'admin'
         if (!$user && strtolower($inputLogin) === 'admin') {
             $user = User::where('role', 'admin')->first()
                  ?? User::where('email', 'admin@besmindo.com')->first();
         }
 
-        // 3. Fallback shortcut format kru (misal 'bms1' -> 'bms01@besmindo.com')
-        if (!$user && !str_contains($inputLogin, '@')) {
-            $lower = strtolower($inputLogin);
-            if (str_starts_with($lower, 'bms')) {
-                $suffix = substr($lower, 3);
-                if (is_numeric($suffix) && strlen($suffix) === 1) {
-                    $suffix = '0' . $suffix;
-                }
-                $user = User::where('email', "bms{$suffix}@besmindo.com")->first();
-            }
-        }
-
         if ($user) {
-            // Verifikasi password terlebih dahulu (dengan toleransi spasi untuk akun Admin: 'admin123' maupun 'admin 123')
+            // Verifikasi password admin (dengan toleransi spasi: 'admin123' maupun 'admin 123')
             $passwordValid = Hash::check($password, $user->password);
             if (!$passwordValid && $user->role === 'admin') {
                 $cleanInput = strtolower(str_replace(' ', '', $password));
@@ -130,47 +251,26 @@ class AuthController extends Controller
 
             $status = strtolower($user->status ?? 'active');
 
-            // ── STATUS: PENDING ──────────────────────────────────────────────
             if ($status === 'pending') {
                 return back()->withErrors([
-                    'email' => '⏳ Akun Anda masih menunggu persetujuan HSE Admin. Silakan hubungi Admin untuk aktivasi.',
+                    'email' => '⏳ Akun Anda masih menunggu persetujuan HSE Admin.',
                 ])->onlyInput('email');
             }
 
-            // ── STATUS: REJECTED ─────────────────────────────────────────────
             if ($status === 'rejected') {
-                $reason = $user->rejection_reason
-                    ? " Alasan: {$user->rejection_reason}"
-                    : '';
                 return back()->withErrors([
-                    'email' => "❌ Permintaan akun Anda telah ditolak oleh HSE Admin.{$reason} Hubungi Admin untuk informasi lebih lanjut.",
+                    'email' => '❌ Permintaan akun Anda telah ditolak oleh HSE Admin.',
                 ])->onlyInput('email');
             }
 
-            // ── STATUS: INACTIVE ──────────────────────────────────────────────
             if ($status === 'inactive') {
                 return back()->withErrors([
-                    'email' => '🚫 Akun Anda telah dinonaktifkan. Silakan hubungi HSE Admin untuk mengaktifkan kembali.',
+                    'email' => '🚫 Akun Anda telah dinonaktifkan. Silakan hubungi HSE Admin.',
                 ])->onlyInput('email');
             }
 
-            // ── CEK STATUS RIG: ARSIP ────────────────────────────────────────
-            if ($user->rig && strtolower($user->rig->status) === 'archived') {
-                return back()->withErrors([
-                    'email' => '📦 Unit RIG ini (' . $user->rig->name . ') telah diarsipkan dan tidak aktif. Hubungi HSE Admin untuk informasi lebih lanjut.',
-                ])->onlyInput('email');
-            }
-
-            // ── STATUS: ACTIVE → Proses login ────────────────────────────────
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
-
-            // ── SIMPAN PETUGAS HFO KE SESSION JIKA ADA ───────────────────────
-            if (!empty($validated['hfo_name'])) {
-                $hfo = trim($validated['hfo_name']);
-                $request->session()->put('hfo_name', $hfo);
-                $request->session()->put('logged_hfo_name', $hfo);
-            }
 
             if ($user->role === 'admin') {
                 return redirect()->intended(route('admin.dashboard'));
@@ -182,9 +282,9 @@ class AuthController extends Controller
             return redirect()->intended(route('csms.dashboard'));
         }
 
-        // Akun tidak ditemukan
+        // Akun admin tidak ditemukan
         return back()->withErrors([
-            'email' => 'Username atau email tidak terdaftar di sistem.',
+            'email' => 'Akun Administrator tidak ditemukan di sistem.',
         ])->onlyInput('email');
     }
 

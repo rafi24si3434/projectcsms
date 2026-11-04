@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import AdminSidebar from "../../Components/AdminSidebar";
+import { Head } from "@inertiajs/react";
+import AdminLayout from "@/Layouts/AdminLayout";
 import {
     Settings,
     User,
@@ -149,101 +150,39 @@ export default function SettingsPage({
     };
 
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                backgroundColor: "#f4f7fb",
-                fontFamily:
-                    "'Instrument Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-                color: "#102033",
-            }}
-        >
-            <AdminSidebar />
+        <AdminLayout>
+            <Head title="Pengaturan Sistem — Portal HSE CSMS" />
 
-            <main
-                style={{
-                    marginLeft: "var(--admin-sidebar-width, 215px)",
-                    width: "calc(100% - var(--admin-sidebar-width, 215px))",
-                    transition:
-                        "margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                    minHeight: "100vh",
-                }}
-            >
-                {/* TOPBAR */}
-                <header
-                    style={{
-                        height: "64px",
-                        backgroundColor: "#ffffff",
-                        borderBottom: "1px solid #e2e8f0",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0 32px",
-                        boxSizing: "border-box",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 90,
-                    }}
-                >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div
-                            style={{
-                                width: "32px",
-                                height: "32px",
-                                borderRadius: "8px",
-                                backgroundColor: "#ecfdf5",
-                                border: "1px solid #a7f3d0",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "#059669",
-                                boxShadow: "0 0 8px rgba(16,185,129,0.2)",
-                            }}
-                        >
-                            <Settings size={18} strokeWidth={2.5} />
+            <div style={{ padding: "28px 32px 60px", maxWidth: "1280px", margin: "0 auto", fontFamily: "'Instrument Sans', -apple-system, sans-serif" }}>
+                {/* 1. PORTAL HEADER CARD (DENGAN AKSEN K3) */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative overflow-hidden mb-6">
+                    {/* Garis Aksen K3 Emerald Pekat di bagian atas card */}
+                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-2">
+                            {/* Badge Pill Atas */}
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+                                <Settings size={14} className="text-emerald-700" />
+                                <span>KONFIGURASI SISTEM &amp; KEAMANAN</span>
+                            </div>
+
+                            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+                                Pengaturan Sistem
+                            </h1>
+                            <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                                Kelola profil akun admin, pembaruan kata sandi keamanan, dan pantau status koneksi server aplikasi.
+                            </p>
                         </div>
-                        <span
-                            style={{
-                                fontSize: "16px",
-                                fontWeight: "800",
-                                color: "#0f172a",
-                                letterSpacing: "-0.01em",
-                            }}
-                        >
-                            Pengaturan & Konfigurasi Sistem
-                        </span>
-                    </div>
 
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "4px 12px",
-                            borderRadius: "20px",
-                            backgroundColor: "#ecfdf5",
-                            border: "1px solid #a7f3d0",
-                            color: "#065f46",
-                            fontSize: "12px",
-                            fontWeight: "700",
-                        }}
-                    >
-                        <span
-                            style={{
-                                width: "8px",
-                                height: "8px",
-                                borderRadius: "50%",
-                                backgroundColor: "#10b981",
-                                boxShadow: "0 0 6px #10b981",
-                            }}
-                        />
-                        Server Online
+                        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shrink-0">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>Server Online &amp; Terhubung</span>
+                        </div>
                     </div>
-                </header>
+                </div>
 
-                {/* PAGE BODY */}
-                <div style={{ padding: "28px 32px 60px", maxWidth: "1200px", margin: "0 auto" }}>
-                    {/* NOTIFICATION BANNER */}
+                {/* NOTIFICATION BANNER */}
                     {notification.text && (
                         <div
                             style={{
@@ -608,8 +547,7 @@ export default function SettingsPage({
                         </div>
                     )}
                 </div>
-            </main>
-        </div>
+        </AdminLayout>
     );
 }
 

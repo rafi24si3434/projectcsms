@@ -4,6 +4,7 @@ import AdminLayout from "@/Layouts/AdminLayout";
 import DocumentViewerModal from "@/Components/DocumentViewerModal";
 import YearSelect from "@/Components/YearSelect";
 import CustomDropdown from "@/Components/CustomDropdown";
+import CustomDateRangePicker, { formatDateDisplay } from "@/Components/CustomDateRangePicker";
 import {
     Activity,
     Award,
@@ -37,6 +38,8 @@ import {
     BarChart3,
     Table,
     ChevronUp,
+    Calendar,
+    ArrowRight,
 } from "lucide-react";
 
 export default function ComplianceOverview({
@@ -55,6 +58,25 @@ export default function ComplianceOverview({
 
     const [selectedMonth, setSelectedMonth] = useState(filter.bulan || "Januari");
     const [selectedYear, setSelectedYear] = useState(filter.tahun || new Date().getFullYear());
+
+    // Helper default tanggal rentang (30 hari terakhir s/d hari ini)
+    const getDefaultStartDate = () => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        return d.toISOString().split("T")[0];
+    };
+    const getDefaultEndDate = () => {
+        return new Date().toISOString().split("T")[0];
+    };
+
+    const [startDate, setStartDate] = useState(filter.start_date || getDefaultStartDate());
+    const [endDate, setEndDate] = useState(filter.end_date || getDefaultEndDate());
+
+    useEffect(() => {
+        if (filter.start_date) setStartDate(filter.start_date);
+        if (filter.end_date) setEndDate(filter.end_date);
+    }, [filter.start_date, filter.end_date]);
+
     const [searchRig, setSearchRig] = useState("");
     const [statusFilter, setStatusFilter] = useState("all"); // 'all' | 'perfect' | 'high' | 'attention'
 
@@ -199,9 +221,51 @@ export default function ComplianceOverview({
             : "/admin/csms/compliance";
         router.get(
             targetPath,
-            { bulan: month, tahun: year, tab: currentTab },
+            { bulan: month, tahun: year, tab: currentTab, start_date: startDate, end_date: endDate },
             { preserveState: true, preserveScroll: true }
         );
+    };
+
+    // Handler perubahan filter rentang tanggal (Date Range Filter)
+    const applyDateFilter = (startVal, endVal) => {
+        if (!startVal || !endVal) return;
+        const targetPath = typeof window !== "undefined" && window.location.pathname.includes("/hfo-stats")
+            ? "/admin/csms/hfo-stats"
+            : "/admin/csms/compliance";
+
+        router.get(
+            targetPath,
+            {
+                start_date: startVal,
+                end_date: endVal,
+                tab: currentTab,
+                bulan: selectedMonth,
+                tahun: selectedYear,
+            },
+            { preserveState: true, preserveScroll: true }
+        );
+    };
+
+    const handleStartDateChange = (newStart) => {
+        setStartDate(newStart);
+        if (newStart && endDate) {
+            applyDateFilter(newStart, endDate);
+        }
+    };
+
+    const handleEndDateChange = (newEnd) => {
+        setEndDate(newEnd);
+        if (startDate && newEnd) {
+            applyDateFilter(startDate, newEnd);
+        }
+    };
+
+    const handleResetDateRange = () => {
+        const defStart = getDefaultStartDate();
+        const defEnd = getDefaultEndDate();
+        setStartDate(defStart);
+        setEndDate(defEnd);
+        applyDateFilter(defStart, defEnd);
     };
 
     // Handler Verifikasi Langsung dari Document Viewer Modal
@@ -291,78 +355,110 @@ export default function ComplianceOverview({
         <AdminLayout>
             <Head title="Rekapitulasi Kepatuhan & Matriks 20 RIG — Portal HSE CSMS" />
 
-            <div className={`p-4 sm:p-6 lg:p-8 ${currentTab === "hfo" ? "max-w-6xl" : "max-w-[1700px]"} mx-auto space-y-6 transition-all`}>
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1560px] mx-auto space-y-6 font-sans text-slate-800">
 
                 {/* ═══════════════════════════════════════════════════════════════
-                    PAGE HEADER & PERIOD CONTROLS
+                    1. PORTAL HEADER CARD - PUTIH BERSIH & BERWIBAWA (IDENTIK CSMS STORAGE)
                 ═══════════════════════════════════════════════════════════════ */}
-                <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                    <div>
-                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-[11px] font-extrabold text-emerald-800 uppercase tracking-wider mb-2">
-                            <Activity size={13} className="text-emerald-600" />
-                            <span>Rekapitulasi Terpusat • Monitoring HSE & CSMS</span>
-                        </div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                            {currentTab === "matrix"
-                                ? "Matriks Statistik & Rekap Kepatuhan RIG"
-                                : "Statistik Keaktifan Petugas HFO"}
-                        </h1>
-                        <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
-                            {currentTab === "matrix"
-                                ? "Cross-tabulation status pemenuhan dan verifikasi dokumen K3 seluruh unit RIG operasional (BMS-01 s/d BMS-21) bersanding dengan 22 kategori rekaman wajib."
-                                : "Leaderboard performa kontribusi unggahan berkas K3 personil Health & Safety Field Officer (HFO) serta audit trail keaktifan petugas di seluruh unit RIG."}
-                        </p>
-                    </div>
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative">
+                    {/* Garis Aksen K3 Emerald Pekat di bagian atas card */}
+                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
 
-                    {/* Period Switcher (Month & Year) */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
-                            <span className="text-xs font-bold text-slate-500 mr-0.5">Periode:</span>
-                            <CustomDropdown
-                                value={selectedMonth}
-                                onChange={(m) => handleFilterChange(m, selectedYear)}
-                                options={months}
-                                headerLabel="PILIH BULAN"
-                                variant="inline"
-                                minWidth="w-48 sm:w-52"
-                            />
-                            <span className="text-slate-300 mx-0.5">/</span>
-                            <YearSelect
-                                value={selectedYear}
-                                onChange={(year) => handleFilterChange(selectedMonth, year)}
-                                availableYears={availableYears}
-                            />
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        {/* Tata Letak Kiri: Judul & Subjudul */}
+                        <div className="space-y-2">
+                            {/* K3 Slogan / Pill Badge Atas */}
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider">
+                                <Activity size={13} className="text-emerald-600" />
+                                <span>REKAPITULASI TERPUSAT • MONITORING HSE & CSMS</span>
+                            </div>
+
+                            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+                                {currentTab === "matrix"
+                                    ? "Matriks Statistik & Rekap Kepatuhan RIG"
+                                    : "Statistik Keaktifan Petugas HFO"}
+                            </h1>
+                            <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                                {currentTab === "matrix"
+                                    ? "Cross-tabulation status pemenuhan dan verifikasi dokumen K3 seluruh unit RIG operasional (BMS-01 s/d BMS-21) bersanding dengan 22 kategori rekaman wajib."
+                                    : "Leaderboard performa kontribusi unggahan berkas K3 personil Health & Safety Field Officer (HFO) serta audit trail keaktifan petugas di seluruh unit RIG."}
+                            </p>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={() => handleFilterChange(selectedMonth, selectedYear)}
-                            title="Segarkan data matriks"
-                            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-all cursor-pointer shadow-2xs hover:scale-105"
-                        >
-                            <RotateCcw size={14} />
-                        </button>
+                        {/* Tata Letak Kanan: Kontrol Aksi & Filter Periode */}
+                        {currentTab === "hfo" ? (
+                            <div className="flex flex-wrap items-center gap-2.5">
+                                <CustomDateRangePicker
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                    onChange={(newStart, newEnd) => {
+                                        setStartDate(newStart);
+                                        setEndDate(newEnd);
+                                        applyDateFilter(newStart, newEnd);
+                                    }}
+                                    onReset={handleResetDateRange}
+                                    align="right"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleResetDateRange}
+                                    title="Segarkan data rentang tanggal"
+                                    className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-emerald-700 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                >
+                                    <RotateCcw size={15} />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1.5 shadow-2xs">
+                                    <span className="text-xs font-bold text-slate-500 mr-0.5">Periode:</span>
+                                    <CustomDropdown
+                                        value={selectedMonth}
+                                        onChange={(m) => handleFilterChange(m, selectedYear)}
+                                        options={months}
+                                        headerLabel="PILIH BULAN"
+                                        variant="inline"
+                                        minWidth="w-48 sm:w-52"
+                                    />
+                                    <span className="text-slate-300 mx-0.5">/</span>
+                                    <YearSelect
+                                        value={selectedYear}
+                                        onChange={(year) => handleFilterChange(selectedMonth, year)}
+                                        availableYears={availableYears}
+                                    />
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleFilterChange(selectedMonth, selectedYear)}
+                                    title="Segarkan data matriks"
+                                    className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-all cursor-pointer shadow-2xs hover:scale-105"
+                                >
+                                    <RotateCcw size={14} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════
-                    TAB NAVIGATION (HEATMAP MATRIX vs HFO ACTIVITY LEADERBOARD)
+                    2. TAB NAVIGASI SUB-MODUL (KAPSUL RAMPING & MENEMPEL RAPI)
                 ═══════════════════════════════════════════════════════════════ */}
-                <div className="flex items-center gap-2 border-b border-slate-200/90 pb-3 flex-wrap">
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-2.5 flex-wrap">
                     <button
                         type="button"
                         onClick={() => handleTabSwitch("matrix")}
-                        className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                        className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                             currentTab === "matrix"
-                                ? "bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-500/20"
+                                ? "bg-emerald-600 text-white shadow-xs"
                                 : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200"
                         }`}
                     >
-                        <Layers size={15} />
+                        <Layers size={14} />
                         <span>Matriks Kepatuhan 20 RIG</span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             currentTab === "matrix"
-                                ? "bg-emerald-700/70 text-emerald-100"
+                                ? "bg-emerald-700/80 text-emerald-100"
                                 : "bg-slate-100 text-slate-600"
                         }`}>
                             {summaryStats.total_rigs || 20} Unit RIG
@@ -372,17 +468,17 @@ export default function ComplianceOverview({
                     <button
                         type="button"
                         onClick={() => handleTabSwitch("hfo")}
-                        className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                        className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                             currentTab === "hfo"
-                                ? "bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-500/20"
+                                ? "bg-emerald-600 text-white shadow-xs"
                                 : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200"
                         }`}
                     >
-                        <Award size={15} />
+                        <Award size={14} />
                         <span>Statistik Keaktifan Petugas HFO</span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             currentTab === "hfo"
-                                ? "bg-emerald-700/70 text-emerald-100"
+                                ? "bg-emerald-700/80 text-emerald-100"
                                 : "bg-emerald-50 text-emerald-700"
                         }`}>
                             {hfoStats?.total_hfos || 0} Petugas
@@ -784,84 +880,88 @@ export default function ComplianceOverview({
                     ═══════════════════════════════════════════════════════════════ */
                     <div className="space-y-6 animate-fade-in">
 
-                        {/* ── 4 KPI SUMMARY CARDS FOR HFO ── */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* ── 4 KPI SUMMARY CARDS FOR HFO (KONSISTEN DENGAN CSMS STORAGE) ── */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
                             {/* Card 1: Total Personil HFO */}
-                            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between">
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                         Total Personil HFO
                                     </span>
-                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                                        <Users size={18} strokeWidth={2.4} />
+                                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/70 flex items-center justify-center shrink-0">
+                                        <Users size={20} className="text-emerald-700" />
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                                        {hfoStats?.total_hfos || 0} <span className="text-sm font-semibold text-slate-400">Petugas</span>
+                                    <div className="text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-1.5">
+                                        <span>{hfoStats?.total_hfos || 0}</span>
+                                        <span className="text-sm font-semibold text-slate-500">Petugas</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 mt-2 font-medium">
+                                    <p className="text-xs text-slate-400 mt-2 line-clamp-1" title="Tersebar di 20 unit RIG operasional (3 HFO per Rig)">
                                         Tersebar di 20 unit RIG operasional (3 HFO per Rig)
                                     </p>
                                 </div>
                             </div>
 
                             {/* Card 2: Total Berkas CSMS Terunggah */}
-                            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between">
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                         Total Dokumen Terunggah
                                     </span>
-                                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
-                                        <FileText size={18} strokeWidth={2.4} />
+                                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/70 flex items-center justify-center shrink-0">
+                                        <FileText size={20} className="text-blue-700" />
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                                        {hfoStats?.total_uploads || 0} <span className="text-sm font-semibold text-slate-400">Berkas</span>
+                                    <div className="text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-1.5">
+                                        <span>{hfoStats?.total_uploads || 0}</span>
+                                        <span className="text-sm font-semibold text-slate-500">Berkas</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 mt-2 font-medium">
-                                        Akumulasi seluruh rekaman K3 yang diunggah kru lapangan
+                                    <p className="text-xs text-slate-400 mt-2 line-clamp-1" title={startDate && endDate ? `Akumulasi dokumen terunggah periode ${formatDateDisplay(startDate)} s/d ${formatDateDisplay(endDate)}` : "Akumulasi seluruh rekaman K3 yang diunggah"}>
+                                        {startDate && endDate ? `Akumulasi dokumen terunggah periode ${formatDateDisplay(startDate)} s/d ${formatDateDisplay(endDate)}` : "Akumulasi seluruh rekaman K3 yang diunggah"}
                                     </p>
                                 </div>
                             </div>
 
                             {/* Card 3: Petugas Sangat Aktif */}
-                            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between">
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                         Petugas Sangat Aktif
                                     </span>
-                                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
-                                        <Flame size={18} strokeWidth={2.4} className="text-emerald-700" />
+                                    <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300/70 flex items-center justify-center shrink-0">
+                                        <Flame size={20} className="text-emerald-700" />
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="text-2xl sm:text-3xl font-black text-emerald-700 tracking-tight">
-                                        {hfoStats?.active_count || 0} <span className="text-sm font-semibold text-slate-400">Petugas</span>
+                                    <div className="text-3xl font-black text-emerald-700 tracking-tight flex items-baseline gap-1.5">
+                                        <span>{hfoStats?.active_count || 0}</span>
+                                        <span className="text-sm font-semibold text-slate-500">Petugas</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 mt-2 font-medium">
-                                        Kontribusi tinggi (mengunggah ≥ 5 berkas rekaman K3)
+                                    <p className="text-xs text-slate-400 mt-2 line-clamp-1" title="Kontribusi tinggi (mengunggah ≥ 5 berkas pada rentang ini)">
+                                        Kontribusi tinggi (mengunggah ≥ 5 berkas pada rentang ini)
                                     </p>
                                 </div>
                             </div>
 
                             {/* Card 4: Petugas Perlu Evaluasi */}
-                            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between">
+                            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                         Perlu Evaluasi (0 Berkas)
                                     </span>
-                                    <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center">
-                                        <AlertTriangle size={18} strokeWidth={2.4} />
+                                    <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/70 flex items-center justify-center shrink-0">
+                                        <AlertTriangle size={20} className="text-rose-600" />
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="text-2xl sm:text-3xl font-black text-rose-600 tracking-tight">
-                                        {hfoStats?.inactive_count || 0} <span className="text-sm font-semibold text-slate-400">Petugas</span>
+                                    <div className="text-3xl font-black text-rose-600 tracking-tight flex items-baseline gap-1.5">
+                                        <span>{hfoStats?.inactive_count || 0}</span>
+                                        <span className="text-sm font-semibold text-slate-500">Petugas</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 mt-2 font-medium">
-                                        Belum pernah mengunggah rekaman K3 (perlu follow-up)
+                                    <p className="text-xs text-slate-400 mt-2 line-clamp-1" title="Belum mengunggah rekaman K3 pada rentang tanggal ini">
+                                        Belum mengunggah rekaman K3 pada rentang tanggal ini
                                     </p>
                                 </div>
                             </div>
@@ -884,6 +984,9 @@ export default function ComplianceOverview({
                                         </h3>
                                         <p className="text-xs text-slate-400 mt-0.5">
                                             Visualisasi volume kontribusi pengunggahan dokumen K3 personil HFO
+                                            {startDate && endDate && (
+                                                <span className="font-semibold text-slate-600"> • Rentang: {formatDateDisplay(startDate)} s/d {formatDateDisplay(endDate)}</span>
+                                            )}
                                         </p>
                                     </div>
                                 </div>

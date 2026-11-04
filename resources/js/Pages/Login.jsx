@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Head, useForm } from "@inertiajs/react";
 import {
     ShieldCheck,
     Lock,
-    Mail,
     UserCheck,
     AlertCircle,
     Eye,
@@ -11,162 +10,13 @@ import {
     CheckCircle2,
     HardHat,
     ArrowRight,
-    ChevronDown,
     User,
-    Check,
+    Info,
 } from "lucide-react";
 
-/**
- * Standardize Rig Name format: "BMS 01" -> "BMS-01", "BMS 03A" -> "BMS-03A"
- */
-const formatRigName = (code, name) => {
-    const raw = (code || name || "").trim();
-    let clean = raw.replace(/^RIG\s+/i, "").trim();
-    clean = clean.replace(/^(BMS)\s*[-_]?\s*(\w+)/i, (_, p1, p2) => `${p1.toUpperCase()}-${p2.toUpperCase()}`);
-    return clean;
-};
-
-/**
- * Custom Minimalist & Modern Dropdown Component
- */
-function CustomSelect({
-    value,
-    onChange,
-    options = [],
-    placeholder = "Pilih opsi",
-    disabled = false,
-    icon: Icon,
-}) {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-        const handleKeyDown = (event) => {
-            if (event.key === "Escape") {
-                setIsOpen(false);
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
-            document.addEventListener("keydown", handleKeyDown);
-        }
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-            document.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [isOpen]);
-
-    const selectedOption = options.find((opt) =>
-        typeof opt === "object" ? String(opt.value) === String(value) : String(opt) === String(value)
-    );
-
-    const selectedLabel = selectedOption
-        ? typeof selectedOption === "object"
-            ? selectedOption.label
-            : selectedOption
-        : null;
-
-    const handleSelect = (val) => {
-        onChange(val);
-        setIsOpen(false);
-    };
-
-    return (
-        <div className="relative" ref={dropdownRef}>
-            <button
-                type="button"
-                disabled={disabled}
-                onClick={() => setIsOpen((prev) => !prev)}
-                className={`w-full pl-10 pr-9 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-all flex items-center justify-between border select-none ${
-                    disabled
-                        ? "bg-slate-100/70 border-slate-200 text-slate-400 cursor-not-allowed opacity-80"
-                        : isOpen
-                        ? "bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs cursor-pointer"
-                        : "bg-slate-50 border-slate-200 text-slate-900 hover:bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                }`}
-            >
-                {/* Left Icon */}
-                <div
-                    className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none transition-colors ${
-                        disabled ? "text-slate-300" : "text-emerald-600"
-                    }`}
-                >
-                    {Icon && <Icon className="h-4 w-4" />}
-                </div>
-
-                {/* Selected Text or Muted Placeholder */}
-                <span
-                    className={`truncate ${
-                        selectedLabel
-                            ? "font-semibold text-slate-800"
-                            : "font-normal text-slate-400"
-                    }`}
-                >
-                    {selectedLabel || placeholder}
-                </span>
-
-                {/* Chevron Down */}
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                    <ChevronDown
-                        className={`h-4 w-4 transition-transform duration-200 ${
-                            isOpen ? "rotate-180 text-emerald-600" : ""
-                        }`}
-                    />
-                </div>
-            </button>
-
-            {/* Floating Dropdown Card */}
-            {isOpen && !disabled && (
-                <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden py-1 transition-all">
-                    <div className="max-h-56 overflow-y-auto divide-y divide-slate-50 focus:outline-none">
-                        {options.length === 0 ? (
-                            <div className="px-4 py-3 text-xs text-slate-400 text-center italic">
-                                Tidak ada opsi tersedia
-                            </div>
-                        ) : (
-                            options.map((option, idx) => {
-                                const val = typeof option === "object" ? option.value : option;
-                                const lbl = typeof option === "object" ? option.label : option;
-                                const isSelected = String(val) === String(value);
-
-                                return (
-                                    <button
-                                        key={idx}
-                                        type="button"
-                                        onClick={() => handleSelect(val)}
-                                        className={`w-full px-4 py-2.5 text-xs sm:text-sm text-left flex items-center justify-between transition-colors cursor-pointer ${
-                                            isSelected
-                                                ? "bg-emerald-50 text-emerald-800 font-bold"
-                                                : "text-slate-700 font-medium hover:bg-emerald-50/70 hover:text-emerald-800"
-                                        }`}
-                                    >
-                                        <span className="truncate">{lbl}</span>
-                                        {isSelected && (
-                                            <Check className="h-4 w-4 text-emerald-600 shrink-0 ml-2" />
-                                        )}
-                                    </button>
-                                );
-                            })
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
-export default function Login({ status, activeRigs = [] }) {
+export default function Login({ status }) {
     const [activeRole, setActiveRole] = useState("admin"); // "admin" | "officer"
     const [showPassword, setShowPassword] = useState(false);
-    const [selectedRigId, setSelectedRigId] = useState("");
-    const [hfoError, setHfoError] = useState("");
 
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
@@ -178,8 +28,6 @@ export default function Login({ status, activeRigs = [] }) {
 
     const handleRoleChange = (role) => {
         setActiveRole(role);
-        setSelectedRigId("");
-        setHfoError("");
         setData((prev) => ({
             ...prev,
             email: "",
@@ -189,46 +37,8 @@ export default function Login({ status, activeRigs = [] }) {
         }));
     };
 
-    const handleRigSelect = (rigId) => {
-        setSelectedRigId(rigId);
-        setHfoError("");
-        const rig = activeRigs.find((r) => String(r.id) === String(rigId));
-        if (rig) {
-            setData((prev) => ({
-                ...prev,
-                email: rig.email,
-                hfo_name: "",
-            }));
-        } else {
-            setData((prev) => ({
-                ...prev,
-                email: "",
-                hfo_name: "",
-            }));
-        }
-    };
-
-    const selectedRig = activeRigs.find((r) => String(r.id) === String(selectedRigId));
-    const hfoOptions = selectedRig?.hfos || [];
-
-    const rigOptions = activeRigs.map((rig) => ({
-        value: rig.id,
-        label: formatRigName(rig.code, rig.name),
-    }));
-
-    const hfoDropdownOptions = hfoOptions.map((hfo) => ({
-        value: hfo,
-        label: hfo,
-    }));
-
     const submit = (e) => {
         e.preventDefault();
-        if (activeRole !== "admin") {
-            if (selectedRigId && !data.hfo_name) {
-                setHfoError("Silakan pilih petugas HFO yang sedang bertugas.");
-                return;
-            }
-        }
         post("/login", {
             onFinish: () => reset("password"),
         });
@@ -443,20 +253,29 @@ export default function Login({ status, activeRigs = [] }) {
                                 )}
                             </div>
                         ) : (
-                            /* ── HSE CREW LOGIN: CUSTOM FLOATING DROPDOWNS ── */
+                            /* ── HSE CREW LOGIN: INPUT MANUAL AMAN ── */
                             <>
-                                {/* 1. Dropdown UNIT RIG */}
+                                {/* Input 1: KODE UNIT RIG / USERNAME */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        UNIT RIG
+                                        KODE UNIT RIG / USERNAME
                                     </label>
-                                    <CustomSelect
-                                        value={selectedRigId}
-                                        onChange={(val) => handleRigSelect(val)}
-                                        options={rigOptions}
-                                        placeholder="Pilih Unit RIG"
-                                        icon={HardHat}
-                                    />
+                                    <div className="relative rounded-xl shadow-2xs">
+                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <HardHat className="h-4 w-4 text-emerald-600" />
+                                        </div>
+                                        <input
+                                            id="rig_code"
+                                            type="text"
+                                            name="email"
+                                            value={data.email}
+                                            onChange={(e) => setData("email", e.target.value)}
+                                            placeholder="Masukkan kode RIG (cth: BMS-02)"
+                                            className="block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all uppercase"
+                                            required
+                                            autoComplete="off"
+                                        />
+                                    </div>
                                     {errors.email && (
                                         <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
                                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -465,53 +284,42 @@ export default function Login({ status, activeRigs = [] }) {
                                     )}
                                 </div>
 
-                                {/* 2. Dropdown HFO (HES Field Officer) */}
+                                {/* Input 2: NAMA PETUGAS HFO / ID PETUGAS */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        HFO (HES Field Officer)
+                                        NAMA PETUGAS HFO / ID PETUGAS
                                     </label>
-                                    <CustomSelect
-                                        value={data.hfo_name}
-                                        onChange={(val) => {
-                                            setData("hfo_name", val);
-                                            if (hfoError) setHfoError("");
-                                        }}
-                                        options={hfoDropdownOptions}
-                                        placeholder={
-                                            !selectedRigId
-                                                ? "Pilih Unit RIG terlebih dahulu"
-                                                : hfoOptions.length === 0
-                                                ? "(Belum ada personil HFO terdaftar)"
-                                                : "Pilih Petugas HFO"
-                                        }
-                                        disabled={!selectedRigId || hfoOptions.length === 0}
-                                        icon={User}
-                                    />
-                                    {hfoError && (
+                                    <div className="relative rounded-xl shadow-2xs">
+                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <User className="h-4 w-4 text-emerald-600" />
+                                        </div>
+                                        <input
+                                            id="hfo_name"
+                                            type="text"
+                                            name="hfo_name"
+                                            value={data.hfo_name}
+                                            onChange={(e) => setData("hfo_name", e.target.value)}
+                                            placeholder="Masukkan nama lengkap / ID HFO"
+                                            className="block w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                            required
+                                            autoComplete="off"
+                                        />
+                                    </div>
+                                    {errors.hfo_name && (
                                         <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
                                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                            {hfoError}
-                                        </p>
-                                    )}
-                                    {data.hfo_name && (
-                                        <p className="mt-1.5 text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
-                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                            <span>
-                                                Petugas bertugas:{" "}
-                                                <strong className="text-emerald-900">{data.hfo_name}</strong>{" "}
-                                                (otomatis dicatat sebagai uploader).
-                                            </span>
+                                            {errors.hfo_name}
                                         </p>
                                     )}
                                 </div>
                             </>
                         )}
 
-                        {/* Input Password */}
+                        {/* Input 3: PIN / PASSWORD AKSES */}
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                    PASSWORD
+                                    {activeRole === "admin" ? "PASSWORD" : "PIN / PASSWORD AKSES"}
                                 </label>
                             </div>
                             <div className="relative rounded-xl shadow-2xs">
@@ -524,7 +332,7 @@ export default function Login({ status, activeRigs = [] }) {
                                     name="password"
                                     value={data.password}
                                     onChange={(e) => setData("password", e.target.value)}
-                                    placeholder="••••••••"
+                                    placeholder={activeRole === "admin" ? "••••••••" : "Masukkan PIN / Password"}
                                     className="block w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                     required
                                     autoComplete="new-password"

@@ -10,15 +10,40 @@ import {
     Download,
     RotateCcw,
     ShieldCheck,
-    AlertCircle,
     CheckCircle2,
-    HardHat,
     Layers,
-    FileSpreadsheet,
     FileText,
+    TrendingUp,
+    Calendar,
+    X,
+    Activity,
 } from "lucide-react";
 
-export default function ArchivedRigs({ archivedRigs = [], totalArchivedRecords = 0 }) {
+/**
+ * Format tanggal Indonesia: "12 Okt 2026, 14:30"
+ */
+const formatDateIndo = (dateStr) => {
+    if (!dateStr) return "-";
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        const day = String(d.getDate()).padStart(2, "0");
+        const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, "0");
+        const mins = String(d.getMinutes()).padStart(2, "0");
+        return `${day} ${month} ${year}, ${hours}:${mins}`;
+    } catch {
+        return String(dateStr);
+    }
+};
+
+export default function ArchivedRigs({
+    archivedRigs = [],
+    totalArchivedRecords = 0,
+    avgCompliance = 0,
+}) {
     const [searchQuery, setSearchQuery] = useState("");
     const [downloadRigTarget, setDownloadRigTarget] = useState(null);
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -26,6 +51,7 @@ export default function ArchivedRigs({ archivedRigs = [], totalArchivedRecords =
     const [rigToRestore, setRigToRestore] = useState(null);
     const [isRestoring, setIsRestoring] = useState(false);
 
+    // Filter daftar rig terarsip berdasarkan nama, kode BMS, atau personil HFO
     const filteredRigs = useMemo(() => {
         if (!searchQuery.trim()) return archivedRigs;
         const q = searchQuery.toLowerCase();
@@ -39,6 +65,7 @@ export default function ArchivedRigs({ archivedRigs = [], totalArchivedRecords =
         });
     }, [archivedRigs, searchQuery]);
 
+    // Handle konfirmasi pemulihan/restore status RIG ke aktif
     const handleConfirmRestore = () => {
         if (!rigToRestore) return;
         setIsRestoring(true);
@@ -62,120 +89,185 @@ export default function ArchivedRigs({ archivedRigs = [], totalArchivedRecords =
         <AdminLayout>
             <Head title="Pusat Arsip Unit RIG — CSMS PT Besmindo Materi Sewatama" />
 
-            <div className="space-y-6">
-                {/* ── HEADER BANNER ── */}
-                <div
-                    className="relative overflow-hidden rounded-2xl p-6 sm:p-7 text-white shadow-lg"
-                    style={{
-                        background: "linear-gradient(135deg, #064e3b 0%, #065f46 50%, #0f172a 100%)",
-                    }}
-                >
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-1.5">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold tracking-wider uppercase">
-                                <Archive size={14} className="text-emerald-400" />
-                                <span>Pusat Arsip &amp; Nonaktif RIG</span>
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1560px] mx-auto space-y-6 font-sans text-slate-800">
+                {/* ═══════════════════════════════════════════════════════════════
+                    1. PORTAL HEADER CARD - PUTIH BERSIH & BERWIBAWA (IDENTIK CSMS STORAGE)
+                ═══════════════════════════════════════════════════════════════ */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative">
+                    {/* Garis Aksen K3 Emerald Pekat di bagian atas card */}
+                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        {/* Sisi Kiri: Badge, Judul, dan Subjudul */}
+                        <div className="space-y-2">
+                            {/* Badge Pill Atas */}
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold uppercase tracking-wider">
+                                <Archive size={14} className="text-amber-700" />
+                                <span>PUSAT ARSIP &amp; NONAKTIF RIG</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+
+                            {/* Judul Utama */}
+                            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
                                 Pusat Arsip Unit RIG CSMS
                             </h1>
-                            <p className="text-xs sm:text-sm text-emerald-100/80 max-w-2xl font-medium leading-relaxed">
-                                Seluruh unit RIG yang dinonaktifkan atau diarsipkan. Sesuai kebijakan keselamatan kerja CSMS, seluruh berkas rekaman dokumen K3 <strong>tetap aman tersimpan utuh</strong> dan dapat ditinjau kapan saja.
+
+                            {/* Deskripsi Modul */}
+                            <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                                Seluruh unit RIG yang dinonaktifkan atau diarsipkan. Seluruh berkas rekaman dokumen K3 tetap aman tersimpan utuh dan dapat ditinjau kapan saja.
                             </p>
                         </div>
 
+                        {/* Sisi Kanan: Tombol Kembali ke CSMS Storage */}
                         <div className="flex items-center gap-3 shrink-0">
                             <Link
                                 href="/csms"
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold backdrop-blur-sm border border-white/15 transition-all shadow-xs"
+                                prefetch="mount"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs sm:text-sm font-semibold border border-slate-200 shadow-2xs transition-all"
                             >
-                                <HardDrive size={15} />
+                                <HardDrive size={16} className="text-slate-600" />
                                 <span>Kembali ke 20 RIG Aktif</span>
                             </Link>
                         </div>
                     </div>
-
-                    {/* Background Subtle Accent */}
-                    <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
                 </div>
 
-                {/* ── BENTO STATS CARDS ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
-                            <Archive size={22} />
-                        </div>
-                        <div>
-                            <div className="text-2xl font-black text-slate-800 leading-tight">
-                                {archivedRigs.length} Unit
-                            </div>
-                            <div className="text-xs font-semibold text-slate-500 mt-0.5">
+                {/* ═══════════════════════════════════════════════════════════════
+                    2. STANDARISASI GRID 4 KARTU METRIK RINGKASAN (IDENTIK CSMS STORAGE)
+                ═══════════════════════════════════════════════════════════════ */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+                    {/* Kartu 1: Total RIG Diarsipkan */}
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                 Total RIG Diarsipkan
+                            </span>
+                            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 border border-amber-200/70 flex items-center justify-center shrink-0">
+                                <Archive size={20} className="text-amber-700" />
                             </div>
+                        </div>
+                        <div>
+                            <div className="text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-1.5">
+                                <span>{archivedRigs.length}</span>
+                                <span className="text-sm font-semibold text-slate-500">Unit</span>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-2 line-clamp-1" title="Unit operasional yang dinonaktifkan sementara">
+                                Unit operasional yang dinonaktifkan sementara
+                            </p>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
-                            <FileText size={22} />
+                    {/* Kartu 2: Dokumen Tersimpan */}
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                Dokumen Tersimpan
+                            </span>
+                            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/70 flex items-center justify-center shrink-0">
+                                <FileText size={20} className="text-emerald-700" />
+                            </div>
                         </div>
                         <div>
-                            <div className="text-2xl font-black text-slate-800 leading-tight">
-                                {totalArchivedRecords} Berkas
+                            <div className="text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-1.5">
+                                <span>{totalArchivedRecords}</span>
+                                <span className="text-sm font-semibold text-slate-500">Berkas</span>
                             </div>
-                            <div className="text-xs font-semibold text-slate-500 mt-0.5">
-                                Dokumen K3 Tersimpan Aman
-                            </div>
+                            <p className="text-xs text-slate-400 mt-2 line-clamp-1" title="Seluruh arsip K3 tersimpan utuh di storage">
+                                Seluruh arsip K3 tersimpan utuh di storage
+                            </p>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200">
-                            <ShieldCheck size={22} />
+                    {/* Kartu 3: Kepatuhan Terakhir */}
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                Kepatuhan Terakhir
+                            </span>
+                            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/70 flex items-center justify-center shrink-0">
+                                <TrendingUp size={20} className="text-blue-700" />
+                            </div>
                         </div>
                         <div>
-                            <div className="text-sm font-black text-slate-800 leading-tight">
+                            <div className="text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-1.5">
+                                <span>{avgCompliance}%</span>
+                                <span className="text-sm font-semibold text-slate-500">ACC</span>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-2 line-clamp-1" title="Rata-rata pemenuhan rekaman sebelum unit diarsipkan">
+                                Rata-rata pemenuhan rekaman sebelum diarsipkan
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Kartu 4: Status Integritas */}
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                Status Integritas
+                            </span>
+                            <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300/70 flex items-center justify-center shrink-0">
+                                <ShieldCheck size={20} className="text-emerald-700" />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-xl sm:text-2xl font-black text-emerald-700 tracking-tight">
                                 Terlindungi Utuh
                             </div>
-                            <div className="text-xs font-semibold text-slate-500 mt-0.5">
-                                Berkas &amp; Audit Trail Terjaga
-                            </div>
+                            <p className="text-xs text-slate-400 mt-2 line-clamp-1" title="Audit trail dan riwayat unggahan terjaga aman">
+                                Audit trail &amp; riwayat unggahan terjaga aman
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* ── SEARCH & TABLE CONTAINER ── */}
+                {/* ═══════════════════════════════════════════════════════════════
+                    3. KONTEN TABEL DAFTAR ARSIP RIG (CARD PUTIH RAPI)
+                ═══════════════════════════════════════════════════════════════ */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                    <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    {/* Header Kontrol di Atas Tabel */}
+                    <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                        {/* Kotak Pencarian */}
                         <div className="relative flex-1 max-w-md">
                             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="Cari nama RIG, kode, atau personil HFO..."
+                                placeholder="Cari nama RIG, kode BMS, atau petugas HFO..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all"
+                                className="w-full pl-10 pr-9 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-2xs"
                             />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery("")}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                                >
+                                    <X size={13} />
+                                </button>
+                            )}
                         </div>
 
-                        <div className="text-xs font-bold text-slate-500">
-                            Menampilkan <span className="text-slate-800 font-black">{filteredRigs.length}</span> dari {archivedRigs.length} unit
+                        {/* Sisi Kanan: Keterangan Jumlah Data */}
+                        <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-xs font-semibold text-slate-500">
+                                Menampilkan <strong className="text-slate-800 font-black">{filteredRigs.length}</strong> dari {archivedRigs.length} unit diarsipkan
+                            </span>
                         </div>
                     </div>
 
+                    {/* Isi Tabel atau State Kosong */}
                     {filteredRigs.length === 0 ? (
                         <div className="p-12 text-center space-y-3">
                             <div className="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center mx-auto border border-slate-200">
                                 <Archive size={26} />
                             </div>
-                            <h3 className="font-bold text-slate-700 text-sm">
+                            <h3 className="font-bold text-slate-800 text-sm">
                                 {archivedRigs.length === 0
                                     ? "Belum ada Unit RIG yang Diarsipkan"
                                     : "Tidak ada unit RIG yang cocok dengan pencarian"}
                             </h3>
-                            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                            <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
                                 {archivedRigs.length === 0
-                                    ? "Semua 20 unit RIG saat ini berstatus aktif pada operasional CSMS lapangan."
+                                    ? "Semua unit RIG saat ini berstatus aktif pada operasional CSMS lapangan."
                                     : "Coba gunakan kata kunci pencarian nama atau kode RIG yang lain."}
                             </p>
                         </div>
@@ -183,68 +275,91 @@ export default function ArchivedRigs({ archivedRigs = [], totalArchivedRecords =
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                                        <th className="py-3.5 px-4 w-12 text-center">No</th>
-                                        <th className="py-3.5 px-4">Unit RIG</th>
-                                        <th className="py-3.5 px-4">Petugas HFO Terdaftar</th>
-                                        <th className="py-3.5 px-4 text-center">Dokumen Tersimpan</th>
-                                        <th className="py-3.5 px-4 text-center">Status</th>
-                                        <th className="py-3.5 px-4 text-center w-56">Aksi &amp; Peninjauan</th>
+                                    <tr className="bg-slate-50/90 border-b border-slate-200/90 text-slate-600 font-semibold text-xs tracking-wider uppercase">
+                                        <th className="py-3.5 px-4 w-12 text-center">NO</th>
+                                        <th className="py-3.5 px-4">UNIT RIG</th>
+                                        <th className="py-3.5 px-4">PETUGAS HFO TERAKHIR</th>
+                                        <th className="py-3.5 px-4 text-center">TOTAL DOKUMEN</th>
+                                        <th className="py-3.5 px-4 text-center">TANGGAL DIARSIPKAN</th>
+                                        <th className="py-3.5 px-4 text-center">STATUS</th>
+                                        <th className="py-3.5 px-4 text-center w-56">AKSI &amp; PENINJAUAN</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 text-xs">
+                                <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                                     {filteredRigs.map((rig, idx) => {
                                         const hfos = [rig.hfo_1, rig.hfo_2, rig.hfo_3].filter(Boolean);
                                         return (
                                             <tr key={rig.id} className="hover:bg-slate-50/70 transition-colors">
+                                                {/* Kolom 1: No */}
                                                 <td className="py-3.5 px-4 text-center font-bold text-slate-400">
                                                     {idx + 1}
                                                 </td>
+
+                                                {/* Kolom 2: Unit RIG (Nama & Badge Kode BMS) */}
                                                 <td className="py-3.5 px-4">
-                                                    <div className="font-black text-slate-800 text-sm">
-                                                        {rig.name}
-                                                    </div>
-                                                    <div className="inline-block px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono font-bold text-[10px] mt-0.5 uppercase">
-                                                        {rig.code}
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-black text-slate-800 text-sm">
+                                                            {rig.name}
+                                                        </span>
+                                                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono font-bold text-[10.5px] uppercase border border-slate-200/80">
+                                                            {rig.code}
+                                                        </span>
                                                     </div>
                                                 </td>
+
+                                                {/* Kolom 3: Petugas HFO Terakhir */}
                                                 <td className="py-3.5 px-4">
                                                     {hfos.length > 0 ? (
                                                         <div className="space-y-1">
                                                             {hfos.map((hfo, i) => (
                                                                 <div key={i} className="flex items-center gap-1.5 text-slate-700 font-medium">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                                                    <span>HFO {i + 1}: <strong>{hfo}</strong></span>
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                                                    <span className="truncate max-w-[200px]" title={hfo}>
+                                                                        {hfo}
+                                                                    </span>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-slate-400 italic font-medium">
+                                                        <span className="text-slate-400 italic text-[11.5px]">
                                                             (Belum terdaftar personil HFO)
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="py-3.5 px-4 text-center font-bold text-slate-700">
-                                                    <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono font-bold text-xs">
+
+                                                {/* Kolom 4: Total Dokumen */}
+                                                <td className="py-3.5 px-4 text-center">
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono font-bold text-xs">
                                                         {rig.records_count ?? 0} Berkas
                                                     </span>
                                                 </td>
+
+                                                {/* Kolom 5: Tanggal Diarsipkan */}
                                                 <td className="py-3.5 px-4 text-center">
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10.5px] font-black uppercase tracking-wider">
-                                                        <Archive size={11} />
-                                                        <span>Diarsipkan</span>
+                                                    <div className="inline-flex items-center gap-1.5 text-slate-600 font-medium text-xs">
+                                                        <Calendar size={13} className="text-slate-400 shrink-0" />
+                                                        <span>{formatDateIndo(rig.updated_at || rig.created_at)}</span>
+                                                    </div>
+                                                </td>
+
+                                                {/* Kolom 6: Status */}
+                                                <td className="py-3.5 px-4 text-center">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10.5px] font-black uppercase tracking-wider">
+                                                        <Archive size={11} className="text-amber-700 shrink-0" />
+                                                        <span>DIARSIPKAN</span>
                                                     </span>
                                                 </td>
+
+                                                {/* Kolom 7: Aksi */}
                                                 <td className="py-3.5 px-4 text-center">
                                                     <div className="flex items-center justify-center gap-1.5 flex-wrap">
                                                         {/* Tombol Lihat Dokumen */}
                                                         <Link
                                                             href={`/csms/rig/${rig.id}`}
-                                                            title="Buka dan periksa seluruh dokumen CSMS RIG ini"
-                                                            style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-white font-bold text-[11px] shadow-2xs hover:brightness-105 transition-all"
+                                                            title="Buka dan tinjau seluruh dokumen CSMS unit RIG ini"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white font-bold text-xs bg-emerald-600 hover:bg-emerald-700 shadow-2xs hover:shadow-xs transition-all"
                                                         >
-                                                            <Eye size={12} />
+                                                            <Eye size={13} />
                                                             <span>Lihat Dokumen</span>
                                                         </Link>
 
@@ -255,20 +370,20 @@ export default function ArchivedRigs({ archivedRigs = [], totalArchivedRecords =
                                                                 setDownloadRigTarget(rig);
                                                                 setIsDownloadModalOpen(true);
                                                             }}
-                                                            title="Unduh seluruh berkas ZIP unit rig ini"
-                                                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                                                            title="Unduh seluruh paket berkas arsip unit RIG ini (ZIP)"
+                                                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
                                                         >
-                                                            <Download size={13} />
+                                                            <Download size={14} />
                                                         </button>
 
                                                         {/* Tombol Pulihkan Unit */}
                                                         <button
                                                             type="button"
                                                             onClick={() => setRigToRestore(rig)}
-                                                            title="Pulihkan kembali unit RIG ini ke daftar aktif operasional"
+                                                            title="Pulihkan kembali unit RIG ini ke operasional aktif"
                                                             className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer"
                                                         >
-                                                            <RotateCcw size={13} />
+                                                            <RotateCcw size={14} />
                                                         </button>
                                                     </div>
                                                 </td>
@@ -328,8 +443,7 @@ export default function ArchivedRigs({ archivedRigs = [], totalArchivedRecords =
                                 type="button"
                                 disabled={isRestoring}
                                 onClick={handleConfirmRestore}
-                                style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
-                                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
+                                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-xs transition-all cursor-pointer hover:shadow-md"
                             >
                                 {isRestoring ? (
                                     <span>Memulihkan...</span>

@@ -36,6 +36,15 @@ function AdminLayoutInner({ children }) {
                     overflowX: "hidden",
                 }}
             >
+                {/* PITA GARIS KESELAMATAN K3 (SAFETY HAZARD RIBBON) */}
+                <div
+                    className="w-full h-2 shrink-0 shadow-xs"
+                    style={{
+                        background:
+                            "repeating-linear-gradient(45deg, #f59e0b, #f59e0b 16px, #1e293b 16px, #1e293b 32px)",
+                    }}
+                />
+
                 {children}
             </div>
         </div>

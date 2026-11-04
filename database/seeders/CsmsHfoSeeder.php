@@ -9,11 +9,19 @@ class CsmsHfoSeeder extends Seeder
 {
     /**
      * Seed initial HFO (Health & Safety Field Officer) personnel for each RIG.
+     * Total: 16 RIG operasional resmi dengan masing-masing 3 personil (48 personil).
      */
     public function run(): void
     {
+        // 1. Bersihkan seluruh penugasan HFO lama/dummy di semua unit RIG terlebih dahulu
+        CsmsRig::query()->update([
+            'hfo_1' => null,
+            'hfo_2' => null,
+            'hfo_3' => null,
+        ]);
+
+        // 2. Daftar resmi penugasan HFO per Unit RIG (Hanya 16 RIG aktif ini)
         $hfoData = [
-            'BMS 01'  => ['AHMAD RIZKI', 'DWI PRASETYO', 'FAJAR SIDIK'],
             'BMS 02'  => ['ANDI KURNIAWAN S', 'ROMANIK', 'M. AKBAR'],
             'BMS 03'  => ['INSANUL ARIF', 'RAHMAD S', 'RIKI HARIYONO'],
             'BMS 03A' => ['KOESTRIANDI', 'ROY SUHENDRA', 'HAVIZ SATRIA'],
@@ -33,9 +41,10 @@ class CsmsHfoSeeder extends Seeder
         ];
 
         foreach ($hfoData as $code => $officers) {
-            // Cocokkan baik 'BMS 02' maupun 'BMS-02'
+            // Cocokkan baik format 'BMS 02', 'BMS-02', maupun tanpa spasi
             $rig = CsmsRig::where('code', $code)
                 ->orWhere('code', str_replace(' ', '-', $code))
+                ->orWhere('code', str_replace('-', ' ', $code))
                 ->first();
 
             if ($rig) {

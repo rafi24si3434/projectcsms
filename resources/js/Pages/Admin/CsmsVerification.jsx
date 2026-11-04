@@ -161,15 +161,6 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
         <AdminLayout>
             <Head title="Verifikasi & ACC Dokumen CSMS - Admin HSE" />
 
-            {/* SAFETY HAZARD ACCENT STRIPE */}
-            <div
-                className="w-full h-1.5 shrink-0"
-                style={{
-                    background:
-                        "repeating-linear-gradient(45deg, #f59e0b, #f59e0b 16px, #1e293b 16px, #1e293b 32px)",
-                }}
-            />
-
             <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-7 font-sans bg-[#f8fafc] text-slate-800">
                 
                 {/* ═══════════════════════════════════════════════════════════════

@@ -157,6 +157,7 @@ class UserController extends Controller
         $user->update($updateData);
 
         // Perbarui data 3 personil HFO untuk Rig ini jika disertakan
+        $rigId = $user->csms_rig_id;
         if ($rigId && ($request->has('hfo_1') || $request->has('hfo_2') || $request->has('hfo_3'))) {
             CsmsRig::where('id', $rigId)->update([
                 'hfo_1' => $request->filled('hfo_1') ? trim($request->hfo_1) : null,
@@ -279,6 +280,7 @@ class UserController extends Controller
         $user->update($updateData);
 
         // Perbarui data 3 personil HFO untuk Rig ini jika disertakan
+        $rigId = $user->csms_rig_id;
         if ($rigId && ($request->has('hfo_1') || $request->has('hfo_2') || $request->has('hfo_3'))) {
             CsmsRig::where('id', $rigId)->update([
                 'hfo_1' => $request->filled('hfo_1') ? trim($request->hfo_1) : null,

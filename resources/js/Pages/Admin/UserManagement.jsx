@@ -605,40 +605,40 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
 
             <div style={{ padding: "28px", maxWidth: "1280px", margin: "0 auto", fontFamily: "'Instrument Sans', -apple-system, sans-serif" }}>
 
-                {/* ── PAGE HEADER ────────────────────────────────────────── */}
-                <div style={{ marginBottom: "24px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                        <div style={{
-                            width: "52px", height: "52px", borderRadius: "14px",
-                            background: "linear-gradient(135deg,#065f46,#10b981)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            boxShadow: "0 6px 20px rgba(16,185,129,0.35)",
-                        }}>
-                            <Users size={24} color="#fff" strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#0f172a", letterSpacing: "-0.02em" }}>
+                {/* ── PAGE HEADER CARD (DENGAN AKSEN K3) ────────────────────── */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs relative overflow-hidden mb-6">
+                    {/* Garis Aksen K3 Emerald Pekat di bagian atas card */}
+                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900" />
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-2">
+                            {/* Badge Pill Atas */}
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+                                <ShieldCheck size={14} className="text-emerald-700" />
+                                <span>MANAJEMEN PENGGUNA &amp; OTORISASI AKSES</span>
+                            </div>
+
+                            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
                                 User Management
                             </h1>
-                            <p style={{ margin: "3px 0 0", fontSize: "13px", color: "#64748b" }}>
-                                Kelola akun & persetujuan pengguna Portal HSE CSMS
+                            <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                                Kelola akun, hak akses role pengguna, dan persetujuan (approval) pendaftaran akun lapangan Portal HSE CSMS.
                             </p>
                         </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
+                                style={{
+                                    background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)",
+                                }}
+                            >
+                                <Plus size={17} />
+                                <span>Tambah Pengguna</span>
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        style={{
-                            display: "flex", alignItems: "center", gap: "8px",
-                            padding: "11px 20px", borderRadius: "12px", border: "none",
-                            background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)",
-                            color: "#fff", fontSize: "13px", fontWeight: "800", cursor: "pointer",
-                            boxShadow: "0 4px 14px rgba(5,150,105,0.35)",
-                            transition: "all 0.2s ease",
-                        }}
-                    >
-                        <Plus size={17} />
-                        Tambah Pengguna
-                    </button>
                 </div>
 
                 {/* ── BENTO STATS ────────────────────────────────────────── */}
