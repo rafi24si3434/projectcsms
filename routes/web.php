@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\CsmsController;
+use App\Http\Controllers\RemoteStorageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -123,6 +124,16 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     Route::get('/settings', [SettingController::class, 'index'])->name('admin.settings');
     Route::post('/settings/profile', [SettingController::class, 'updateProfile'])->name('admin.settings.profile');
     Route::post('/settings/password', [SettingController::class, 'updatePassword'])->name('admin.settings.password');
+
+    // Remote Storage (FTP & SFTP) Endpoints
+    Route::prefix('remote-storage')->name('admin.remote-storage.')->group(function () {
+        Route::get('/test', [RemoteStorageController::class, 'test'])->name('test');
+        Route::get('/files', [RemoteStorageController::class, 'index'])->name('files');
+        Route::post('/upload', [RemoteStorageController::class, 'upload'])->name('upload');
+        Route::get('/download', [RemoteStorageController::class, 'download'])->name('download');
+        Route::get('/preview', [RemoteStorageController::class, 'preview'])->name('preview');
+        Route::delete('/delete', [RemoteStorageController::class, 'destroy'])->name('delete');
+    });
 });
 
 // Fallback route untuk file storage publik (memastikan berkas selalu dapat diakses dan tidak pernah 403 Forbidden)

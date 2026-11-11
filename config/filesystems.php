@@ -60,6 +60,34 @@ return [
             'report' => false,
         ],
 
+        'ftp' => [
+            'driver' => 'ftp',
+            'host' => env('FTP_HOST', '127.0.0.1'),
+            'username' => env('FTP_USERNAME'),
+            'password' => env('FTP_PASSWORD'),
+            'port' => (int) env('FTP_PORT', 21),
+            'root' => env('FTP_ROOT', '/'),
+            'passive' => env('FTP_PASSIVE', true),
+            'ssl' => env('FTP_SSL', false),
+            'timeout' => (int) env('FTP_TIMEOUT', 30),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'sftp' => [
+            'driver' => 'sftp',
+            'host' => env('SFTP_HOST', '127.0.0.1'),
+            'username' => env('SFTP_USERNAME'),
+            'password' => env('SFTP_PASSWORD'),
+            'port' => (int) env('SFTP_PORT', 22),
+            'root' => env('SFTP_ROOT', '/'),
+            'privateKey' => env('SFTP_PRIVATE_KEY'),
+            'passphrase' => env('SFTP_PASSPHRASE'),
+            'timeout' => (int) env('SFTP_TIMEOUT', 30),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
