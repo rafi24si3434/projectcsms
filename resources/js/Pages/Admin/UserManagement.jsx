@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Head, usePage, router } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import {
@@ -431,6 +431,12 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
     const [userList, setUserList]             = useState(users);
     const [pendingBadge, setPendingBadge]     = useState(pendingCount);
 
+    // Sinkronisasi otomatis saat props 'users' atau 'pendingCount' diperbarui oleh Inertia
+    useEffect(() => {
+        setUserList(users);
+        setPendingBadge(pendingCount);
+    }, [users, pendingCount]);
+
     const addToast = (message, type = "success") => {
         const id = Date.now();
         setToasts(prev => [...prev, { id, message, type }]);
@@ -472,6 +478,7 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
             onSuccess: (page) => {
                 if (onSuccess) onSuccess(page);
                 setProcessing(false);
+                router.reload({ preserveScroll: true });
             },
             onError: (errs) => {
                 setModalErrors(errs || {});
@@ -514,6 +521,7 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
                 setUserList(updated);
                 setPendingBadge(updated.filter(u => (u.status||"").toLowerCase() === "pending").length);
                 addToast(`✅ Akun ${user.name} berhasil di-ACC! Pengguna sekarang dapat login.`, "success");
+                router.reload({ preserveScroll: true });
             },
             onError: () => {
                 addToast("Gagal menyetujui akun. Coba lagi.", "error");
@@ -535,6 +543,7 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
                 setPendingBadge(updated.filter(u => (u.status||"").toLowerCase() === "pending").length);
                 setRejectUser(null);
                 addToast(`Akun ${user.name} telah ditolak.`, "warning");
+                router.reload({ preserveScroll: true });
             },
             onError: () => {
                 addToast("Gagal menolak akun. Coba lagi.", "error");
@@ -563,6 +572,7 @@ export default function UserManagement({ users = [], rigs = [], pendingCount = 0
             onSuccess: (page) => {
                 const updated = page.props.users || [];
                 setUserList(updated);
+                router.reload({ preserveScroll: true });
             },
             onError: () => addToast("Gagal mengubah status.", "error"),
         });

@@ -383,6 +383,7 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                     setUploadStepMessage("");
                     setUploadTarget(null);
                     reset();
+                    router.reload({ preserveScroll: true });
                 }, 400);
             },
             onError: () => {
@@ -475,6 +476,7 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                     if (updatedRec) {
                         setViewerState((prev) => ({ ...prev, record: updatedRec }));
                     }
+                    router.reload({ preserveScroll: true });
                     resolve();
                 },
                 onError: reject,
@@ -495,6 +497,7 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
                     if (updatedRec) {
                         setViewerState((prev) => ({ ...prev, record: updatedRec }));
                     }
+                    router.reload({ preserveScroll: true });
                     resolve();
                 },
                 onError: reject,
@@ -504,7 +507,12 @@ export default function RigDetail({ rig, categories = [], records = [], matrix =
 
     const handleDeleteRecord = (id) => {
         if (confirm("Apakah Anda yakin ingin menghapus dokumen rekaman ini?")) {
-            router.delete(`/csms/record/${id}`);
+            router.delete(`/csms/record/${id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    router.reload({ preserveScroll: true });
+                },
+            });
         }
     };
 

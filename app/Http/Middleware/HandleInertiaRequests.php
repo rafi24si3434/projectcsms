@@ -36,30 +36,33 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $isAdmin = $user && $user->role === 'admin';
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => fn () => $request->user() ? [
-                    'id'          => $request->user()->id,
-                    'name'        => $request->user()->name,
-                    'email'       => $request->user()->email,
-                    'role'        => $request->user()->role,
-                    'status'      => $request->user()->status,
+                'user' => fn () => $user ? [
+                    'id'          => $user->id,
+                    'name'        => $user->name,
+                    'email'       => $user->email,
+                    'role'        => $user->role,
+                    'status'      => $user->status,
                     'hfo_name'    => session('hfo_name') ?: session('logged_hfo_name'),
-                    'csms_rig_id' => $request->user()->csms_rig_id,
-                    'rig'         => $request->user()->rig ? [
-                        'id'   => $request->user()->rig->id,
-                        'name' => $request->user()->rig->name,
-                        'code' => $request->user()->rig->code,
+                    'csms_rig_id' => $user->csms_rig_id,
+                    'rig'         => ($user->csms_rig_id && $user->rig) ? [
+                        'id'   => $user->rig->id,
+                        'name' => $user->rig->name,
+                        'code' => $user->rig->code,
                     ] : null,
                 ] : null,
             ],
-            // Badge notifikasi untuk admin sidebar — dihitung secara lazy hanya jika user login sebagai admin
-            'pendingUsersCount' => fn () => ($request->user() && $request->user()->role === 'admin')
-                ? User::where('status', 'Pending')->count()
+            // Badge notifikasi admin di-cache 30-60 detik agar tidak query berulang di setiap klik menu
+            'pendingUsersCount' => fn () => $isAdmin
+                ? cache()->remember('admin_pending_users_count', 30, fn () => User::where('status', 'Pending')->count())
                 : 0,
-            'archivedRigsCount' => fn () => ($request->user() && $request->user()->role === 'admin')
-                ? \App\Models\CsmsRig::where('status', 'archived')->count()
+            'archivedRigsCount' => fn () => $isAdmin
+                ? cache()->remember('admin_archived_rigs_count', 60, fn () => \App\Models\CsmsRig::where('status', 'archived')->count())
                 : 0,
             // Flash messages global
             'flash' => [

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { router } from "@inertiajs/react";
 import AdminSidebar from "../../Components/AdminSidebar";
 import {
     CheckCircle2,
@@ -115,6 +116,7 @@ export default function Approval({ reports: initialReports = [] }) {
 
             setRejectionModal(null);
             setRejectionReason("");
+            router.reload({ preserveScroll: true });
             alert(`Laporan berhasil diubah menjadi: ${newStatus.toUpperCase()}`);
         } catch (error) {
             console.error("Error updating approval:", error);

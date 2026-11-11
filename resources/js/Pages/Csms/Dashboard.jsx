@@ -76,6 +76,12 @@ export default function CsmsDashboard({
     const [drawerFilter, setDrawerFilter] = useState("all"); // 'all' | 'uploaded' | 'missing'
     const [drawerSearch, setDrawerSearch] = useState("");
 
+    // Sinkronisasi unit rig di modal checklist dengan rigStats terbaru secara reaktif
+    const liveDrawerRig = useMemo(() => {
+        if (!drawerRig) return null;
+        return (rigStats || []).find((r) => r.id === drawerRig.id) || drawerRig;
+    }, [drawerRig, rigStats]);
+
     // Keyboard listener untuk tombol Escape agar menutup modal dialog
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -142,6 +148,7 @@ export default function CsmsDashboard({
             onSuccess: () => {
                 setIsArchivingRig(false);
                 setRigToArchive(null);
+                router.reload({ preserveScroll: true });
             },
             onError: () => {
                 setIsArchivingRig(false);
@@ -190,6 +197,7 @@ export default function CsmsDashboard({
             onSuccess: () => {
                 setIsUpdatingRig(false);
                 setShowEditRigModal(false);
+                router.reload({ preserveScroll: true });
             },
             onError: (errs) => {
                 setIsUpdatingRig(false);
@@ -219,10 +227,14 @@ export default function CsmsDashboard({
                     hfo_2: "",
                     hfo_3: "",
                 });
+                router.reload({ preserveScroll: true });
             },
             onError: (errs) => {
                 setIsSubmittingRig(false);
                 setAddRigErrors(errs || {});
+            },
+            onFinish: () => {
+                setIsSubmittingRig(false);
             },
         });
     };
@@ -292,6 +304,7 @@ export default function CsmsDashboard({
                 onSuccess: () => {
                     setViewerState((prev) => ({ ...prev, isOpen: false }));
                     setActiveCellModal(null);
+                    router.reload({ preserveScroll: true });
                 },
             }
         );
@@ -306,6 +319,7 @@ export default function CsmsDashboard({
                 onSuccess: () => {
                     setViewerState((prev) => ({ ...prev, isOpen: false }));
                     setActiveCellModal(null);
+                    router.reload({ preserveScroll: true });
                 },
             }
         );
@@ -336,13 +350,19 @@ export default function CsmsDashboard({
             onSuccess: () => {
                 setIsUploadModalOpen(false);
                 reset();
+                router.reload({ preserveScroll: true });
             },
         });
     };
 
     const handleDeleteRecord = (id) => {
         if (confirm("Apakah Anda yakin ingin menghapus arsip dokumen CSMS ini?")) {
-            router.delete(`/csms/record/${id}`);
+            router.delete(`/csms/record/${id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    router.reload({ preserveScroll: true });
+                },
+            });
         }
     };
 
@@ -536,6 +556,8 @@ export default function CsmsDashboard({
                             {/* Tombol Input Per-Rig */}
                             <Link
                                 href="/csms/input-rig"
+                                prefetch="hover"
+                                preserveScroll
                                 className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm transition-all"
                             >
                                 <FileText size={16} className="text-slate-600" />
@@ -545,6 +567,8 @@ export default function CsmsDashboard({
                             {/* Tombol Verifikasi & ACC Admin */}
                             <Link
                                 href="/admin/csms/verification"
+                                prefetch="hover"
+                                preserveScroll
                                 className="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-3.5 py-2 rounded-xl border border-amber-300 text-xs sm:text-sm transition-all"
                             >
                                 <ShieldCheck size={16} className="text-amber-600" />
@@ -759,6 +783,8 @@ export default function CsmsDashboard({
                                             <div className="flex items-center justify-between gap-2 mb-2">
                                                 <Link
                                                     href={`/csms/rig/${rig.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                                    prefetch="hover"
+                                                    preserveScroll
                                                     className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors"
                                                     title={`Buka detail dokumen K3 ${rig.name}`}
                                                 >
@@ -817,6 +843,8 @@ export default function CsmsDashboard({
                                             {/* Nama Rig & Rangkuman Dokumen */}
                                             <Link
                                                 href={`/csms/rig/${rig.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                                prefetch="hover"
+                                                preserveScroll
                                                 className="block group/title mt-1"
                                                 title={`Buka detail matriks K3 ${rig.name}`}
                                             >
@@ -1593,7 +1621,7 @@ export default function CsmsDashboard({
             {/* ═══════════════════════════════════════════════════════════════
                 MODAL DIALOG CHECKLIST DOKUMEN RIG (CENTERED MODAL)
             ═══════════════════════════════════════════════════════════════ */}
-            {drawerRig && (
+            {liveDrawerRig && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-hidden">
                     {/* Backdrop Overlay Gelap & Lembut */}
                     <div
@@ -1609,20 +1637,20 @@ export default function CsmsDashboard({
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                         <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black">
-                                            {drawerRig.code}
+                                            {liveDrawerRig.code}
                                         </span>
                                         <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-md border ${
-                                            drawerRig.percentage >= 100
+                                            liveDrawerRig.percentage >= 100
                                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                : drawerRig.percentage > 0
+                                                : liveDrawerRig.percentage > 0
                                                 ? "bg-amber-50 text-amber-700 border-amber-200"
                                                 : "bg-slate-50 text-slate-500 border-slate-200"
                                         }`}>
-                                            {drawerRig.percentage}% Kepatuhan
+                                            {liveDrawerRig.percentage}% Kepatuhan
                                         </span>
                                     </div>
                                     <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                                        {drawerRig.name}
+                                        {liveDrawerRig.name}
                                     </h2>
                                     <p className="text-xs text-slate-500 font-medium">
                                         Periode Evaluasi: <strong className="text-slate-700">{selectedMonth} {selectedYear}</strong>
@@ -1647,7 +1675,7 @@ export default function CsmsDashboard({
                                     <div className="truncate">
                                         <span className="text-slate-400 font-semibold mr-1">Petugas HFO:</span>
                                         <strong className="text-slate-800">
-                                            {drawerRig.hfo_list && drawerRig.hfo_list.length > 0 ? drawerRig.hfo_list.join(", ") : "Belum ditentukan"}
+                                            {liveDrawerRig.hfo_list && liveDrawerRig.hfo_list.length > 0 ? liveDrawerRig.hfo_list.join(", ") : "Belum ditentukan"}
                                         </strong>
                                     </div>
                                 </div>
@@ -1846,7 +1874,9 @@ export default function CsmsDashboard({
                         {/* 4. Footer Tetap (Sticky Bottom) */}
                         <div className="p-4 sm:p-5 border-t border-slate-200 bg-slate-50/90 flex items-center justify-between gap-3 shrink-0">
                             <Link
-                                href={`/csms/rig/${drawerRig.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                href={`/csms/rig/${liveDrawerRig.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                prefetch="hover"
+                                preserveScroll
                                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
                                 style={{ background: "linear-gradient(135deg, #22c55e 0%, #059669 45%, #064e3b 100%)" }}
                             >
@@ -1972,6 +2002,8 @@ export default function CsmsDashboard({
                         <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
                             <Link
                                 href={`/csms/rig/${activeCellModal.rig?.id}?bulan=${selectedMonth}&tahun=${selectedYear}`}
+                                prefetch="hover"
+                                preserveScroll
                                 className="text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline flex items-center gap-1"
                             >
                                 <span>Buka Matriks Lengkap {activeCellModal.rig?.code}</span>

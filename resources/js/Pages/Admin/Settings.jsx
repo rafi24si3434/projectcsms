@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Head } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import {
     Settings,
@@ -90,6 +90,7 @@ export default function SettingsPage({
             }
 
             showNotif("success", result.message || "Profil berhasil diperbarui!");
+            router.reload({ preserveScroll: true });
         } catch (error) {
             console.error("Error updating profile:", error);
             showNotif("error", "Terjadi kendala saat menghubungkan ke server.");
@@ -141,6 +142,7 @@ export default function SettingsPage({
                 password_confirmation: "",
             });
             showNotif("success", result.message || "Kata sandi berhasil diperbarui!");
+            router.reload({ preserveScroll: true });
         } catch (error) {
             console.error("Error updating password:", error);
             showNotif("error", "Terjadi kendala saat memperbarui kata sandi.");

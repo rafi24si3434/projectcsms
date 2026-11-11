@@ -192,8 +192,12 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
             `/admin/csms/categories/${catId}`,
             { nama_dokumen: renameValue.trim() },
             {
-                preserveState: true,
-                onSuccess: () => { setRenamingCatId(null); setRenameValue(""); },
+                preserveScroll: true,
+                onSuccess: () => {
+                    setRenamingCatId(null);
+                    setRenameValue("");
+                    router.reload({ preserveScroll: true });
+                },
             }
         );
     };
@@ -207,10 +211,11 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
             "/admin/csms/categories",
             addForm,
             {
-                preserveState: false,
+                preserveScroll: true,
                 onSuccess: () => {
                     setShowAddModal(false);
                     setAddForm({ nama_dokumen: "", durasi: "", scope: "crew", keterangan_default: "" });
+                    router.reload({ preserveScroll: true });
                 },
                 onFinish: () => setAddSubmitting(false),
             }
@@ -222,9 +227,10 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
         if (!deleteCatModal) return;
         setIsDeletingCat(true);
         router.delete(`/admin/csms/categories/${deleteCatModal.id}`, {
-            preserveState: false,
+            preserveScroll: true,
             onSuccess: () => {
                 setDeleteCatModal(null);
+                router.reload({ preserveScroll: true });
             },
             onFinish: () => setIsDeletingCat(false),
         });
@@ -321,6 +327,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                     setUploadStepMessage("");
                     setUploadTarget(null);
                     reset();
+                    router.reload({ preserveScroll: true });
                 }, 400);
             },
             onError: (errs) => {
@@ -415,6 +422,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                     if (updatedRec) {
                         setViewerState((prev) => ({ ...prev, record: updatedRec }));
                     }
+                    router.reload({ preserveScroll: true });
                     resolve();
                 },
                 onError: reject,
@@ -435,6 +443,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                     if (updatedRec) {
                         setViewerState((prev) => ({ ...prev, record: updatedRec }));
                     }
+                    router.reload({ preserveScroll: true });
                     resolve();
                 },
                 onError: reject,
@@ -449,6 +458,9 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
             approval_notes: 'Disetujui langsung (ACC Sah) oleh Admin HSE.',
         }, {
             preserveScroll: true,
+            onSuccess: () => {
+                router.reload({ preserveScroll: true });
+            },
         });
     };
 
@@ -485,6 +497,7 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                 setIsVerifying(false);
                 setVerificationModal({ isOpen: false, record: null, category: null, crew: null });
                 setVerifyNotes("");
+                router.reload({ preserveScroll: true });
             },
             onError: () => {
                 setIsVerifying(false);
@@ -504,13 +517,21 @@ export default function UserRigInput({ rig, allRigs = [], categories = [], recor
                 approval_status: 'approved',
             }, {
                 preserveScroll: true,
+                onSuccess: () => {
+                    router.reload({ preserveScroll: true });
+                },
             });
         }
     };
 
     const handleDeleteRecord = (id) => {
         if (confirm("Apakah Anda yakin ingin menghapus berkas dokumen ini?")) {
-            router.delete(`/csms/record/${id}`);
+            router.delete(`/csms/record/${id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    router.reload({ preserveScroll: true });
+                },
+            });
         }
     };
 

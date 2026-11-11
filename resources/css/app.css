@@ -206,3 +206,18 @@ textarea:focus-visible {
     stroke-dasharray: 440 1240;
     animation: diamond-neon-sweep 3s linear infinite;
 }
+
+/* ── Inertia / NProgress Loading Bar (Hijau Botol / Deep Forest Green) ── */
+#nprogress {
+    pointer-events: none;
+}
+
+#nprogress .bar {
+    background: #064e3b !important;
+    height: 3px !important;
+    z-index: 99999 !important;
+}
+
+#nprogress .peg {
+    box-shadow: 0 0 10px #064e3b, 0 0 5px #065f46 !important;
+}

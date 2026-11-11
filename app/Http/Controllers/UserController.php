@@ -66,6 +66,8 @@ class UserController extends Controller
             'plain_password' => $validated['password'],
         ]);
 
+        cache()->forget('admin_pending_users_count');
+
         // Jika admin membuat akun langsung active, tandai approved_by sebagai dirinya sendiri
         if ($statusNormalized === 'Active') {
             $user->update([
@@ -84,14 +86,6 @@ class UserController extends Controller
         }
 
         $user->load('rig');
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Pengguna baru {$user->name} berhasil ditambahkan ke database.",
-                'data'    => $user,
-            ], 201);
-        }
 
         return redirect()->back()->with('success', "Pengguna baru {$user->name} berhasil ditambahkan.");
     }
@@ -123,12 +117,6 @@ class UserController extends Controller
 
         // Cegah admin menonaktifkan / pending-kan akunnya sendiri
         if (auth()->id() === $user->id && in_array(strtolower($validated['status']), ['inactive', 'pending'])) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak dapat menonaktifkan atau men-pending akun Anda sendiri yang sedang aktif.',
-                ], 422);
-            }
             return redirect()->back()->withErrors(['status' => 'Anda tidak dapat mengubah status akun sendiri yang sedang digunakan.']);
         }
 
@@ -155,6 +143,7 @@ class UserController extends Controller
         }
 
         $user->update($updateData);
+        cache()->forget('admin_pending_users_count');
 
         // Perbarui data 3 personil HFO untuk Rig ini jika disertakan
         $rigId = $user->csms_rig_id;
@@ -168,14 +157,6 @@ class UserController extends Controller
 
         $user->load('rig');
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Data pengguna {$user->name} berhasil diperbarui.",
-                'data'    => $user,
-            ]);
-        }
-
         return redirect()->back()->with('success', "Data pengguna {$user->name} berhasil diperbarui.");
     }
 
@@ -187,12 +168,6 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         if (strtolower($user->status ?? '') !== 'pending') {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Akun ini tidak dalam status Pending, tidak perlu di-ACC.',
-                ], 422);
-            }
             return redirect()->back()->withErrors(['status' => 'Akun ini tidak dalam status Pending.']);
         }
 
@@ -202,16 +177,9 @@ class UserController extends Controller
             'approved_at' => now(),
             'rejection_reason' => null,
         ]);
+        cache()->forget('admin_pending_users_count');
 
         $user->load('rig');
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Akun {$user->name} ({$user->email}) berhasil di-ACC dan sekarang aktif.",
-                'data'    => $user,
-            ]);
-        }
 
         return redirect()->back()->with('success', "Akun {$user->name} berhasil di-ACC dan sekarang aktif.");
     }
@@ -231,16 +199,9 @@ class UserController extends Controller
             'status'           => 'Rejected',
             'rejection_reason' => $validated['reason'] ?? 'Ditolak oleh HSE Admin.',
         ]);
+        cache()->forget('admin_pending_users_count');
 
         $user->load('rig');
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Akun {$user->name} ({$user->email}) ditolak.",
-                'data'    => $user,
-            ]);
-        }
 
         return redirect()->back()->with('success', "Akun {$user->name} telah ditolak.");
     }
@@ -253,19 +214,13 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         if (auth()->id() === $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak dapat menonaktifkan akun Anda sendiri yang sedang aktif digunakan.',
-            ], 422);
+            return redirect()->back()->withErrors(['status' => 'Anda tidak dapat menonaktifkan akun Anda sendiri yang sedang aktif digunakan.']);
         }
 
         $currentStatus = strtolower($user->status ?? 'active');
 
         if ($currentStatus === 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gunakan tombol ACC/Tolak untuk akun dengan status Pending.',
-            ], 422);
+            return redirect()->back()->withErrors(['status' => 'Gunakan tombol ACC/Tolak untuk akun dengan status Pending.']);
         }
 
         $isCurrentlyActive = $currentStatus === 'active';
@@ -278,6 +233,7 @@ class UserController extends Controller
         }
 
         $user->update($updateData);
+        cache()->forget('admin_pending_users_count');
 
         // Perbarui data 3 personil HFO untuk Rig ini jika disertakan
         $rigId = $user->csms_rig_id;
@@ -293,14 +249,6 @@ class UserController extends Controller
 
         $statusLabel = $newStatus === 'Active' ? 'diaktifkan' : 'dinonaktifkan';
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Akun {$user->name} berhasil {$statusLabel}.",
-                'data'    => $user,
-            ]);
-        }
-
         return redirect()->back()->with('success', "Akun {$user->name} berhasil {$statusLabel}.");
     }
 
@@ -312,21 +260,12 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         if (auth()->id() === $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan.',
-            ], 422);
+            return redirect()->back()->withErrors(['status' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan.']);
         }
 
         $name = $user->name;
         $user->delete();
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Pengguna {$name} berhasil dihapus dari database.",
-            ]);
-        }
+        cache()->forget('admin_pending_users_count');
 
         return redirect()->back()->with('success', "Pengguna {$name} berhasil dihapus.");
     }

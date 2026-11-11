@@ -75,6 +75,7 @@ export default function ArchivedRigs({
             onSuccess: () => {
                 setIsRestoring(false);
                 setRigToRestore(null);
+                router.reload({ preserveScroll: true });
             },
             onError: () => {
                 setIsRestoring(false);

@@ -18,36 +18,38 @@ class CsmsController extends Controller
      */
     public static function getAvailableYears(): array
     {
-        $yearsFile = storage_path('app/csms_years.json');
-        $customYears = [];
-        $deletedYears = [];
+        return cache()->remember('csms_available_years', 300, function () {
+            $yearsFile = storage_path('app/csms_years.json');
+            $customYears = [];
+            $deletedYears = [];
 
-        if (file_exists($yearsFile)) {
-            $data = json_decode(file_get_contents($yearsFile), true) ?: [];
-            $customYears = array_map('intval', $data['custom'] ?? []);
-            $deletedYears = array_map('intval', $data['deleted'] ?? []);
-        }
+            if (file_exists($yearsFile)) {
+                $data = json_decode(file_get_contents($yearsFile), true) ?: [];
+                $customYears = array_map('intval', $data['custom'] ?? []);
+                $deletedYears = array_map('intval', $data['deleted'] ?? []);
+            }
 
-        $currentYear = (int) date('Y');
-        $baseYears = range(2024, $currentYear + 5);
+            $currentYear = (int) date('Y');
+            $baseYears = range(2024, $currentYear + 5);
 
-        // Ambil juga tahun-tahun yang sudah pernah diinput di database record
-        try {
-            $recordYears = CsmsRecord::distinct('periode_tahun')->pluck('periode_tahun')->map(fn($y) => (int)$y)->toArray();
-        } catch (\Throwable $e) {
-            $recordYears = [];
-        }
+            // Ambil juga tahun-tahun yang sudah pernah diinput di database record
+            try {
+                $recordYears = CsmsRecord::distinct('periode_tahun')->pluck('periode_tahun')->map(fn($y) => (int)$y)->toArray();
+            } catch (\Throwable $e) {
+                $recordYears = [];
+            }
 
-        $allYears = array_unique(array_merge($baseYears, $recordYears, $customYears));
-        $allYears = array_values(array_filter($allYears, fn($y) => !in_array((int)$y, $deletedYears, true)));
+            $allYears = array_unique(array_merge($baseYears, $recordYears, $customYears));
+            $allYears = array_values(array_filter($allYears, fn($y) => !in_array((int)$y, $deletedYears, true)));
 
-        sort($allYears);
+            sort($allYears);
 
-        if (empty($allYears)) {
-            $allYears = [$currentYear];
-        }
+            if (empty($allYears)) {
+                $allYears = [$currentYear];
+            }
 
-        return $allYears;
+            return $allYears;
+        });
     }
 
     /**
@@ -578,6 +580,7 @@ class CsmsController extends Controller
                 'last_activity_raw'  => null,
                 'last_activity_doc'  => null,
                 'activity_status'    => 'Belum Aktif',
+                'recent_documents'   => [],
             ];
         }
 
@@ -606,6 +609,7 @@ class CsmsController extends Controller
                     'last_activity_raw'  => null,
                     'last_activity_doc'  => null,
                     'activity_status'    => 'Belum Aktif',
+                    'recent_documents'   => [],
                 ];
             }
 
@@ -629,6 +633,18 @@ class CsmsController extends Controller
                 $m = (int)$actTime->format('n');
                 $hfoAgg[$uploader]['last_activity_date'] = $actTime->format('d') . ' ' . ($monthsIndo[$m] ?? '') . ' ' . $actTime->format('Y, H:i');
                 $hfoAgg[$uploader]['last_activity_doc'] = $r->category ? $r->category->nama_dokumen : $r->file_name;
+            }
+
+            if (count($hfoAgg[$uploader]['recent_documents']) < 10) {
+                $hfoAgg[$uploader]['recent_documents'][] = [
+                    'id'              => $r->id,
+                    'file_name'       => $r->file_name,
+                    'file_path'       => $r->file_path,
+                    'category_name'   => $r->category ? $r->category->nama_dokumen : 'Dokumen CSMS',
+                    'crew'            => $r->crew ?: 'Rig',
+                    'approval_status' => $r->approval_status,
+                    'created_at'      => $r->created_at ? $r->created_at->format('d/m/Y H:i') : null,
+                ];
             }
         }
 
@@ -670,10 +686,76 @@ class CsmsController extends Controller
 
         $fullList = $sortedDesc->all();
 
+        // 5. Agregasi kontribusi per unit RIG dan kelompok 3 personil HFO
+        $rigGroups = [];
+        foreach ($activeRigs as $rig) {
+            $rigHfos = [];
+            $rigTotalUploaded = 0;
+            $rigApprovedCount = 0;
+            $rigPendingCount  = 0;
+            $rigRevisionCount = 0;
+
+            $officerNames = array_values(array_filter([$rig->hfo_1, $rig->hfo_2, $rig->hfo_3]));
+            foreach ($officerNames as $idx => $officerName) {
+                $name = trim($officerName);
+                if (isset($hfoAgg[$name])) {
+                    $hfoData = $hfoAgg[$name];
+                    $hfoData['crew_label'] = 'Kru ' . chr(65 + $idx); // Kru A, Kru B, Kru C
+                    $rigHfos[] = $hfoData;
+                    $rigTotalUploaded += $hfoData['total_uploaded'];
+                    $rigApprovedCount += $hfoData['approved_count'];
+                    $rigPendingCount  += $hfoData['pending_count'];
+                    $rigRevisionCount += $hfoData['revision_count'];
+                }
+            }
+
+            // Sertakan juga petugas lain yang mengunggah atas nama RIG ini jika ada
+            foreach ($hfoAgg as $name => $hfoData) {
+                if ($hfoData['rig_id'] == $rig->id && !in_array($name, array_map('trim', $officerNames))) {
+                    $hfoData['crew_label'] = 'Personil Tambahan';
+                    $rigHfos[] = $hfoData;
+                    $rigTotalUploaded += $hfoData['total_uploaded'];
+                    $rigApprovedCount += $hfoData['approved_count'];
+                    $rigPendingCount  += $hfoData['pending_count'];
+                    $rigRevisionCount += $hfoData['revision_count'];
+                }
+            }
+
+            $activeHfosCount = count(array_filter($rigHfos, fn($h) => ($h['total_uploaded'] ?? 0) > 0));
+            $totalHfosInRig  = count($rigHfos);
+
+            $teamStatus = 'Inaktif';
+            if ($totalHfosInRig > 0 && $activeHfosCount === $totalHfosInRig && $rigTotalUploaded > 0) {
+                $teamStatus = 'Solid';
+            } elseif ($activeHfosCount > 0) {
+                $teamStatus = 'Parsial';
+            }
+
+            $rigGroups[] = [
+                'rig_id'             => $rig->id,
+                'rig_code'           => $rig->code,
+                'rig_name'           => $rig->name,
+                'total_uploaded'     => $rigTotalUploaded,
+                'approved_count'     => $rigApprovedCount,
+                'pending_count'      => $rigPendingCount,
+                'revision_count'     => $rigRevisionCount,
+                'hfos'               => $rigHfos,
+                'total_hfos'         => $totalHfosInRig,
+                'active_hfos'        => $activeHfosCount,
+                'approval_rate'      => $rigTotalUploaded > 0 ? round(($rigApprovedCount / $rigTotalUploaded) * 100) : 0,
+                'team_status'        => $teamStatus,
+            ];
+        }
+
+        // Top 5 Rigs dengan unggahan terbanyak
+        $topRigs = collect($rigGroups)->filter(fn($r) => $r['total_uploaded'] > 0)->sortByDesc('total_uploaded')->values()->take(5)->all();
+
         return [
             'top_active'     => $top5,
             'low_activity'   => $lowActivity,
             'full_list'      => $fullList,
+            'top_rigs'       => $topRigs,
+            'rig_groups'     => $rigGroups,
             'total_hfos'     => count($hfoAgg),
             'active_count'   => $sangatAktifCount,
             'moderate_count' => $cukupAktifCount,
@@ -1389,6 +1471,9 @@ class CsmsController extends Controller
         $rig = CsmsRig::findOrFail($id);
         $rig->update(['status' => 'archived']);
 
+        // Invalidate cache jumlah arsip rig
+        cache()->forget('admin_archived_rigs_count');
+
         // Nonaktifkan user kru terkait agar tidak dapat login
         \App\Models\User::where('csms_rig_id', $rig->id)->update(['status' => 'Inactive']);
 
@@ -1406,6 +1491,9 @@ class CsmsController extends Controller
 
         $rig = CsmsRig::findOrFail($id);
         $rig->update(['status' => 'active']);
+
+        // Invalidate cache jumlah arsip rig
+        cache()->forget('admin_archived_rigs_count');
 
         // Aktifkan kembali user kru terkait
         \App\Models\User::where('csms_rig_id', $rig->id)->update(['status' => 'Active']);
@@ -1493,6 +1581,7 @@ class CsmsController extends Controller
             @mkdir(storage_path('app'), 0755, true);
         }
         file_put_contents($yearsFile, json_encode(['custom' => $custom, 'deleted' => $deleted], JSON_PRETTY_PRINT));
+        cache()->forget('csms_available_years');
 
         return redirect()->back()->with('success', "Opsi tahun {$year} berhasil ditambahkan.");
     }
@@ -1530,6 +1619,7 @@ class CsmsController extends Controller
             @mkdir(storage_path('app'), 0755, true);
         }
         file_put_contents($yearsFile, json_encode(['custom' => $custom, 'deleted' => $deleted], JSON_PRETTY_PRINT));
+        cache()->forget('csms_available_years');
 
         // Dapatkan tahun fallback berikutnya yang masih tersedia
         $fallbackYear = self::resolveActiveYear();

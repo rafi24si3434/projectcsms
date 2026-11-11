@@ -89,7 +89,8 @@ function AdminSidebar() {
             <div className="p-5 border-b border-slate-100 shrink-0 flex flex-col items-center justify-center">
                 <Link
                     href={isRigUser ? "/csms/input-rig" : "/csms"}
-                    prefetch="mount"
+                    prefetch={["mount", "hover"]}
+                    cacheFor="1m"
                     preserveScroll
                     className="block focus:outline-none"
                 >
@@ -152,7 +153,8 @@ function AdminSidebar() {
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        prefetch="mount"
+                                        prefetch={["mount", "hover"]}
+                                        cacheFor="1m"
                                         preserveScroll
                                         className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
                                             active
@@ -190,7 +192,8 @@ function AdminSidebar() {
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            prefetch="mount"
+                                            prefetch={["mount", "hover"]}
+                                            cacheFor="1m"
                                             preserveScroll
                                             className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
                                                 active
@@ -226,7 +229,8 @@ function AdminSidebar() {
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            prefetch="mount"
+                                            prefetch={["mount", "hover"]}
+                                            cacheFor="1m"
                                             preserveScroll
                                             className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none ${
                                                 active

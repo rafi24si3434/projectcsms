@@ -112,9 +112,11 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
         if (!actionModal.record) return;
 
         post(`/admin/csms/verify/${actionModal.record.id}`, {
+            preserveScroll: true,
             onSuccess: () => {
                 setActionModal({ isOpen: false, record: null, targetStatus: "approved" });
                 reset();
+                router.reload({ preserveScroll: true });
             },
         });
     };
@@ -143,7 +145,11 @@ export default function CsmsVerification({ records = [], rigs = [], categories =
                 record_ids: selectedIds,
                 approval_status: 'approved',
             }, {
-                onSuccess: () => setSelectedIds([]),
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSelectedIds([]);
+                    router.reload({ preserveScroll: true });
+                },
             });
         }
     };

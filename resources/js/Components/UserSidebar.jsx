@@ -62,7 +62,7 @@ export default function UserSidebar() {
                     boxSizing: "border-box",
                     flexShrink: 0,
                 }}>
-                    <Link href="/csms" prefetch="mount" preserveScroll style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", textDecoration: "none" }}>
+                    <Link href="/csms" prefetch={["mount", "hover"]} cacheFor="1m" preserveScroll style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", textDecoration: "none" }}>
                         <img
                             src="/images/logo-besmindo.png"
                             alt="BESMINDO"
@@ -164,7 +164,8 @@ export default function UserSidebar() {
                 }}>
                     <Link
                         href="/csms"
-                        prefetch="mount"
+                        prefetch={["mount", "hover"]}
+                        cacheFor="1m"
                         preserveScroll
                         style={{
                             display: "flex",

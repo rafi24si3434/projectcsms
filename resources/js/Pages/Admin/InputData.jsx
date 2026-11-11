@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import AdminSidebar from "../../Components/AdminSidebar";
-import { usePage } from "@inertiajs/react";
+import { usePage, router } from "@inertiajs/react";
 
 const MONTHS = [
     { value: "01", label: "Januari" },
@@ -367,6 +367,8 @@ export default function InputData() {
             alert(
                 `Data HSE ${selectedMonthLabel} berhasil dikirim! Status saat ini: PENDING (Menunggu Persetujuan / Approval dari Admin via Email atau Menu Approval).`,
             );
+
+            router.reload({ preserveScroll: true });
 
             console.log("REPORT BERHASIL DISIMPAN:", result.data);
         } catch (error) {
